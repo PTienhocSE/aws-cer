@@ -5,6 +5,7 @@ import { getAuthUserOrDemo } from '@/lib/auth';
 export async function PATCH(req: NextRequest) {
   try {
     const authUser = await getAuthUserOrDemo(req);
+    if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
     const body = await req.json();
     const { questionBankId } = body;
 

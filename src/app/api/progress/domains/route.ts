@@ -5,6 +5,7 @@ import { getAuthUserOrDemo } from '@/lib/auth';
 export async function GET(req: NextRequest) {
   try {
     const authUser = await getAuthUserOrDemo(req);
+    if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
     const userId = authUser.userId;
 
     // Ensure activeBankId is never undefined (Prisma ignores undefined in where filter)

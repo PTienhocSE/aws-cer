@@ -5,6 +5,7 @@ import { getAuthUserOrDemo } from '@/lib/auth';
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const authUser = await getAuthUserOrDemo(req);
+    if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
     const userId = authUser.userId;
     const { id: examAttemptId } = await params;
     const body = await req.json();

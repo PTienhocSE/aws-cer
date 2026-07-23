@@ -5,8 +5,9 @@ import { getAuthUserOrDemo } from '@/lib/auth';
 export async function POST(req: NextRequest) {
   try {
     const authUser = await getAuthUserOrDemo(req);
+    if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
     const userId = authUser.userId;
-    const activeBankId = authUser.activeQuestionBankId;
+    const activeBankId = authUser.activeQuestionBankId || undefined;
     const body = await req.json();
     const { totalQuestions = 65, timeLimitMinutes = 130 } = body;
 
@@ -17,6 +18,10 @@ export async function POST(req: NextRequest) {
 
     if (questions.length === 0) {
       return NextResponse.json({ error: 'Không tìm thấy câu hỏi cho kỳ thi' }, { status: 400 });
+    }
+
+    if (!activeBankId) {
+      return NextResponse.json({ error: 'Chưa chọn ngân hàng câu hỏi' }, { status: 400 });
     }
 
     const examAttempt = await prisma.mockExamAttempt.create({

@@ -5,8 +5,12 @@ import { getAuthUserOrDemo } from '@/lib/auth';
 export async function POST(req: NextRequest) {
   try {
     const authUser = await getAuthUserOrDemo(req);
+    if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
     const userId = authUser.userId;
     const bankId = authUser.activeQuestionBankId;
+    if (!bankId) {
+      return NextResponse.json({ error: 'Chưa chọn ngân hàng câu hỏi' }, { status: 400 });
+    }
     const body = await req.json();
     const { mode = 'CUSTOM', domainId, limit = 15 } = body;
 

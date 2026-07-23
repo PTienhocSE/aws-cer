@@ -6,6 +6,7 @@ import { calculateSuperMemo2 } from '@/lib/spaced-repetition';
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const authUser = await getAuthUserOrDemo(req);
+    if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
     const userId = authUser.userId;
     const { id: sessionId } = await params;
     const body = await req.json();

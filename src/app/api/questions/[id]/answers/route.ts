@@ -8,6 +8,7 @@ export async function POST(
 ) {
   try {
     const authUser = await getAuthUserOrDemo(req);
+    if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
     const { id: questionId } = await params;
     const userId = authUser.userId;
 

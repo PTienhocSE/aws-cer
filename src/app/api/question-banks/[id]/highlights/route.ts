@@ -5,6 +5,7 @@ import { getAuthUserOrDemo } from '@/lib/auth';
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const authUser = await getAuthUserOrDemo(req);
+    if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
     const { id: questionBankId } = await params;
     const { searchParams } = new URL(req.url);
     const color = searchParams.get('color');

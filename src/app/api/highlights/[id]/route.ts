@@ -5,6 +5,7 @@ import { getAuthUserOrDemo } from '@/lib/auth';
 export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const authUser = await getAuthUserOrDemo(req);
+    if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
     const { id } = await params;
 
     const existing = await prisma.questionHighlight.findUnique({ where: { id } });

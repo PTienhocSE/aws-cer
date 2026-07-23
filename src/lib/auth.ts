@@ -1,53 +1,68 @@
 import { NextRequest } from 'next/server';
+import { SignJWT, jwtVerify } from 'jose';
 import { prisma } from './prisma';
 
-export function signToken(payload: any) {
-  return 'jwt-session-token-' + (payload.userId || 'guest');
+const SECRET = new TextEncoder().encode(
+  process.env.JWT_SECRET || 'fallback-secret-change-in-production'
+);
+
+export async function signToken(payload: {
+  userId: string;
+  email: string;
+  name?: string;
+  role: string;
+  activeQuestionBankId?: string | null;
+}) {
+  return new SignJWT({ ...payload })
+    .setProtectedHeader({ alg: 'HS256' })
+    .setIssuedAt()
+    .setExpirationTime('7d')
+    .sign(SECRET);
+}
+
+async function verifyToken(token: string) {
+  try {
+    const { payload } = await jwtVerify(token, SECRET);
+    return payload as {
+      userId: string;
+      email: string;
+      name?: string;
+      role: string;
+      activeQuestionBankId?: string | null;
+    };
+  } catch {
+    return null;
+  }
 }
 
 export async function getAuthenticatedUser(req: NextRequest) {
-  return getAuthUserOrDemo(req);
+  const token =
+    req.cookies.get('token')?.value ||
+    req.headers.get('authorization')?.replace('Bearer ', '');
+
+  if (!token) return null;
+
+  const payload = await verifyToken(token);
+  if (!payload?.userId) return null;
+
+  return {
+    userId: payload.userId,
+    email: payload.email,
+    name: payload.name,
+    role: payload.role,
+    activeQuestionBankId: payload.activeQuestionBankId,
+  };
 }
 
 export async function getOptionalAuthUser(req: NextRequest) {
-  const token = req.cookies.get('token')?.value || req.headers.get('authorization');
-  if (!token) return null;
-
-  const demoEmail = 'demo@aws.com';
-  const user = await prisma.user.findUnique({ where: { email: demoEmail } });
-  if (!user) return null;
-
-  return {
-    userId: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    activeQuestionBankId: user.activeQuestionBankId,
-  };
+  return getAuthenticatedUser(req);
 }
 
+// Legacy alias — now requires real auth, no longer falls back to demo
 export async function getAuthUserOrDemo(req: NextRequest) {
-  const demoEmail = 'demo@aws.com';
-  let user = await prisma.user.findUnique({
-    where: { email: demoEmail },
-  });
+  const user = await getAuthenticatedUser(req);
+  if (user) return user;
 
-  if (!user) {
-    const passwordHash = '$2a$10$wW10jVw.g53QW5r9O0bH/./X3NfC5V7e8D8E9F0G1H2I3J4K5L6M7';
-    user = await prisma.user.create({
-      data: {
-        email: demoEmail,
-        passwordHash,
-        name: 'AWS Learner Demo',
-      },
-    });
-  }
-
-  return {
-    userId: user.id,
-    email: user.email,
-    name: user.name,
-    role: user.role,
-    activeQuestionBankId: user.activeQuestionBankId || 'aws-saa-c03-v1',
-  };
+  // Fallback: return null — callers should handle unauthorized
+  return null;
 }

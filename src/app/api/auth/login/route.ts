@@ -59,6 +59,7 @@ export async function POST(req: NextRequest) {
       email: user.email,
       name: user.name || undefined,
       role: user.role,
+      activeQuestionBankId: user.activeQuestionBankId,
     });
 
     const response = NextResponse.json({
