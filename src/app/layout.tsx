@@ -4,8 +4,13 @@ import Providers from '@/components/Providers';
 import Navbar from '@/components/Navbar';
 
 export const metadata: Metadata = {
-  title: 'AWS Certification Study Platform — SAA-C03',
-  description: 'Nền tảng luyện thi chứng chỉ AWS Solutions Architect Associate với Spaced Repetition, Mock Exam và Note thông minh.',
+  title: 'AWS Certification Study Platform',
+  description: 'Nền tảng luyện thi chứng chỉ AWS với Spaced Repetition, Mock Exam và Note thông minh.',
+  icons: {
+    icon: '/amazon-web-services-logo.png',
+    shortcut: '/amazon-web-services-logo.png',
+    apple: '/amazon-web-services-logo.png',
+  },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
