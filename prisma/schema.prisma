@@ -1,0 +1,337 @@
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id                   String   @id @default(uuid())
+  email                String   @unique
+  passwordHash         String
+  name                 String?
+  role                 String   @default("USER")
+  activeQuestionBankId String?
+  timezone             String   @default("Asia/Ho_Chi_Minh")
+  dailyQuestionGoal    Int      @default(20)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  enrollments      UserQuestionBankEnrollment[]
+  progresses       UserQuestionProgress[]
+  notes            QuestionNote[]
+  bookmarks        QuestionBookmark[]
+  highlights       QuestionHighlight[]
+  practiceSessions PracticeSession[]
+  mockExamAttempts MockExamAttempt[]
+  studyActivities  DailyStudyActivity[]
+
+  @@index([email])
+}
+
+model Certification {
+  id            String         @id @default(uuid())
+  code          String?        @unique
+  name          String
+  slug          String         @unique
+  provider      String         @default("AWS")
+  description   String?
+  icon          String?
+  status        String         @default("PUBLISHED")
+  questionBanks QuestionBank[]
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+}
+
+model QuestionBank {
+  id              String   @id @default(uuid())
+  certificationId String
+  name            String
+  slug            String   @unique
+  description     String?
+  version         String   @default("v1.0")
+  totalQuestions  Int      @default(0)
+  status          String   @default("PUBLISHED")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  certification    Certification                @relation(fields: [certificationId], references: [id], onDelete: Cascade)
+  domains          Domain[]
+  questions        Question[]
+  enrollments      UserQuestionBankEnrollment[]
+  practiceSessions PracticeSession[]
+  mockExamAttempts MockExamAttempt[]
+  studyActivities  DailyStudyActivity[]
+  highlights       QuestionHighlight[]
+  notes            QuestionNote[]
+  bookmarks        QuestionBookmark[]
+  progresses       UserQuestionProgress[]
+
+  @@unique([certificationId, version])
+}
+
+model Domain {
+  id               String   @id @default(uuid())
+  questionBankId   String
+  code             String
+  name             String
+  weightPercentage Int      @default(25)
+
+  questionBank     QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+  topics           Topic[]
+  questions        Question[]
+
+  @@index([questionBankId])
+}
+
+model Topic {
+  id        String   @id @default(uuid())
+  domainId  String
+  code      String
+  name      String
+
+  domain    Domain   @relation(fields: [domainId], references: [id], onDelete: Cascade)
+  questions Question[]
+
+  @@index([domainId])
+}
+
+model Question {
+  id              String   @id @default(uuid())
+  rawId           Int?
+  questionBankId  String
+  domainId        String
+  topicId         String?
+  type            String   @default("SINGLE_CHOICE")
+  difficulty      String   @default("MEDIUM")
+  questionText    String
+  explanationText String?
+  tags            String   @default("[]")
+
+  questionBank    QuestionBank        @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+  domain          Domain              @relation(fields: [domainId], references: [id])
+  topic           Topic?              @relation(fields: [topicId], references: [id])
+  options         QuestionOption[]
+  references      QuestionReference[]
+  notes           QuestionNote[]
+  bookmarks       QuestionBookmark[]
+  highlights      QuestionHighlight[]
+  progresses      UserQuestionProgress[]
+  practiceAnswers PracticeAnswer[]
+  examAnswers     MockExamAnswer[]
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([questionBankId, domainId])
+}
+
+model QuestionOption {
+  id         String   @id @default(uuid())
+  questionId String
+  rawId      Int?
+  text       String
+  isCorrect  Boolean  @default(false)
+
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model QuestionReference {
+  id         String   @id @default(uuid())
+  questionId String
+  title      String
+  url        String?
+
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+}
+
+model UserQuestionBankEnrollment {
+  id               String    @id @default(uuid())
+  userId           String
+  questionBankId   String
+  status           String    @default("ACTIVE")
+  enrolledAt       DateTime  @default(now())
+  lastStudiedAt    DateTime?
+  progressPercent  Float     @default(0)
+
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionBank     QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionBankId])
+}
+
+model QuestionHighlight {
+  id             String   @id @default(uuid())
+  userId         String
+  questionId     String
+  questionBankId String
+  targetType     String   @default("QUESTION")
+  targetId       String?
+  selectedText   String
+  startOffset    Int      @default(0)
+  endOffset      Int      @default(0)
+  color          String   @default("YELLOW")
+  contextBefore  String?
+  contextAfter   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question       Question     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionBank   QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+
+  @@index([userId, questionBankId])
+}
+
+model UserQuestionProgress {
+  id                String    @id @default(uuid())
+  userId            String
+  questionId        String
+  questionBankId    String
+  attempts          Int       @default(0)
+  correctAttempts   Int       @default(0)
+  incorrectAttempts Int       @default(0)
+  lastAnswerCorrect Boolean?
+  confidenceLevel   Int?
+  masteryStatus     String    @default("NEW")
+  easinessFactor    Float     @default(2.5)
+  intervalDays      Int       @default(0)
+  nextReviewAt      DateTime?
+  lastReviewedAt    DateTime?
+
+  user              User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question          Question     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionBank      QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@index([userId, questionBankId, nextReviewAt])
+  @@index([userId, questionBankId, masteryStatus])
+}
+
+model QuestionNote {
+  id             String   @id @default(uuid())
+  userId         String
+  questionId     String
+  questionBankId String
+  content        String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question       Question     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionBank   QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@index([userId, questionBankId])
+}
+
+model QuestionBookmark {
+  id             String   @id @default(uuid())
+  userId         String
+  questionId     String
+  questionBankId String
+  createdAt      DateTime @default(now())
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  question       Question     @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  questionBank   QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionId])
+  @@index([userId, questionBankId])
+}
+
+model PracticeSession {
+  id             String   @id @default(uuid())
+  userId         String
+  questionBankId String
+  title          String?
+  mode           String
+  sourceType     String   @default("ALL")
+  isCompleted    Boolean  @default(false)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionBank   QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+  answers        PracticeAnswer[]
+
+  @@index([userId, questionBankId])
+}
+
+model PracticeAnswer {
+  id                String   @id @default(uuid())
+  sessionId         String
+  questionId        String
+  selectedOptionIds String   @default("[]")
+  isCorrect         Boolean
+  confidenceLevel   Int?
+  timeSpentSeconds  Int?
+  createdAt         DateTime @default(now())
+
+  session           PracticeSession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  question          Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId])
+}
+
+model MockExamAttempt {
+  id               String   @id @default(uuid())
+  userId           String
+  questionBankId   String
+  totalQuestions   Int
+  timeLimitMinutes Int
+  score            Float?
+  isPassed         Boolean?
+  isCompleted      Boolean  @default(false)
+  startedAt        DateTime @default(now())
+  submittedAt      DateTime?
+  timeSpentSeconds Int      @default(0)
+
+  user             User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionBank     QuestionBank     @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+  answers          MockExamAnswer[]
+
+  @@index([userId, questionBankId])
+}
+
+model MockExamAnswer {
+  id                String   @id @default(uuid())
+  examAttemptId     String
+  questionId        String
+  selectedOptionIds String   @default("[]")
+  isFlagged         Boolean  @default(false)
+  isCorrect         Boolean?
+
+  examAttempt       MockExamAttempt @relation(fields: [examAttemptId], references: [id], onDelete: Cascade)
+  question          Question        @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([examAttemptId])
+}
+
+model DailyStudyActivity {
+  id                        String   @id @default(uuid())
+  userId                    String
+  questionBankId            String
+  activityDate              String
+  answeredQuestions         Int      @default(0)
+  correctAnswers            Int      @default(0)
+  incorrectAnswers          Int      @default(0)
+  practiceSessionsCompleted Int      @default(0)
+  mockExamsCompleted        Int      @default(0)
+  reviewQuestionsCompleted  Int      @default(0)
+  studySeconds              Int      @default(0)
+  createdAt                 DateTime @default(now())
+  updatedAt                 DateTime @updatedAt
+
+  user                      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  questionBank              QuestionBank @relation(fields: [questionBankId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, questionBankId, activityDate])
+  @@index([userId, activityDate])
+}

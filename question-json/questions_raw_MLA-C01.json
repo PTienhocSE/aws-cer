@@ -1,0 +1,3191 @@
+[
+  {
+    "id": 448,
+    "text": "Case Study -\n\nA company is building a web-based AI application by using Amazon SageMaker. The application will provide the following capabilities and features: ML experimentation, training, a central model registry, model deployment, and model monitoring.\n\nThe application must ensure secure and isolated use of training data during the ML lifecycle. The training data is stored in Amazon S3.\n\nThe company needs to use the central model registry to manage different versions of models in the application.\n\nWhich action will meet this requirement with the LEAST operational overhead?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1831,
+        "text": "Use Amazon Elastic Container Registry (Amazon ECR) and unique tags for each model version.",
+        "is_correct": false
+      },
+      {
+        "id": 1830,
+        "text": "Create a separate Amazon Elastic Container Registry (Amazon ECR) repository for each model.",
+        "is_correct": false
+      },
+      {
+        "id": 1832,
+        "text": "Use the SageMaker Model Registry and model groups to catalog the models.",
+        "is_correct": true
+      },
+      {
+        "id": 1833,
+        "text": "Use the SageMaker Model Registry and unique tags for each model version.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 449,
+    "text": "Case study -\n\nAn ML engineer is developing a fraud detection model on AWS. The training dataset includes transaction logs, customer profiles, and tables from an on-premises MySQL database. The transaction logs and customer profiles are stored in Amazon S3.\n\nThe dataset has a class imbalance that affects the learning of the model's algorithm. Additionally, many of the features have interdependencies. The algorithm is not capturing all the desired underlying patterns in the data.\n\nWhich AWS service or feature can aggregate the data from the various data sources?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1834,
+        "text": "Amazon EMR Spark jobs",
+        "is_correct": false
+      },
+      {
+        "id": 1835,
+        "text": "Amazon Kinesis Data Streams",
+        "is_correct": false
+      },
+      {
+        "id": 1836,
+        "text": "Amazon DynamoDB",
+        "is_correct": false
+      },
+      {
+        "id": 1837,
+        "text": "AWS Lake Formation",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 450,
+    "text": "A company is using Amazon SageMaker to develop ML models. The company stores sensitive training data in an Amazon S3 bucket. The model training must have network isolation from the internet.\n\n\n\nWhich solution will meet this requirement?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1838,
+        "text": "Run the SageMaker training jobs in private subnets. Create a NAT gateway. Route traffic for training through the NAT gateway.",
+        "is_correct": false
+      },
+      {
+        "id": 1839,
+        "text": "Run the SageMaker training jobs in private subnets. Create an S3 gateway VPC endpoint. Route traffic for training through the S3 gateway VPC endpoint.",
+        "is_correct": true
+      },
+      {
+        "id": 1840,
+        "text": "Run the SageMaker training jobs in public subnets that have an attached security group. In the security group, use inbound rules to limit traffic from the internet. Encrypt SageMaker instance storage by using server-side encryption with AWS KMS keys (SSE-KMS).",
+        "is_correct": false
+      },
+      {
+        "id": 1841,
+        "text": "Encrypt traffic to Amazon S3 by using a bucket policy that includes a value of True for the aws:SecureTransport condition key. Use default at-rest encryption for Amazon S3. Encrypt SageMaker instance storage by using server-side encryption with AWS KMS keys (SSE-KMS).",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 451,
+    "text": "A company needs an AWS solution that will automatically create versions of ML models as the models are created.\n\n\n\nWhich solution will meet this requirement?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1842,
+        "text": "Amazon Elastic Container Registry (Amazon ECR)",
+        "is_correct": false
+      },
+      {
+        "id": 1843,
+        "text": "Model packages from Amazon SageMaker Marketplace",
+        "is_correct": false
+      },
+      {
+        "id": 1844,
+        "text": "Amazon SageMaker ML Lineage Tracking",
+        "is_correct": false
+      },
+      {
+        "id": 1845,
+        "text": "Amazon SageMaker Model Registry",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 452,
+    "text": "A company needs to use Retrieval Augmented Generation (RAG) to supplement an open source large language model (LLM) that runs on Amazon Bedrock. The company's data for RAG is a set of documents in an Amazon S3 bucket. The documents consist of .csv files and .docx files.\n\n\n\nWhich solution will meet these requirements with the LEAST operational overhead?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1846,
+        "text": "Create a pipeline in Amazon SageMaker Pipelines to generate a new model. Call the new model from Amazon Bedrock to perform RAG queries.",
+        "is_correct": false
+      },
+      {
+        "id": 1847,
+        "text": "Convert the data into vectors. Store the data in an Amazon Neptune database. Connect the database to Amazon Bedrock. Call the Amazon Bedrock API to perform RAG queries.",
+        "is_correct": false
+      },
+      {
+        "id": 1848,
+        "text": "Fine-tune an existing LLM by using an AutoML job in Amazon SageMaker. Configure the S3 bucket as a data source for the AutoML job. Deploy the LLM to a SageMaker endpoint. Use the endpoint to perform RAG queries.",
+        "is_correct": false
+      },
+      {
+        "id": 1849,
+        "text": "Create a knowledge base for Amazon Bedrock. Configure a data source that references the S3 bucket. Use the Amazon Bedrock API to perform RAG queries.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 453,
+    "text": "A company plans to deploy an ML model for production inference on an Amazon SageMaker endpoint. The average inference payload size will vary from 100 MB to 300 MB. Inference requests must be processed in 60 minutes or less.\n\n\n\nWhich SageMaker inference option will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1850,
+        "text": "Serverless inference",
+        "is_correct": false
+      },
+      {
+        "id": 1851,
+        "text": "Asynchronous inference",
+        "is_correct": true
+      },
+      {
+        "id": 1852,
+        "text": "Real-time inference",
+        "is_correct": false
+      },
+      {
+        "id": 1853,
+        "text": "Batch transform",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 454,
+    "text": "An ML engineer notices class imbalance in an image classification training job.\n\n\n\nWhat should the ML engineer do to resolve this issue?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1854,
+        "text": "Reduce the size of the dataset.",
+        "is_correct": false
+      },
+      {
+        "id": 1855,
+        "text": "Transform some of the images in the dataset.",
+        "is_correct": false
+      },
+      {
+        "id": 1856,
+        "text": "Apply random oversampling on the dataset.",
+        "is_correct": true
+      },
+      {
+        "id": 1857,
+        "text": "Apply random data splitting on the dataset.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 455,
+    "text": "A company receives daily .csv files about customer interactions with its ML model. The company stores the files in Amazon S3 and uses the files to retrain the model. An ML engineer needs to implement a solution to mask credit card numbers in the files before the model is retrained.\n\n\n\nWhich solution will meet this requirement with the LEAST development effort?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1858,
+        "text": "Create a discovery job in Amazon Macie. Configure the job to find and mask sensitive data.",
+        "is_correct": false
+      },
+      {
+        "id": 1859,
+        "text": "Create Apache Spark code to run on an AWS Glue job. Use the Sensitive Data Detection functionality in AWS Glue to find and mask sensitive data.",
+        "is_correct": true
+      },
+      {
+        "id": 1860,
+        "text": "Create Apache Spark code to run on an AWS Glue job. Program the code to perform a regex operation to find and mask sensitive data.",
+        "is_correct": false
+      },
+      {
+        "id": 1861,
+        "text": "Create Apache Spark code to run on an Amazon EC2 instance. Program the code to perform an operation to find and mask sensitive data.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 456,
+    "text": "A medical company is using AWS to build a tool to recommend treatments for patients. The company has obtained health records and self-reported textual information in English from patients. The company needs to use this information to gain insight about the patients.\n\n\n\nWhich solution will meet this requirement with the LEAST development effort?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1862,
+        "text": "Use Amazon SageMaker to build a recurrent neural network (RNN) to summarize the data.",
+        "is_correct": false
+      },
+      {
+        "id": 1863,
+        "text": "Use Amazon Comprehend Medical to summarize the data.",
+        "is_correct": true
+      },
+      {
+        "id": 1864,
+        "text": "Use Amazon Kendra to create a quick-search tool to query the data.",
+        "is_correct": false
+      },
+      {
+        "id": 1865,
+        "text": "Use the Amazon SageMaker Sequence-to-Sequence (seq2seq) algorithm to create a text summary from the data.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 457,
+    "text": "A company needs to extract entities from a PDF document to build a classifier model.\n\n\n\nWhich solution will extract and store the entities in the LEAST amount of time?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1866,
+        "text": "Use Amazon Comprehend to extract the entities. Store the output in Amazon S3.",
+        "is_correct": true
+      },
+      {
+        "id": 1867,
+        "text": "Use an open source AI optical character recognition (OCR) tool on Amazon SageMaker to extract the entities. Store the output in Amazon S3.",
+        "is_correct": false
+      },
+      {
+        "id": 1868,
+        "text": "Use Amazon Textract to extract the entities. Use Amazon Comprehend to convert the entities to text. Store the output in Amazon S3.",
+        "is_correct": false
+      },
+      {
+        "id": 1869,
+        "text": "Use Amazon Textract integrated with Amazon Augmented AI (Amazon A2I) to extract the entities. Store the output in Amazon S3.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 458,
+    "text": "A company shares Amazon SageMaker Studio notebooks that are accessible through a VPN. The company must enforce access controls to prevent malicious actors from exploiting presigned URLs to access the notebooks.\n\n\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1870,
+        "text": "Set up Studio client IP validation by using the aws:sourceIp IAM policy condition.",
+        "is_correct": true
+      },
+      {
+        "id": 1871,
+        "text": "Set up Studio client VPC validation by using the aws:sourceVpc IAM policy condition.",
+        "is_correct": false
+      },
+      {
+        "id": 1872,
+        "text": "Set up Studio client role endpoint validation by using the aws:PrimaryTag IAM policy condition.",
+        "is_correct": false
+      },
+      {
+        "id": 1873,
+        "text": "Set up Studio client user endpoint validation by using the aws:PrincipalTag IAM policy condition.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 459,
+    "text": "An ML engineer needs to merge and transform data from two sources to retrain an existing ML model. One data source consists of .csv files that are stored in an Amazon S3 bucket. Each .csv file consists of millions of records. The other data source is an Amazon Aurora DB cluster.\n\n\n\nThe result of the merge process must be written to a second S3 bucket. The ML engineer needs to perform this merge-and-transform task every week.\n\n\n\nWhich solution will meet these requirements with the LEAST operational overhead?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1874,
+        "text": "Create a transient Amazon EMR cluster every week. Use the cluster to run an Apache Spark job to merge and transform the data.",
+        "is_correct": false
+      },
+      {
+        "id": 1875,
+        "text": "Create a weekly AWS Glue job that uses the Apache Spark engine. Use DynamicFrame native operations to merge and transform the data.",
+        "is_correct": true
+      },
+      {
+        "id": 1876,
+        "text": "Create an AWS Lambda function that runs Apache Spark code every week to merge and transform the data. Configure the Lambda function to connect to the initial S3 bucket and the DB cluster.",
+        "is_correct": false
+      },
+      {
+        "id": 1877,
+        "text": "Create an AWS Batch job that runs Apache Spark code on Amazon EC2 instances every week. Configure the Spark code to save the data from the EC2 instances to the second S3 bucket.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 460,
+    "text": "Case study -\n\nAn ML engineer is developing a fraud detection model on AWS. The training dataset includes transaction logs, customer profiles, and tables from an on-premises MySQL database. The transaction logs and customer profiles are stored in Amazon S3.\n\nThe dataset has a class imbalance that affects the learning of the model's algorithm. Additionally, many of the features have interdependencies. The algorithm is not capturing all the desired underlying patterns in the data.\n\nAfter the data is aggregated, the ML engineer must implement a solution to automatically detect anomalies in the data and to visualize the result.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1878,
+        "text": "Use Amazon Athena to automatically detect the anomalies and to visualize the result.",
+        "is_correct": false
+      },
+      {
+        "id": 1879,
+        "text": "Use Amazon Redshift Spectrum to automatically detect the anomalies. Use Amazon QuickSight to visualize the result.",
+        "is_correct": false
+      },
+      {
+        "id": 1880,
+        "text": "Use Amazon SageMaker Data Wrangler to automatically detect the anomalies and to visualize the result.",
+        "is_correct": true
+      },
+      {
+        "id": 1881,
+        "text": "Use AWS Batch to automatically detect the anomalies. Use Amazon QuickSight to visualize the result.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 461,
+    "text": "An ML engineer has deployed an Amazon SageMaker model to a serverless endpoint in production. The model is invoked by the InvokeEndpoint API operation.\n\n\n\nThe model's latency in production is higher than the baseline latency in the test environment. The ML engineer thinks that the increase in latency is because of model startup time.\n\n\n\nWhat should the ML engineer do to confirm or deny this hypothesis?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1882,
+        "text": "Schedule a SageMaker Model Monitor job. Observe metrics about model quality.",
+        "is_correct": false
+      },
+      {
+        "id": 1883,
+        "text": "Schedule a SageMaker Model Monitor job with Amazon CloudWatch metrics enabled.",
+        "is_correct": false
+      },
+      {
+        "id": 1884,
+        "text": "Enable Amazon CloudWatch metrics. Observe the ModelSetupTime metric in the SageMaker namespace.",
+        "is_correct": true
+      },
+      {
+        "id": 1885,
+        "text": "Enable Amazon CloudWatch metrics. Observe the ModelLoadingWaitTime metric in the SageMaker namespace.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 462,
+    "text": "An ML engineer needs to ensure that a dataset complies with regulations for personally identifiable information (PII). The ML engineer will use the data to train an ML model on Amazon SageMaker instances. SageMaker must not use any of the PII.\n\n\n\nWhich solution will meet these requirements in the MOST operationally efficient way?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1886,
+        "text": "Use the Amazon Comprehend DetectPiiEntities API call to redact the PII from the data. Store the data in an Amazon S3 bucket. Access the S3 bucket from the SageMaker instances for model training.",
+        "is_correct": true
+      },
+      {
+        "id": 1887,
+        "text": "Use the Amazon Comprehend DetectPiiEntities API call to redact the PII from the data. Store the data in an Amazon Elastic File System (Amazon EFS) file system. Mount the EFS file system to the SageMaker instances for model training.",
+        "is_correct": false
+      },
+      {
+        "id": 1888,
+        "text": "Use AWS Glue DataBrew to cleanse the dataset of PII. Store the data in an Amazon Elastic File System (Amazon EFS) file system. Mount the EFS file system to the SageMaker instances for model training.",
+        "is_correct": false
+      },
+      {
+        "id": 1889,
+        "text": "Use Amazon Macie for automatic discovery of PII in the data. Remove the PII. Store the data in an Amazon S3 bucket. Mount the S3 bucket to the SageMaker instances for model training.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 463,
+    "text": "A company must install a custom script on any newly created Amazon SageMaker notebook instances.\n\n\n\nWhich solution will meet this requirement with the LEAST operational overhead?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1890,
+        "text": "Create a lifecycle configuration script to install the custom script when a new SageMaker notebook is created. Attach the lifecycle configuration to every new SageMaker notebook as part of the creation steps.",
+        "is_correct": true
+      },
+      {
+        "id": 1891,
+        "text": "Create a custom Amazon Elastic Container Registry (Amazon ECR) image that contains the custom script. Push the ECR image to a Docker registry. Attach the Docker image to a SageMaker Studio domain. Select the kernel to run as part of the SageMaker notebook.",
+        "is_correct": false
+      },
+      {
+        "id": 1892,
+        "text": "Create a custom package index repository. Use AWS CodeArtifact to manage the installation of the custom script. Set up AWS PrivateLink endpoints to connect CodeArtifact to the SageMaker instance. Install the script.",
+        "is_correct": false
+      },
+      {
+        "id": 1893,
+        "text": "Store the custom script in Amazon S3. Create an AWS Lambda function to install the custom script on new SageMaker notebooks. Configure Amazon EventBridge to invoke the Lambda function when a new SageMaker notebook is initialized.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 464,
+    "text": "A company is building a real-time data processing pipeline for an ecommerce application. The application generates a high volume of clickstream data that must be ingested, processed, and visualized in near real time. The company needs a solution that supports SQL for data processing and Jupyter notebooks for interactive analysis.\n\n\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1894,
+        "text": "Use Amazon Data Firehose to ingest the data. Create an AWS Lambda function to process the data. Store the processed data in Amazon S3. Use Amazon QuickSight to visualize the data.",
+        "is_correct": false
+      },
+      {
+        "id": 1895,
+        "text": "Use Amazon Kinesis Data Streams to ingest the data. Use Amazon Data Firehose to transform the data. Use Amazon Athena to process the data. Use Amazon QuickSight to visualize the data.",
+        "is_correct": false
+      },
+      {
+        "id": 1896,
+        "text": "Use Amazon Managed Streaming for Apache Kafka (Amazon MSK) to ingest the data. Use AWS Glue with PySpark to process the data. Store the processed data in Amazon S3. Use Amazon QuickSight to visualize the data.",
+        "is_correct": false
+      },
+      {
+        "id": 1897,
+        "text": "Use Amazon Managed Streaming for Apache Kafka (Amazon MSK) to ingest the data. Use Amazon Managed Service for Apache Flink to process the data. Use the built-in Flink dashboard to visualize the data.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 465,
+    "text": "A medical company needs to store clinical data. The data includes personally identifiable information (PII) and protected health information (PHI).\n\n\n\nAn ML engineer needs to implement a solution to ensure that the PII and PHI are not used to train ML models.\n\n\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1898,
+        "text": "Store the clinical data in Amazon S3 buckets. Use AWS Glue DataBrew to mask the PII and PHI before the data is used for model training.",
+        "is_correct": false
+      },
+      {
+        "id": 1899,
+        "text": "Upload the clinical data to an Amazon Redshift database. Use built-in SQL stored procedures to automatically classify and mask the PII and PHI before the data is used for model training.",
+        "is_correct": false
+      },
+      {
+        "id": 1900,
+        "text": "Use Amazon Comprehend to detect and mask the PII before the data is used for model training. Use Amazon Comprehend Medical to detect and mask the PHI before the data is used for model training.",
+        "is_correct": true
+      },
+      {
+        "id": 1901,
+        "text": "Create an AWS Lambda function to encrypt the PII and PHI. Program the Lambda function to save the encrypted data to an Amazon S3 bucket for model training.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 466,
+    "text": "Case study -\n\nAn ML engineer is developing a fraud detection model on AWS. The training dataset includes transaction logs, customer profiles, and tables from an on-premises MySQL database. The transaction logs and customer profiles are stored in Amazon S3.\n\nThe dataset has a class imbalance that affects the learning of the model's algorithm. Additionally, many of the features have interdependencies. The algorithm is not capturing all the desired underlying patterns in the data.\n\nThe training dataset includes categorical data and numerical data. The ML engineer must prepare the training dataset to maximize the accuracy of the model.\n\nWhich action will meet this requirement with the LEAST operational overhead?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1902,
+        "text": "Use AWS Glue to transform the categorical data into numerical data.",
+        "is_correct": false
+      },
+      {
+        "id": 1903,
+        "text": "Use AWS Glue to transform the numerical data into categorical data.",
+        "is_correct": false
+      },
+      {
+        "id": 1904,
+        "text": "Use Amazon SageMaker Data Wrangler to transform the categorical data into numerical data.",
+        "is_correct": true
+      },
+      {
+        "id": 1905,
+        "text": "Use Amazon SageMaker Data Wrangler to transform the numerical data into categorical data.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 467,
+    "text": "Case study -\n\nAn ML engineer is developing a fraud detection model on AWS. The training dataset includes transaction logs, customer profiles, and tables from an on-premises MySQL database. The transaction logs and customer profiles are stored in Amazon S3.\n\nThe dataset has a class imbalance that affects the learning of the model's algorithm. Additionally, many of the features have interdependencies. The algorithm is not capturing all the desired underlying patterns in the data.\n\nBefore the ML engineer trains the model, the ML engineer must resolve the issue of the imbalanced data.\n\nWhich solution will meet this requirement with the LEAST operational effort?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1906,
+        "text": "Use Amazon Athena to identify patterns that contribute to the imbalance. Adjust the dataset accordingly.",
+        "is_correct": false
+      },
+      {
+        "id": 1907,
+        "text": "Use Amazon SageMaker Studio Classic built-in algorithms to process the imbalanced dataset.",
+        "is_correct": false
+      },
+      {
+        "id": 1908,
+        "text": "Use AWS Glue DataBrew built-in features to oversample the minority class.",
+        "is_correct": false
+      },
+      {
+        "id": 1909,
+        "text": "Use the Amazon SageMaker Data Wrangler balance data operation to oversample the minority class.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 468,
+    "text": "Case study -\n\nAn ML engineer is developing a fraud detection model on AWS. The training dataset includes transaction logs, customer profiles, and tables from an on-premises MySQL database. The transaction logs and customer profiles are stored in Amazon S3.\n\nThe dataset has a class imbalance that affects the learning of the model's algorithm. Additionally, many of the features have interdependencies. The algorithm is not capturing all the desired underlying patterns in the data.\n\nThe ML engineer needs to use an Amazon SageMaker built-in algorithm to train the model.\n\nWhich algorithm should the ML engineer use to meet this requirement?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1910,
+        "text": "LightGBM",
+        "is_correct": true
+      },
+      {
+        "id": 1911,
+        "text": "Linear learner",
+        "is_correct": false
+      },
+      {
+        "id": 1912,
+        "text": "К-means clustering",
+        "is_correct": false
+      },
+      {
+        "id": 1913,
+        "text": "Neural Topic Model (NTM)",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 469,
+    "text": "A company has deployed an XGBoost prediction model in production to predict if a customer is likely to cancel a subscription. The company uses Amazon SageMaker Model Monitor to detect deviations in the F1 score.\n\nDuring a baseline analysis of model quality, the company recorded a threshold for the F1 score. After several months of no change, the model's F1 score decreases significantly.\n\nWhat could be the reason for the reduced F1 score?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1914,
+        "text": "Concept drift occurred in the underlying customer data that was used for predictions.",
+        "is_correct": true
+      },
+      {
+        "id": 1915,
+        "text": "The model was not sufficiently complex to capture all the patterns in the original baseline data.",
+        "is_correct": false
+      },
+      {
+        "id": 1916,
+        "text": "The original baseline data had a data quality issue of missing values.",
+        "is_correct": false
+      },
+      {
+        "id": 1917,
+        "text": "Incorrect ground truth labels were provided to Model Monitor during the calculation of the baseline.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 470,
+    "text": "A company has a team of data scientists who use Amazon SageMaker notebook instances to test ML models. When the data scientists need new permissions, the company attaches the permissions to each individual role that was created during the creation of the SageMaker notebook instance.\n\nThe company needs to centralize management of the team's permissions.\n\nWhich solution will meet this requirement?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1918,
+        "text": "Create a single IAM role that has the necessary permissions. Attach the role to each notebook instance that the team uses.",
+        "is_correct": true
+      },
+      {
+        "id": 1919,
+        "text": "Create a single IAM group. Add the data scientists to the group. Associate the group with each notebook instance that the team uses.",
+        "is_correct": false
+      },
+      {
+        "id": 1920,
+        "text": "Create a single IAM user. Attach the AdministratorAccess AWS managed IAM policy to the user. Configure each notebook instance to use the IAM user.",
+        "is_correct": false
+      },
+      {
+        "id": 1921,
+        "text": "Create a single IAM group. Add the data scientists to the group. Create an IAM role. Attach the AdministratorAccess AWS managed IAM policy to the role. Associate the role with the group. Associate the group with each notebook instance that the team uses.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 471,
+    "text": "An ML engineer needs to use an ML model to predict the price of apartments in a specific location.\n\nWhich metric should the ML engineer use to evaluate the model's performance?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1922,
+        "text": "Accuracy",
+        "is_correct": false
+      },
+      {
+        "id": 1923,
+        "text": "Area Under the ROC Curve (AUC)",
+        "is_correct": false
+      },
+      {
+        "id": 1924,
+        "text": "F1 score",
+        "is_correct": false
+      },
+      {
+        "id": 1925,
+        "text": "Mean absolute error (MAE)",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 472,
+    "text": "An ML engineer has trained a neural network by using stochastic gradient descent (SGD). The neural network performs poorly on the test set. The values for training loss and validation loss remain high and show an oscillating pattern. The values decrease for a few epochs and then increase for a few epochs before repeating the same cycle.\n\nWhat should the ML engineer do to improve the training process?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1926,
+        "text": "Introduce early stopping.",
+        "is_correct": false
+      },
+      {
+        "id": 1927,
+        "text": "Increase the size of the test set.",
+        "is_correct": false
+      },
+      {
+        "id": 1928,
+        "text": "Increase the learning rate.",
+        "is_correct": false
+      },
+      {
+        "id": 1929,
+        "text": "Decrease the learning rate.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 473,
+    "text": "An ML engineer needs to process thousands of existing CSV objects and new CSV objects that are uploaded. The CSV objects are stored in a central Amazon S3 bucket and have the same number of columns. One of the columns is a transaction date. The ML engineer must query the data based on the transaction date.\n\nWhich solution will meet these requirements with the LEAST operational overhead?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1930,
+        "text": "Use an Amazon Athena CREATE TABLE AS SELECT (CTAS) statement to create a table based on the transaction date from data in the central S3 bucket. Query the objects from the table.",
+        "is_correct": true
+      },
+      {
+        "id": 1931,
+        "text": "Create a new S3 bucket for processed data. Set up S3 replication from the central S3 bucket to the new S3 bucket. Use S3 Object Lambda to query the objects based on transaction date.",
+        "is_correct": false
+      },
+      {
+        "id": 1932,
+        "text": "Create a new S3 bucket for processed data. Use AWS Glue for Apache Spark to create a job to query the CSV objects based on transaction date. Configure the job to store the results in the new S3 bucket. Query the objects from the new S3 bucket.",
+        "is_correct": false
+      },
+      {
+        "id": 1933,
+        "text": "Create a new S3 bucket for processed data. Use Amazon Data Firehose to transfer the data from the central S3 bucket to the new S3 bucket. Configure Firehose to run an AWS Lambda function to query the data based on transaction date.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 474,
+    "text": "Case Study -\n\nA company is building a web-based AI application by using Amazon SageMaker. The application will provide the following capabilities and features: ML experimentation, training, a central model registry, model deployment, and model monitoring.\n\nThe application must ensure secure and isolated use of training data during the ML lifecycle. The training data is stored in Amazon S3.\n\nThe company is experimenting with consecutive training jobs.\n\nHow can the company MINIMIZE infrastructure startup times for these jobs?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1935,
+        "text": "Use SageMaker managed warm pools.",
+        "is_correct": true
+      },
+      {
+        "id": 1936,
+        "text": "Use SageMaker Training Compiler.",
+        "is_correct": false
+      },
+      {
+        "id": 1934,
+        "text": "Use Managed Spot Training.",
+        "is_correct": false
+      },
+      {
+        "id": 1937,
+        "text": "Use the SageMaker distributed data parallelism (SMDDP) library.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 475,
+    "text": "A company has a large, unstructured dataset. The dataset includes many duplicate records across several key attributes.\n\nWhich solution on AWS will detect duplicates in the dataset with the LEAST code development?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1938,
+        "text": "Use Amazon Mechanical Turk jobs to detect duplicates.",
+        "is_correct": false
+      },
+      {
+        "id": 1939,
+        "text": "Use Amazon QuickSight ML Insights to build a custom deduplication model.",
+        "is_correct": false
+      },
+      {
+        "id": 1940,
+        "text": "Use Amazon SageMaker Data Wrangler to pre-process and detect duplicates.",
+        "is_correct": false
+      },
+      {
+        "id": 1941,
+        "text": "Use the AWS Glue FindMatches transform to detect duplicates.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 476,
+    "text": "A company needs to run a batch data-processing job on Amazon EC2 instances. The job will run during the weekend and will take 90 minutes to finish running. The processing can handle interruptions. The company will run the job every weekend for the next 6 months.\n\nWhich EC2 instance purchasing option will meet these requirements MOST cost-effectively?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1942,
+        "text": "Spot Instances",
+        "is_correct": true
+      },
+      {
+        "id": 1943,
+        "text": "Reserved Instances",
+        "is_correct": false
+      },
+      {
+        "id": 1944,
+        "text": "On-Demand Instances",
+        "is_correct": false
+      },
+      {
+        "id": 1945,
+        "text": "Dedicated Instances",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 477,
+    "text": "An ML engineer has an Amazon Comprehend custom model in Account A in the us-east-1 Region. The ML engineer needs to copy the model to Account В in the same Region.\n\nWhich solution will meet this requirement with the LEAST development effort?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1946,
+        "text": "Use Amazon S3 to make a copy of the model. Transfer the copy to Account B.",
+        "is_correct": false
+      },
+      {
+        "id": 1947,
+        "text": "Create a resource-based IAM policy. Use the Amazon Comprehend ImportModel API operation to copy the model to Account B.",
+        "is_correct": true
+      },
+      {
+        "id": 1948,
+        "text": "Use AWS DataSync to replicate the model from Account A to Account B.",
+        "is_correct": false
+      },
+      {
+        "id": 1949,
+        "text": "Create an AWS Site-to-Site VPN connection between Account A and Account В to transfer the model.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 478,
+    "text": "An ML engineer is training a simple neural network model. The ML engineer tracks the performance of the model over time on a validation dataset. The model's performance improves substantially at first and then degrades after a specific number of epochs.\n\nWhich solutions will mitigate this problem? (Choose two.)",
+    "explanation": "",
+    "question_type": "multiple",
+    "answers": [
+      {
+        "id": 1950,
+        "text": "Enable early stopping on the model.",
+        "is_correct": true
+      },
+      {
+        "id": 1951,
+        "text": "Increase dropout in the layers.",
+        "is_correct": true
+      },
+      {
+        "id": 1952,
+        "text": "Increase the number of layers.",
+        "is_correct": false
+      },
+      {
+        "id": 1953,
+        "text": "Increase the number of neurons.",
+        "is_correct": false
+      },
+      {
+        "id": 1954,
+        "text": "Investigate and reduce the sources of model bias.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 479,
+    "text": "A company has a Retrieval Augmented Generation (RAG) application that uses a vector database to store embeddings of documents. The company must migrate the application to AWS and must implement a solution that provides semantic search of text files. The company has already migrated the text repository to an Amazon S3 bucket.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1955,
+        "text": "Use an AWS Batch job to process the files and generate embeddings. Use AWS Glue to store the embeddings. Use SQL queries to perform the semantic searches.",
+        "is_correct": false
+      },
+      {
+        "id": 1956,
+        "text": "Use a custom Amazon SageMaker notebook to run a custom script to generate embeddings. Use SageMaker Feature Store to store the embeddings. Use SQL queries to perform the semantic searches.",
+        "is_correct": false
+      },
+      {
+        "id": 1957,
+        "text": "Use the Amazon Kendra S3 connector to ingest the documents from the S3 bucket into Amazon Kendra. Query Amazon Kendra to perform the semantic searches.",
+        "is_correct": true
+      },
+      {
+        "id": 1958,
+        "text": "Use an Amazon Textract asynchronous job to ingest the documents from the S3 bucket. Query Amazon Textract to perform the semantic searches.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 480,
+    "text": "A company uses Amazon Athena to query a dataset in Amazon S3. The dataset has a target variable that the company wants to predict.\n\nThe company needs to use the dataset in a solution to determine if a model can predict the target variable.\n\nWhich solution will provide this information with the LEAST development effort?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1959,
+        "text": "Create a new model by using Amazon SageMaker Autopilot. Report the model's achieved performance.",
+        "is_correct": true
+      },
+      {
+        "id": 1960,
+        "text": "Implement custom scripts to perform data pre-processing, multiple linear regression, and performance evaluation. Run the scripts on Amazon EC2 instances.",
+        "is_correct": false
+      },
+      {
+        "id": 1961,
+        "text": "Configure Amazon Macie to analyze the dataset and to create a model. Report the model's achieved performance.",
+        "is_correct": false
+      },
+      {
+        "id": 1962,
+        "text": "Select a model from Amazon Bedrock. Tune the model with the data. Report the model's achieved performance.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 481,
+    "text": "A company wants to predict the success of advertising campaigns by considering the color scheme of each advertisement. An ML engineer is preparing data for a neural network model. The dataset includes color information as categorical data.\n\nWhich technique for feature engineering should the ML engineer use for the model?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1963,
+        "text": "Apply label encoding to the color categories. Automatically assign each color a unique integer.",
+        "is_correct": false
+      },
+      {
+        "id": 1964,
+        "text": "Implement padding to ensure that all color feature vectors have the same length.",
+        "is_correct": false
+      },
+      {
+        "id": 1965,
+        "text": "Perform dimensionality reduction on the color categories.",
+        "is_correct": false
+      },
+      {
+        "id": 1966,
+        "text": "One-hot encode the color categories to transform the color scheme feature into a binary matrix.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 482,
+    "text": "A company uses a hybrid cloud environment. A model that is deployed on premises uses data in Amazon 53 to provide customers with a live conversational engine.\n\nThe model is using sensitive data. An ML engineer needs to implement a solution to identify and remove the sensitive data.\n\nWhich solution will meet these requirements with the LEAST operational overhead?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1967,
+        "text": "Deploy the model on Amazon SageMaker. Create a set of AWS Lambda functions to identify and remove the sensitive data.",
+        "is_correct": false
+      },
+      {
+        "id": 1968,
+        "text": "Deploy the model on an Amazon Elastic Container Service (Amazon ECS) cluster that uses AWS Fargate. Create an AWS Batch job to identify and remove the sensitive data.",
+        "is_correct": false
+      },
+      {
+        "id": 1969,
+        "text": "Use Amazon Macie to identify the sensitive data. Create a set of AWS Lambda functions to remove the sensitive data.",
+        "is_correct": true
+      },
+      {
+        "id": 1970,
+        "text": "Use Amazon Comprehend to identify the sensitive data. Launch Amazon EC2 instances to remove the sensitive data.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 483,
+    "text": "An ML engineer needs to create data ingestion pipelines and ML model deployment pipelines on AWS. All the raw data is stored in Amazon S3 buckets.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1971,
+        "text": "Use Amazon Data Firehose to create the data ingestion pipelines. Use Amazon SageMaker Studio Classic to create the model deployment pipelines.",
+        "is_correct": false
+      },
+      {
+        "id": 1972,
+        "text": "Use AWS Glue to create the data ingestion pipelines. Use Amazon SageMaker Studio Classic to create the model deployment pipelines.",
+        "is_correct": true
+      },
+      {
+        "id": 1973,
+        "text": "Use Amazon Redshift ML to create the data ingestion pipelines. Use Amazon SageMaker Studio Classic to create the model deployment pipelines.",
+        "is_correct": false
+      },
+      {
+        "id": 1974,
+        "text": "Use Amazon Athena to create the data ingestion pipelines. Use an Amazon SageMaker notebook to create the model deployment pipelines.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 484,
+    "text": "A company that has hundreds of data scientists is using Amazon SageMaker to create ML models. The models are in model groups in the SageMaker Model Registry.\n\nThe data scientists are grouped into three categories: computer vision, natural language processing (NLP), and speech recognition. An ML engineer needs to implement a solution to organize the existing models into these groups to improve model discoverability at scale. The solution must not affect the integrity of the model artifacts and their existing groupings.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1975,
+        "text": "Create a custom tag for each of the three categories. Add the tags to the model packages in the SageMaker Model Registry.",
+        "is_correct": false
+      },
+      {
+        "id": 1976,
+        "text": "Create a model group for each category. Move the existing models into these category model groups.",
+        "is_correct": false
+      },
+      {
+        "id": 1977,
+        "text": "Use SageMaker ML Lineage Tracking to automatically identify and tag which model groups should contain the models.",
+        "is_correct": false
+      },
+      {
+        "id": 1978,
+        "text": "Create a Model Registry collection for each of the three categories. Move the existing model groups into the collections.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 485,
+    "text": "Case Study -\n\nA company is building a web-based AI application by using Amazon SageMaker. The application will provide the following capabilities and features: ML experimentation, training, a central model registry, model deployment, and model monitoring.\n\nThe application must ensure secure and isolated use of training data during the ML lifecycle. The training data is stored in Amazon S3.\n\nThe company must implement a manual approval-based workflow to ensure that only approved models can be deployed to production endpoints.\n\nWhich solution will meet this requirement?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1979,
+        "text": "Use SageMaker Experiments to facilitate the approval process during model registration.",
+        "is_correct": false
+      },
+      {
+        "id": 1980,
+        "text": "Use SageMaker ML Lineage Tracking on the central model registry. Create tracking entities for the approval process.",
+        "is_correct": false
+      },
+      {
+        "id": 1981,
+        "text": "Use SageMaker Model Monitor to evaluate the performance of the model and to manage the approval.",
+        "is_correct": false
+      },
+      {
+        "id": 1982,
+        "text": "Use SageMaker Pipelines. When a model version is registered, use the AWS SDK to change the approval status to \"Approved.\"",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 486,
+    "text": "A company runs an Amazon SageMaker domain in a public subnet of a newly created VPC. The network is configured properly, and ML engineers can access the SageMaker domain.\n\nRecently, the company discovered suspicious traffic to the domain from a specific IP address. The company needs to block traffic from the specific IP address.\n\nWhich update to the network configuration will meet this requirement?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1983,
+        "text": "Create a security group inbound rule to deny traffic from the specific IP address. Assign the security group to the domain.",
+        "is_correct": false
+      },
+      {
+        "id": 1984,
+        "text": "Create a network ACL inbound rule to deny traffic from the specific IP address. Assign the rule to the default network Ad for the subnet where the domain is located.",
+        "is_correct": true
+      },
+      {
+        "id": 1985,
+        "text": "Create a shadow variant for the domain. Configure SageMaker Inference Recommender to send traffic from the specific IP address to the shadow endpoint.",
+        "is_correct": false
+      },
+      {
+        "id": 1986,
+        "text": "Create a VPC route table to deny inbound traffic from the specific IP address. Assign the route table to the domain.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 487,
+    "text": "A company is gathering audio, video, and text data in various languages. The company needs to use a large language model (LLM) to summarize the gathered data that is in Spanish.\n\nWhich solution will meet these requirements in the LEAST amount of time?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1987,
+        "text": "Train and deploy a model in Amazon SageMaker to convert the data into English text. Train and deploy an LLM in SageMaker to summarize the text.",
+        "is_correct": false
+      },
+      {
+        "id": 1988,
+        "text": "Use Amazon Transcribe and Amazon Translate to convert the data into English text. Use Amazon Bedrock with the Jurassic model to summarize the text.",
+        "is_correct": true
+      },
+      {
+        "id": 1989,
+        "text": "Use Amazon Rekognition and Amazon Translate to convert the data into English text. Use Amazon Bedrock with the Anthropic Claude model to summarize the text.",
+        "is_correct": false
+      },
+      {
+        "id": 1990,
+        "text": "Use Amazon Comprehend and Amazon Translate to convert the data into English text. Use Amazon Bedrock with the Stable Diffusion model to summarize the text.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 488,
+    "text": "A financial company receives a high volume of real-time market data streams from an external provider. The streams consist of thousands of JSON records every second.\n\nThe company needs to implement a scalable solution on AWS to identify anomalous data points.\n\nWhich solution will meet these requirements with the LEAST operational overhead?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1991,
+        "text": "Ingest real-time data into Amazon Kinesis data streams. Use the built-in RANDOM_CUT_FOREST function in Amazon Managed Service for Apache Flink to process the data streams and to detect data anomalies.",
+        "is_correct": true
+      },
+      {
+        "id": 1992,
+        "text": "Ingest real-time data into Amazon Kinesis data streams. Deploy an Amazon SageMaker endpoint for real-time outlier detection. Create an AWS Lambda function to detect anomalies. Use the data streams to invoke the Lambda function.",
+        "is_correct": false
+      },
+      {
+        "id": 1993,
+        "text": "Ingest real-time data into Apache Kafka on Amazon EC2 instances. Deploy an Amazon SageMaker endpoint for real-time outlier detection. Create an AWS Lambda function to detect anomalies. Use the data streams to invoke the Lambda function.",
+        "is_correct": false
+      },
+      {
+        "id": 1994,
+        "text": "Send real-time data to an Amazon Simple Queue Service (Amazon SQS) FIFO queue. Create an AWS Lambda function to consume the queue messages. Program the Lambda function to start an AWS Glue extract, transform, and load (ETL) job for batch processing and anomaly detection.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 489,
+    "text": "A company has a large collection of chat recordings from customer interactions after a product release. An ML engineer needs to create an ML model to analyze the chat data. The ML engineer needs to determine the success of the product by reviewing customer sentiments about the product.\n\nWhich action should the ML engineer take to complete the evaluation in the LEAST amount of time?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1995,
+        "text": "Use Amazon Rekognition to analyze sentiments of the chat conversations.",
+        "is_correct": false
+      },
+      {
+        "id": 1996,
+        "text": "Train a Naive Bayes classifier to analyze sentiments of the chat conversations.",
+        "is_correct": false
+      },
+      {
+        "id": 1997,
+        "text": "Use Amazon Comprehend to analyze sentiments of the chat conversations.",
+        "is_correct": true
+      },
+      {
+        "id": 1998,
+        "text": "Use random forests to classify sentiments of the chat conversations.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 490,
+    "text": "A company has a conversational AI assistant that sends requests through Amazon Bedrock to an Anthropic Claude large language model (LLM). Users report that when they ask similar questions multiple times, they sometimes receive different answers. An ML engineer needs to improve the responses to be more consistent and less random.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 1999,
+        "text": "Increase the temperature parameter and the top_k parameter.",
+        "is_correct": false
+      },
+      {
+        "id": 2000,
+        "text": "Increase the temperature parameter. Decrease the top_k parameter.",
+        "is_correct": false
+      },
+      {
+        "id": 2001,
+        "text": "Decrease the temperature parameter. Increase the top_k parameter.",
+        "is_correct": false
+      },
+      {
+        "id": 2002,
+        "text": "Decrease the temperature parameter and the top_k parameter.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 491,
+    "text": "A company is using ML to predict the presence of a specific weed in a farmer's field. The company is using the Amazon SageMaker linear learner built-in algorithm with a value of multiclass_dassifier for the predictorjype hyperparameter.\n\nWhat should the company do to MINIMIZE false positives?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2003,
+        "text": "Set the value of the weight decay hyperparameter to zero.",
+        "is_correct": false
+      },
+      {
+        "id": 2004,
+        "text": "Increase the number of training epochs.",
+        "is_correct": false
+      },
+      {
+        "id": 2005,
+        "text": "Increase the value of the target_precision hyperparameter.",
+        "is_correct": true
+      },
+      {
+        "id": 2006,
+        "text": "Change the value of the predictorjype hyperparameter to regressor.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 492,
+    "text": "A company has implemented a data ingestion pipeline for sales transactions from its ecommerce website. The company uses Amazon Data Firehose to ingest data into Amazon OpenSearch Service. The buffer interval of the Firehose stream is set for 60 seconds. An OpenSearch linear model generates real-time sales forecasts based on the data and presents the data in an OpenSearch dashboard.\n\nThe company needs to optimize the data ingestion pipeline to support sub-second latency for the real-time dashboard.\n\nWhich change to the architecture will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2007,
+        "text": "Use zero buffering in the Firehose stream. Tune the batch size that is used in the PutRecordBatch operation.",
+        "is_correct": true
+      },
+      {
+        "id": 2008,
+        "text": "Replace the Firehose stream with an AWS DataSync task. Configure the task with enhanced fan-out consumers.",
+        "is_correct": false
+      },
+      {
+        "id": 2009,
+        "text": "Increase the buffer interval of the Firehose stream from 60 seconds to 120 seconds.",
+        "is_correct": false
+      },
+      {
+        "id": 2010,
+        "text": "Replace the Firehose stream with an Amazon Simple Queue Service (Amazon SQS) queue.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 493,
+    "text": "A company has trained an ML model in Amazon SageMaker. The company needs to host the model to provide inferences in a production environment.\n\nThe model must be highly available and must respond with minimum latency. The size of each request will be between 1 KB and 3 MB. The model will receive unpredictable bursts of requests during the day. The inferences must adapt proportionally to the changes in demand.\n\nHow should the company deploy the model into production to meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2011,
+        "text": "Create a SageMaker real-time inference endpoint. Configure auto scaling. Configure the endpoint to present the existing model.",
+        "is_correct": true
+      },
+      {
+        "id": 2012,
+        "text": "Deploy the model on an Amazon Elastic Container Service (Amazon ECS) cluster. Use ECS scheduled scaling that is based on the CPU of the ECS cluster.",
+        "is_correct": false
+      },
+      {
+        "id": 2013,
+        "text": "Install SageMaker Operator on an Amazon Elastic Kubernetes Service (Amazon EKS) cluster. Deploy the model in Amazon EKS. Set horizontal pod auto scaling to scale replicas based on the memory metric.",
+        "is_correct": false
+      },
+      {
+        "id": 2014,
+        "text": "Use Spot Instances with a Spot Fleet behind an Application Load Balancer (ALB) for inferences. Use the ALBRequestCountPerTarget metric as the metric for auto scaling.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 494,
+    "text": "An ML engineer needs to use an Amazon EMR cluster to process large volumes of data in batches. Any data loss is unacceptable.\n\nWhich instance purchasing option will meet these requirements MOST cost-effectively?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2015,
+        "text": "Run the primary node, core nodes, and task nodes on On-Demand Instances.",
+        "is_correct": false
+      },
+      {
+        "id": 2016,
+        "text": "Run the primary node, core nodes, and task nodes on Spot Instances.",
+        "is_correct": false
+      },
+      {
+        "id": 2017,
+        "text": "Run the primary node on an On-Demand Instance. Run the core nodes and task nodes on Spot Instances.",
+        "is_correct": false
+      },
+      {
+        "id": 2018,
+        "text": "Run the primary node and core nodes on On-Demand Instances. Run the task nodes on Spot Instances.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 495,
+    "text": "A company wants to improve the sustainability of its ML operations.\n\nWhich actions will reduce the energy usage and computational resources that are associated with the company's training jobs? (Choose two.)",
+    "explanation": "",
+    "question_type": "multiple",
+    "answers": [
+      {
+        "id": 2019,
+        "text": "Use Amazon SageMaker Debugger to stop training jobs when non-converging conditions are detected.",
+        "is_correct": true
+      },
+      {
+        "id": 2020,
+        "text": "Use Amazon SageMaker Ground Truth for data labeling.",
+        "is_correct": false
+      },
+      {
+        "id": 2021,
+        "text": "Deploy models by using AWS Lambda functions.",
+        "is_correct": false
+      },
+      {
+        "id": 2022,
+        "text": "Use AWS Trainium instances for training.",
+        "is_correct": true
+      },
+      {
+        "id": 2023,
+        "text": "Use PyTorch or TensorFlow with the distributed training option.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 496,
+    "text": "Case Study -\n\nA company is building a web-based AI application by using Amazon SageMaker. The application will provide the following capabilities and features: ML experimentation, training, a central model registry, model deployment, and model monitoring.\n\nThe application must ensure secure and isolated use of training data during the ML lifecycle. The training data is stored in Amazon S3.\n\nThe company needs to run an on-demand workflow to monitor bias drift for models that are deployed to real-time endpoints from the application.\n\nWhich action will meet this requirement?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2024,
+        "text": "Configure the application to invoke an AWS Lambda function that runs a SageMaker Clarify job.",
+        "is_correct": true
+      },
+      {
+        "id": 2025,
+        "text": "Invoke an AWS Lambda function to pull the sagemaker-model-monitor-analyzer built-in SageMaker image.",
+        "is_correct": false
+      },
+      {
+        "id": 2026,
+        "text": "Use AWS Glue Data Quality to monitor bias.",
+        "is_correct": false
+      },
+      {
+        "id": 2027,
+        "text": "Use SageMaker notebooks to compare the bias.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 497,
+    "text": "A company is planning to create several ML prediction models. The training data is stored in Amazon S3. The entire dataset is more than 5 ТВ in size and consists of CSV, JSON, Apache Parquet, and simple text files.\n\nThe data must be processed in several consecutive steps. The steps include complex manipulations that can take hours to finish running. Some of the processing involves natural language processing (NLP) transformations. The entire process must be automated.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2028,
+        "text": "Process data at each step by using Amazon SageMaker Data Wrangler. Automate the process by using Data Wrangler jobs.",
+        "is_correct": false
+      },
+      {
+        "id": 2029,
+        "text": "Use Amazon SageMaker notebooks for each data processing step. Automate the process by using Amazon EventBridge.",
+        "is_correct": false
+      },
+      {
+        "id": 2030,
+        "text": "Process data at each step by using AWS Lambda functions. Automate the process by using AWS Step Functions and Amazon EventBridge.",
+        "is_correct": false
+      },
+      {
+        "id": 2031,
+        "text": "Use Amazon SageMaker Pipelines to create a pipeline of data processing steps. Automate the pipeline by using Amazon EventBridge.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 498,
+    "text": "An ML engineer needs to use AWS CloudFormation to create an ML model that an Amazon SageMaker endpoint will host.\n\nWhich resource should the ML engineer declare in the CloudFormation template to meet this requirement?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2032,
+        "text": "AWS::SageMaker::Model",
+        "is_correct": true
+      },
+      {
+        "id": 2033,
+        "text": "AWS::SageMaker::Endpoint",
+        "is_correct": false
+      },
+      {
+        "id": 2034,
+        "text": "AWS::SageMaker::NotebookInstance",
+        "is_correct": false
+      },
+      {
+        "id": 2035,
+        "text": "AWS::SageMaker::Pipeline",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 499,
+    "text": "An advertising company uses AWS Lake Formation to manage a data lake. The data lake contains structured data and unstructured data. The company's ML engineers are assigned to specific advertisement campaigns.\n\nThe ML engineers must interact with the data through Amazon Athena and by browsing the data directly in an Amazon S3 bucket. The ML engineers must have access to only the resources that are specific to their assigned advertisement campaigns.\n\nWhich solution will meet these requirements in the MOST operationally efficient way?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2036,
+        "text": "Configure IAM policies on an AWS Glue Data Catalog to restrict access to Athena based on the ML engineers' campaigns.",
+        "is_correct": false
+      },
+      {
+        "id": 2037,
+        "text": "Store users and campaign information in an Amazon DynamoDB table. Configure DynamoDB Streams to invoke an AWS Lambda function to update S3 bucket policies.",
+        "is_correct": false
+      },
+      {
+        "id": 2038,
+        "text": "Use Lake Formation to authorize AWS Glue to access the S3 bucket. Configure Lake Formation tags to map ML engineers to their campaigns.",
+        "is_correct": true
+      },
+      {
+        "id": 2039,
+        "text": "Configure S3 bucket policies to restrict access to the S3 bucket based on the ML engineers' campaigns.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 500,
+    "text": "An ML engineer needs to use data with Amazon SageMaker Canvas to train an ML model. The data is stored in Amazon S3 and is complex in structure. The ML engineer must use a file format that minimizes processing time for the data.\n\nWhich file format will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2040,
+        "text": "CSV files compressed with Snappy",
+        "is_correct": false
+      },
+      {
+        "id": 2041,
+        "text": "JSON objects in JSONL format",
+        "is_correct": false
+      },
+      {
+        "id": 2042,
+        "text": "JSON files compressed with gzip",
+        "is_correct": false
+      },
+      {
+        "id": 2043,
+        "text": "Apache Parquet files",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 501,
+    "text": "An ML engineer is evaluating several ML models and must choose one model to use in production. The cost of false negative predictions by the models is much higher than the cost of false positive predictions.\n\nWhich metric finding should the ML engineer prioritize the MOST when choosing the model?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2044,
+        "text": "Low precision",
+        "is_correct": false
+      },
+      {
+        "id": 2045,
+        "text": "High precision",
+        "is_correct": false
+      },
+      {
+        "id": 2046,
+        "text": "Low recall",
+        "is_correct": false
+      },
+      {
+        "id": 2047,
+        "text": "High recall",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 502,
+    "text": "A company has trained and deployed an ML model by using Amazon SageMaker. The company needs to implement a solution to record and monitor all the API call events for the SageMaker endpoint. The solution also must provide a notification when the number of API call events breaches a threshold.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2048,
+        "text": "Use SageMaker Debugger to track the inferences and to report metrics. Create a custom rule to provide a notification when the threshold is breached.",
+        "is_correct": false
+      },
+      {
+        "id": 2049,
+        "text": "Use SageMaker Debugger to track the inferences and to report metrics. Use the tensor_variance built-in rule to provide a notification when the threshold is breached.",
+        "is_correct": false
+      },
+      {
+        "id": 2050,
+        "text": "Log all the endpoint invocation API events by using AWS CloudTrail. Use an Amazon CloudWatch dashboard for monitoring. Set up a CloudWatch alarm to provide notification when the threshold is breached.",
+        "is_correct": true
+      },
+      {
+        "id": 2051,
+        "text": "Add the Invocations metric to an Amazon CloudWatch dashboard for monitoring. Set up a CloudWatch alarm to provide notification when the threshold is breached.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 503,
+    "text": "A company has AWS Glue data processing jobs that are orchestrated by an AWS Glue workflow. The AWS Glue jobs can run on a schedule or can be launched manually.\n\nThe company is developing pipelines in Amazon SageMaker Pipelines for ML model development. The pipelines will use the output of the AWS Glue jobs during the data processing phase of model development. An ML engineer needs to implement a solution that integrates the AWS Glue jobs with the pipelines.\n\nWhich solution will meet these requirements with the LEAST operational overhead?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2052,
+        "text": "Use AWS Step Functions for orchestration of the pipelines and the AWS Glue jobs.",
+        "is_correct": false
+      },
+      {
+        "id": 2053,
+        "text": "Use processing steps in SageMaker Pipelines. Configure inputs that point to the Amazon Resource Names (ARNs) of the AWS Glue jobs.",
+        "is_correct": false
+      },
+      {
+        "id": 2054,
+        "text": "Use Callback steps in SageMaker Pipelines to start the AWS Glue workflow and to stop the pipelines until the AWS Glue jobs finish running.",
+        "is_correct": true
+      },
+      {
+        "id": 2055,
+        "text": "Use Amazon EventBridge to invoke the pipelines and the AWS Glue jobs in the desired order.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 504,
+    "text": "A company is using an Amazon Redshift database as its single data source. Some of the data is sensitive.\n\nA data scientist needs to use some of the sensitive data from the database. An ML engineer must give the data scientist access to the data without transforming the source data and without storing anonymized data in the database.\n\nWhich solution will meet these requirements with the LEAST implementation effort?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2056,
+        "text": "Configure dynamic data masking policies to control how sensitive data is shared with the data scientist at query time.",
+        "is_correct": true
+      },
+      {
+        "id": 2057,
+        "text": "Create a materialized view with masking logic on top of the database. Grant the necessary read permissions to the data scientist.",
+        "is_correct": false
+      },
+      {
+        "id": 2058,
+        "text": "Unload the Amazon Redshift data to Amazon S3. Use Amazon Athena to create schema-on-read with masking logic. Share the view with the data scientist.",
+        "is_correct": false
+      },
+      {
+        "id": 2059,
+        "text": "Unload the Amazon Redshift data to Amazon S3. Create an AWS Glue job to anonymize the data. Share the dataset with the data scientist.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 505,
+    "text": "An ML engineer is using a training job to fine-tune a deep learning model in Amazon SageMaker Studio. The ML engineer previously used the same pre-trained model with a similar dataset. The ML engineer expects vanishing gradient, underutilized GPU, and overfitting problems.\n\nThe ML engineer needs to implement a solution to detect these issues and to react in predefined ways when the issues occur. The solution also must provide comprehensive real-time metrics during the training.\n\nWhich solution will meet these requirements with the LEAST operational overhead?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2060,
+        "text": "Use TensorBoard to monitor the training job. Publish the findings to an Amazon Simple Notification Service (Amazon SNS) topic. Create an AWS Lambda function to consume the findings and to initiate the predefined actions.",
+        "is_correct": false
+      },
+      {
+        "id": 2061,
+        "text": "Use Amazon CloudWatch default metrics to gain insights about the training job. Use the metrics to invoke an AWS Lambda function to initiate the predefined actions.",
+        "is_correct": false
+      },
+      {
+        "id": 2062,
+        "text": "Expand the metrics in Amazon CloudWatch to include the gradients in each training step. Use the metrics to invoke an AWS Lambda function to initiate the predefined actions.",
+        "is_correct": false
+      },
+      {
+        "id": 2063,
+        "text": "Use SageMaker Debugger built-in rules to monitor the training job. Configure the rules to initiate the predefined actions.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 506,
+    "text": "A credit card company has a fraud detection model in production on an Amazon SageMaker endpoint. The company develops a new version of the model. The company needs to assess the new model's performance by using live data and without affecting production end users.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2064,
+        "text": "Set up SageMaker Debugger and create a custom rule.",
+        "is_correct": false
+      },
+      {
+        "id": 2065,
+        "text": "Set up blue/green deployments with all-at-once traffic shifting.",
+        "is_correct": false
+      },
+      {
+        "id": 2066,
+        "text": "Set up blue/green deployments with canary traffic shifting.",
+        "is_correct": false
+      },
+      {
+        "id": 2067,
+        "text": "Set up shadow testing with a shadow variant of the new model.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 507,
+    "text": "HOTSPOT -\n\nA company stores historical data in .csv files in Amazon S3. Only some of the rows and columns in the .csv files are populated. The columns are not labeled. An ML engineer needs to prepare and store the data so that the company can use the data to train ML models.\n\nSelect and order the correct steps from the following list to perform this task. Each step should be selected one time or not at all. (Select and order three.)\n\n• Create an Amazon SageMaker batch transform job for data cleaning and feature engineering.\n\n• Store the resulting data back in Amazon S3.\n\n• Use Amazon Athena to infer the schemas and available columns.\n\n• Use AWS Glue crawlers to infer the schemas and available columns.\n\n• Use AWS Glue DataBrew for data cleaning and feature engineering.",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [],
+    "comment_count": 0
+  },
+  {
+    "id": 508,
+    "text": "A company stores time-series data about user clicks in an Amazon S3 bucket. The raw data consists of millions of rows of user activity every day. ML engineers access the data to develop their ML models.\n\nThe ML engineers need to generate daily reports and analyze click trends over the past 3 days by using Amazon Athena. The company must retain the data for 30 days before archiving the data.\n\nWhich solution will provide the HIGHEST performance for data retrieval?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2068,
+        "text": "Keep all the time-series data without partitioning in the S3 bucket. Manually move data that is older than 30 days to separate S3 buckets.",
+        "is_correct": false
+      },
+      {
+        "id": 2069,
+        "text": "Create AWS Lambda functions to copy the time-series data into separate S3 buckets. Apply S3 Lifecycle policies to archive data that is older than 30 days to S3 Glacier Flexible Retrieval.",
+        "is_correct": false
+      },
+      {
+        "id": 2070,
+        "text": "Organize the time-series data into partitions by date prefix in the S3 bucket. Apply S3 Lifecycle policies to archive partitions that are older than 30 days to S3 Glacier Flexible Retrieval.",
+        "is_correct": true
+      },
+      {
+        "id": 2071,
+        "text": "Put each day's time-series data into its own S3 bucket. Use S3 Lifecycle policies to archive S3 buckets that hold data that is older than 30 days to S3 Glacier Flexible Retrieval.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 509,
+    "text": "A company has deployed an ML model that detects fraudulent credit card transactions in real time in a banking application. The model uses Amazon SageMaker Asynchronous Inference. Consumers are reporting delays in receiving the inference results.\n\nAn ML engineer needs to implement a solution to improve the inference performance. The solution also must provide a notification when a deviation in model quality occurs.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2072,
+        "text": "Use SageMaker real-time inference for inference. Use SageMaker Model Monitor for notifications about model quality.",
+        "is_correct": true
+      },
+      {
+        "id": 2073,
+        "text": "Use SageMaker batch transform for inference. Use SageMaker Model Monitor for notifications about model quality.",
+        "is_correct": false
+      },
+      {
+        "id": 2074,
+        "text": "Use SageMaker Serverless Inference for inference. Use SageMaker Inference Recommender for notifications about model quality.",
+        "is_correct": false
+      },
+      {
+        "id": 2075,
+        "text": "Keep using SageMaker Asynchronous Inference for inference. Use SageMaker Inference Recommender for notifications about model quality.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 510,
+    "text": "An ML engineer needs to implement a solution to host a trained ML model. The rate of requests to the model will be inconsistent throughout the day.\n\nThe ML engineer needs a scalable solution that minimizes costs when the model is not in use. The solution also must maintain the model's capacity to respond to requests during times of peak usage.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2076,
+        "text": "Create AWS Lambda functions that have fixed concurrency to host the model. Configure the Lambda functions to automatically scale based on the number of requests to the model.",
+        "is_correct": false
+      },
+      {
+        "id": 2077,
+        "text": "Deploy the model on an Amazon Elastic Container Service (Amazon ECS) cluster that uses AWS Fargate. Set a static number of tasks to handle requests during times of peak usage.",
+        "is_correct": false
+      },
+      {
+        "id": 2078,
+        "text": "Deploy the model to an Amazon SageMaker endpoint. Deploy multiple copies of the model to the endpoint. Create an Application Load Balancer to route traffic between the different copies of the model at the endpoint.",
+        "is_correct": false
+      },
+      {
+        "id": 2079,
+        "text": "Deploy the model to an Amazon SageMaker endpoint. Create SageMaker endpoint auto scaling policies that are based on Amazon CloudWatch metrics to adjust the number of instances dynamically.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 511,
+    "text": "A company uses Amazon SageMaker Studio to develop an ML model. The company has a single SageMaker Studio domain. An ML engineer needs to implement a solution that provides an automated alert when SageMaker compute costs reach a specific threshold.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2080,
+        "text": "Add resource tagging by editing the SageMaker user profile in the SageMaker domain. Configure AWS Cost Explorer to send an alert when the threshold is reached.",
+        "is_correct": false
+      },
+      {
+        "id": 2081,
+        "text": "Add resource tagging by editing the SageMaker user profile in the SageMaker domain. Configure AWS Budgets to send an alert when the threshold is reached.",
+        "is_correct": true
+      },
+      {
+        "id": 2082,
+        "text": "Add resource tagging by editing each user's IAM profile. Configure AWS Cost Explorer to send an alert when the threshold is reached.",
+        "is_correct": false
+      },
+      {
+        "id": 2083,
+        "text": "Add resource tagging by editing each user's IAM profile. Configure AWS Budgets to send an alert when the threshold is reached.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 512,
+    "text": "A company uses Amazon SageMaker for its ML workloads. The company's ML engineer receives a 50 MB Apache Parquet data file to build a fraud detection model. The file includes several correlated columns that are not required.\n\nWhat should the ML engineer do to drop the unnecessary columns in the file with the LEAST effort?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2084,
+        "text": "Download the file to a local workstation. Perform one-hot encoding by using a custom Python script.",
+        "is_correct": false
+      },
+      {
+        "id": 2085,
+        "text": "Create an Apache Spark job that uses a custom processing script on Amazon EMR.",
+        "is_correct": false
+      },
+      {
+        "id": 2086,
+        "text": "Create a SageMaker processing job by calling the SageMaker Python SDK.",
+        "is_correct": false
+      },
+      {
+        "id": 2087,
+        "text": "Create a data flow in SageMaker Data Wrangler. Configure a transform step.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 513,
+    "text": "A company is creating an application that will recommend products for customers to purchase. The application will make API calls to Amazon Q Business. The company must ensure that responses from Amazon Q Business do not include the name of the company's main competitor.\n\nWhich solution will meet this requirement?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2088,
+        "text": "Configure the competitor's name as a blocked phrase in Amazon Q Business.",
+        "is_correct": true
+      },
+      {
+        "id": 2089,
+        "text": "Configure an Amazon Q Business retriever to exclude the competitor’s name.",
+        "is_correct": false
+      },
+      {
+        "id": 2090,
+        "text": "Configure an Amazon Kendra retriever for Amazon Q Business to build indexes that exclude the competitor's name.",
+        "is_correct": false
+      },
+      {
+        "id": 2091,
+        "text": "Configure document attribute boosting in Amazon Q Business to deprioritize the competitor's name.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 514,
+    "text": "An ML engineer needs to use Amazon SageMaker to fine-tune a large language model (LLM) for text summarization. The ML engineer must follow a low-code no-code (LCNC) approach.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2094,
+        "text": "Use SageMaker Autopilot to fine-tune an LLM that is deployed on Amazon EC2 instances.",
+        "is_correct": false
+      },
+      {
+        "id": 2092,
+        "text": "Use SageMaker Studio to fine-tune an LLM that is deployed on Amazon EC2 instances.",
+        "is_correct": false
+      },
+      {
+        "id": 2093,
+        "text": "Use SageMaker Autopilot to fine-tune an LLM that is deployed by a custom API endpoint.",
+        "is_correct": false
+      },
+      {
+        "id": 2095,
+        "text": "Use SageMaker Autopilot to fine-tune an LLM that is deployed by SageMaker JumpStart.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 515,
+    "text": "A company has an ML model that needs to run one time each night to predict stock values. The model input is 3 MB of data that is collected during the current day. The model produces the predictions for the next day. The prediction process takes less than 1 minute to finish running.\n\nHow should the company deploy the model on Amazon SageMaker to meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2096,
+        "text": "Use a multi-model serverless endpoint. Enable caching.",
+        "is_correct": false
+      },
+      {
+        "id": 2097,
+        "text": "Use an asynchronous inference endpoint. Set the InitialInstanceCount parameter to 0.",
+        "is_correct": false
+      },
+      {
+        "id": 2098,
+        "text": "Use a real-time endpoint. Configure an auto scaling policy to scale the model to 0 when the model is not in use.",
+        "is_correct": false
+      },
+      {
+        "id": 2099,
+        "text": "Use a serverless inference endpoint. Set the MaxConcurrency parameter to 1.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 516,
+    "text": "An ML engineer trained an ML model on Amazon SageMaker to detect automobile accidents from dosed-circuit TV footage. The ML engineer used SageMaker Data Wrangler to create a training dataset of images of accidents and non-accidents.\n\nThe model performed well during training and validation. However, the model is underperforming in production because of variations in the quality of the images from various cameras.\n\nWhich solution will improve the model's accuracy in the LEAST amount of time?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2100,
+        "text": "Collect more images from all the cameras. Use Data Wrangler to prepare a new training dataset.",
+        "is_correct": false
+      },
+      {
+        "id": 2101,
+        "text": "Recreate the training dataset by using the Data Wrangler corrupt image transform. Specify the impulse noise option.",
+        "is_correct": true
+      },
+      {
+        "id": 2102,
+        "text": "Recreate the training dataset by using the Data Wrangler enhance image contrast transform. Specify the Gamma contrast option.",
+        "is_correct": false
+      },
+      {
+        "id": 2103,
+        "text": "Recreate the training dataset by using the Data Wrangler resize image transform. Crop all images to the same size.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 517,
+    "text": "A company has an application that uses different APIs to generate embeddings for input text. The company needs to implement a solution to automatically rotate the API tokens every 3 months.\n\nWhich solution will meet this requirement?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2104,
+        "text": "Store the tokens in AWS Secrets Manager. Create an AWS Lambda function to perform the rotation.",
+        "is_correct": true
+      },
+      {
+        "id": 2105,
+        "text": "Store the tokens in AWS Systems Manager Parameter Store. Create an AWS Lambda function to perform the rotation.",
+        "is_correct": false
+      },
+      {
+        "id": 2106,
+        "text": "Store the tokens in AWS Key Management Service (AWS KMS). Use an AWS managed key to perform the rotation.",
+        "is_correct": false
+      },
+      {
+        "id": 2107,
+        "text": "Store the tokens in AWS Key Management Service (AWS KMS). Use an AWS owned key to perform the rotation.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 518,
+    "text": "HOTSPOT -\n\nAn ML engineer needs to use Amazon SageMaker Feature Store to create and manage features to train a model.\n\nSelect and order the steps from the following list to create and use the features in Feature Store. Each step should be selected one time. (Select and order three.)\n\n• Access the store to build datasets for training.\n\n• Create a feature group.\n\n• Ingest the records.",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [],
+    "comment_count": 0
+  },
+  {
+    "id": 519,
+    "text": "An ML engineer receives datasets that contain missing values, duplicates, and extreme outliers. The ML engineer must consolidate these datasets into a single data frame and must prepare the data for ML.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2108,
+        "text": "Use Amazon SageMaker Data Wrangler to import the datasets and to consolidate them into a single data frame. Use the cleansing and enrichment functionalities to prepare the data.",
+        "is_correct": true
+      },
+      {
+        "id": 2109,
+        "text": "Use Amazon SageMaker Ground Truth to import the datasets and to consolidate them into a single data frame. Use the human-in-the-loop capability to prepare the data.",
+        "is_correct": false
+      },
+      {
+        "id": 2110,
+        "text": "Manually import and merge the datasets. Consolidate the datasets into a single data frame. Use Amazon Q Developer to generate code snippets that will prepare the data.",
+        "is_correct": false
+      },
+      {
+        "id": 2111,
+        "text": "Manually import and merge the datasets. Consolidate the datasets into a single data frame. Use Amazon SageMaker data labeling to prepare the data.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 520,
+    "text": "A company has historical data that shows whether customers needed long-term support from company staff. The company needs to develop an ML model to predict whether new customers will require long-term support.\n\nWhich modeling approach should the company use to meet this requirement?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2112,
+        "text": "Anomaly detection",
+        "is_correct": false
+      },
+      {
+        "id": 2113,
+        "text": "Linear regression",
+        "is_correct": false
+      },
+      {
+        "id": 2114,
+        "text": "Logistic regression",
+        "is_correct": true
+      },
+      {
+        "id": 2115,
+        "text": "Semantic segmentation",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 521,
+    "text": "An ML engineer has developed a binary classification model outside of Amazon SageMaker. The ML engineer needs to make the model accessible to a SageMaker Canvas user for additional tuning.\n\nThe model artifacts are stored in an Amazon S3 bucket. The ML engineer and the Canvas user are part of the same SageMaker domain.\n\nWhich combination of requirements must be met so that the ML engineer can share the model with the Canvas user? (Choose two.)",
+    "explanation": "",
+    "question_type": "multiple",
+    "answers": [
+      {
+        "id": 2116,
+        "text": "The ML engineer and the Canvas user must be in separate SageMaker domains.",
+        "is_correct": false
+      },
+      {
+        "id": 2117,
+        "text": "The Canvas user must have permissions to access the S3 bucket where the model artifacts are stored.",
+        "is_correct": true
+      },
+      {
+        "id": 2118,
+        "text": "The model must be registered in the SageMaker Model Registry.",
+        "is_correct": true
+      },
+      {
+        "id": 2119,
+        "text": "The ML engineer must host the model on AWS Marketplace.",
+        "is_correct": false
+      },
+      {
+        "id": 2120,
+        "text": "The ML engineer must deploy the model to a SageMaker endpoint.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 522,
+    "text": "A company is building a deep learning model on Amazon SageMaker. The company uses a large amount of data as the training dataset. The company needs to optimize the model's hyperparameters to minimize the loss function on the validation dataset.\n\nWhich hyperparameter tuning strategy will accomplish this goal with the LEAST computation time?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2121,
+        "text": "Hyperband",
+        "is_correct": true
+      },
+      {
+        "id": 2122,
+        "text": "Grid search",
+        "is_correct": false
+      },
+      {
+        "id": 2123,
+        "text": "Bayesian optimization",
+        "is_correct": false
+      },
+      {
+        "id": 2124,
+        "text": "Random search",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 523,
+    "text": "A company is planning to use Amazon Redshift ML in its primary AWS account. The source data is in an Amazon S3 bucket in a secondary account.\n\nAn ML engineer needs to set up an ML pipeline in the primary account to access the S3 bucket in the secondary account. The solution must not require public IPv4 addresses.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2125,
+        "text": "Provision a Redshift cluster and Amazon SageMaker Studio in a VPC with no public access enabled in the primary account. Create a VPC peering connection between the accounts. Update the VPC route tables to remove the route to 0.0.0.0/0.",
+        "is_correct": false
+      },
+      {
+        "id": 2126,
+        "text": "Provision a Redshift cluster and Amazon SageMaker Studio in a VPC with no public access enabled in the primary account. Create an AWS Direct Connect connection and a transit gateway. Associate the VPCs from both accounts with the transit gateway. Update the VPC route tables to remove the route to 0.0.0.0/0.",
+        "is_correct": false
+      },
+      {
+        "id": 2127,
+        "text": "Provision a Redshift cluster and Amazon SageMaker Studio in a VPC in the primary account. Create an AWS Site-to-Site VPN connection with two encrypted IPsec tunnels between the accounts. Set up interface VPC endpoints for Amazon S3.",
+        "is_correct": false
+      },
+      {
+        "id": 2128,
+        "text": "Provision a Redshift cluster and Amazon SageMaker Studio in a VPC in the primary account. Create an S3 gateway endpoint. Update the S3 bucket policy to allow IAM principals from the primary account. Set up interface VPC endpoints for SageMaker and Amazon Redshift.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 524,
+    "text": "A company is using an AWS Lambda function to monitor the metrics from an ML model. An ML engineer needs to implement a solution to send an email message when the metrics breach a threshold.\n\nWhich solution will meet this requirement?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2129,
+        "text": "Log the metrics from the Lambda function to AWS CloudTrail. Configure a CloudTrail trail to send the email message.",
+        "is_correct": false
+      },
+      {
+        "id": 2130,
+        "text": "Log the metrics from the Lambda function to Amazon CloudFront. Configure an Amazon CloudWatch alarm to send the email message.",
+        "is_correct": false
+      },
+      {
+        "id": 2131,
+        "text": "Log the metrics from the Lambda function to Amazon CloudWatch. Configure a CloudWatch alarm to send the email message.",
+        "is_correct": true
+      },
+      {
+        "id": 2132,
+        "text": "Log the metrics from the Lambda function to Amazon CloudWatch. Configure an Amazon CloudFront rule to send the email message.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 525,
+    "text": "A company has used Amazon SageMaker to deploy a predictive ML model in production. The company is using SageMaker Model Monitor on the model. After a model update, an ML engineer notices data quality issues in the Model Monitor checks.\n\nWhat should the ML engineer do to mitigate the data quality issues that Model Monitor has identified?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2133,
+        "text": "Adjust the model's parameters and hyperparameters.",
+        "is_correct": false
+      },
+      {
+        "id": 2134,
+        "text": "Initiate a manual Model Monitor job that uses the most recent production data.",
+        "is_correct": false
+      },
+      {
+        "id": 2135,
+        "text": "Create a new baseline from the latest dataset. Update Model Monitor to use the new baseline for evaluations.",
+        "is_correct": true
+      },
+      {
+        "id": 2136,
+        "text": "Include additional data in the existing training set for the model. Retrain and redeploy the model.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 526,
+    "text": "A company has an ML model that generates text descriptions based on images that customers upload to the company's website. The images can be up to 50 MB in total size.\n\nAn ML engineer decides to store the images in an Amazon S3 bucket. The ML engineer must implement a processing solution that can scale to accommodate changes in demand.\n\nWhich solution will meet these requirements with the LEAST operational overhead?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2137,
+        "text": "Create an Amazon SageMaker batch transform job to process all the images in the S3 bucket.",
+        "is_correct": false
+      },
+      {
+        "id": 2138,
+        "text": "Create an Amazon SageMaker Asynchronous Inference endpoint and a scaling policy. Run a script to make an inference request for each image.",
+        "is_correct": true
+      },
+      {
+        "id": 2139,
+        "text": "Create an Amazon Elastic Kubernetes Service (Amazon EKS) cluster that uses Karpenter for auto scaling. Host the model on the EKS cluster. Run a script to make an inference request for each image.",
+        "is_correct": false
+      },
+      {
+        "id": 2140,
+        "text": "Create an AWS Batch job that uses an Amazon Elastic Container Service (Amazon ECS) cluster. Specify a list of images to process for each AWS Batch job.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 527,
+    "text": "An ML engineer needs to use AWS services to identify and extract meaningful unique keywords from documents.\n\nWhich solution will meet these requirements with the LEAST operational overhead?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2141,
+        "text": "Use the Natural Language Toolkit (NLTK) library on Amazon EC2 instances for text pre-processing. Use the Latent Dirichlet Allocation (LDA) algorithm to identify and extract relevant keywords.",
+        "is_correct": false
+      },
+      {
+        "id": 2142,
+        "text": "Use Amazon SageMaker and the BlazingText algorithm. Apply custom pre-processing steps for stemming and removal of stop words. Calculate term frequency-inverse document frequency (TF-IDF) scores to identify and extract relevant keywords.",
+        "is_correct": false
+      },
+      {
+        "id": 2143,
+        "text": "Store the documents in an Amazon S3 bucket. Create AWS Lambda functions to process the documents and to run Python scripts for stemming and removal of stop words. Use bigram and trigram techniques to identify and extract relevant keywords.",
+        "is_correct": false
+      },
+      {
+        "id": 2144,
+        "text": "Use Amazon Comprehend custom entity recognition and key phrase extraction to identify and extract relevant keywords.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 528,
+    "text": "A company needs to give its ML engineers appropriate access to training data. The ML engineers must access training data from only their own business group. The ML engineers must not be allowed to access training data from other business groups.\n\nThe company uses a single AWS account and stores all the training data in Amazon S3 buckets. All ML model training occurs in Amazon SageMaker.\n\nWhich solution will provide the ML engineers with the appropriate access?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2146,
+        "text": "Configure S3 Object Lock settings for each user.",
+        "is_correct": false
+      },
+      {
+        "id": 2145,
+        "text": "Enable S3 bucket versioning.",
+        "is_correct": false
+      },
+      {
+        "id": 2147,
+        "text": "Add cross-origin resource sharing (CORS) policies to the S3 buckets.",
+        "is_correct": false
+      },
+      {
+        "id": 2148,
+        "text": "Create IAM policies. Attach the policies to IAM users or IAM roles.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 529,
+    "text": "HOTSPOT -\n\nA company wants to host an ML model on Amazon SageMaker. An ML engineer is configuring a continuous integration and continuous delivery (Cl/CD) pipeline in AWS CodePipeline to deploy the model. The pipeline must run automatically when new training data for the model is uploaded to an Amazon S3 bucket.\n\nSelect and order the pipeline's correct steps from the following list. Each step should be selected one time or not at all. (Select and order three.)\n\n• An S3 event notification invokes the pipeline when new data is uploaded.\n\n• S3 Lifecycle rule invokes the pipeline when new data is uploaded.\n\n• SageMaker retrains the model by using the data in the S3 bucket.\n\n• The pipeline deploys the model to a SageMaker endpoint.\n\n• The pipeline deploys the model to SageMaker Model Registry.",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [],
+    "comment_count": 0
+  },
+  {
+    "id": 530,
+    "text": "A company needs to host a custom ML model to perform forecast analysis. The forecast analysis will occur with predictable and sustained load during the same 2-hour period every day.\n\nMultiple invocations during the analysis period will require quick responses. The company needs AWS to manage the underlying infrastructure and any auto scaling activities.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2149,
+        "text": "Schedule an Amazon SageMaker batch transform job by using AWS Lambda.",
+        "is_correct": false
+      },
+      {
+        "id": 2150,
+        "text": "Configure an Auto Scaling group of Amazon EC2 instances to use scheduled scaling.",
+        "is_correct": false
+      },
+      {
+        "id": 2151,
+        "text": "Use Amazon SageMaker Serverless Inference with provisioned concurrency.",
+        "is_correct": true
+      },
+      {
+        "id": 2152,
+        "text": "Run the model on an Amazon Elastic Kubernetes Service (Amazon EKS) cluster on Amazon EC2 with pod auto scaling.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 531,
+    "text": "A company's ML engineer has deployed an ML model for sentiment analysis to an Amazon SageMaker endpoint. The ML engineer needs to explain to company stakeholders how the model makes predictions.\n\nWhich solution will provide an explanation for the model's predictions?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2153,
+        "text": "Use SageMaker Model Monitor on the deployed model.",
+        "is_correct": false
+      },
+      {
+        "id": 2154,
+        "text": "Use SageMaker Clarify on the deployed model.",
+        "is_correct": true
+      },
+      {
+        "id": 2155,
+        "text": "Show the distribution of inferences from A/В testing in Amazon CloudWatch.",
+        "is_correct": false
+      },
+      {
+        "id": 2156,
+        "text": "Add a shadow endpoint. Analyze prediction differences on samples.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 532,
+    "text": "An ML engineer is using Amazon SageMaker to train a deep learning model that requires distributed training. After some training attempts, the ML engineer observes that the instances are not performing as expected. The ML engineer identifies communication overhead between the training instances.\n\nWhat should the ML engineer do to MINIMIZE the communication overhead between the instances?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2157,
+        "text": "Place the instances in the same VPC subnet. Store the data in a different AWS Region from where the instances are deployed.",
+        "is_correct": false
+      },
+      {
+        "id": 2158,
+        "text": "Place the instances in the same VPC subnet but in different Availability Zones. Store the data in a different AWS Region from where the instances are deployed.",
+        "is_correct": false
+      },
+      {
+        "id": 2159,
+        "text": "Place the instances in the same VPC subnet. Store the data in the same AWS Region and Availability Zone where the instances are deployed.",
+        "is_correct": true
+      },
+      {
+        "id": 2160,
+        "text": "Place the instances in the same VPC subnet. Store the data in the same AWS Region but in a different Availability Zone from where the instances are deployed.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 533,
+    "text": "A company is running ML models on premises by using custom Python scripts and proprietary datasets. The company is using PyTorch. The model building requires unique domain knowledge. The company needs to move the models to AWS.\n\nWhich solution will meet these requirements with the LEAST effort?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2161,
+        "text": "Use SageMaker built-in algorithms to train the proprietary datasets.",
+        "is_correct": false
+      },
+      {
+        "id": 2162,
+        "text": "Use SageMaker script mode and premade images for ML frameworks.",
+        "is_correct": true
+      },
+      {
+        "id": 2163,
+        "text": "Build a container on AWS that includes custom packages and a choice of ML frameworks.",
+        "is_correct": false
+      },
+      {
+        "id": 2164,
+        "text": "Purchase similar production models through AWS Marketplace.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 534,
+    "text": "A company is using Amazon SageMaker and millions of files to train an ML model. Each file is several megabytes in size. The files are stored in an Amazon S3 bucket. The company needs to improve training performance.\n\nWhich solution will meet these requirements in the LEAST amount of time?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2165,
+        "text": "Transfer the data to a new S3 bucket that provides S3 Express One Zone storage. Adjust the training job to use the new S3 bucket.",
+        "is_correct": false
+      },
+      {
+        "id": 2166,
+        "text": "Create an Amazon FSx for Lustre file system. Link the file system to the existing S3 bucket. Adjust the training job to read from the file system.",
+        "is_correct": true
+      },
+      {
+        "id": 2167,
+        "text": "Create an Amazon Elastic File System (Amazon EFS) file system. Transfer the existing data to the file system. Adjust the training job to read from the file system.",
+        "is_correct": false
+      },
+      {
+        "id": 2168,
+        "text": "Create an Amazon ElastiCache (Redis OSS) cluster. Link the Redis OSS cluster to the existing S3 bucket. Stream the data from the Redis OSS cluster directly to the training job.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 535,
+    "text": "A company wants to develop an ML model by using tabular data from its customers. The data contains meaningful ordered features with sensitive information that should not be discarded. An ML engineer must ensure that the sensitive data is masked before another team starts to build the model.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2169,
+        "text": "Use Amazon Made to categorize the sensitive data.",
+        "is_correct": false
+      },
+      {
+        "id": 2170,
+        "text": "Prepare the data by using AWS Glue DataBrew.",
+        "is_correct": true
+      },
+      {
+        "id": 2171,
+        "text": "Run an AWS Batch job to change the sensitive data to random values.",
+        "is_correct": false
+      },
+      {
+        "id": 2172,
+        "text": "Run an Amazon EMR job to change the sensitive data to random values.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 536,
+    "text": "An ML engineer needs to deploy ML models to get inferences from large datasets in an asynchronous manner. The ML engineer also needs to implement scheduled monitoring of the data quality of the models. The ML engineer must receive alerts when changes in data quality occur.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2173,
+        "text": "Deploy the models by using scheduled AWS Glue jobs. Use Amazon CloudWatch alarms to monitor the data quality and to send alerts.",
+        "is_correct": false
+      },
+      {
+        "id": 2174,
+        "text": "Deploy the models by using scheduled AWS Batch jobs. Use AWS CloudTrail to monitor the data quality and to send alerts.",
+        "is_correct": false
+      },
+      {
+        "id": 2175,
+        "text": "Deploy the models by using Amazon Elastic Container Service (Amazon ECS) on AWS Fargate. Use Amazon EventBridge to monitor the data quality and to send alerts.",
+        "is_correct": false
+      },
+      {
+        "id": 2176,
+        "text": "Deploy the models by using Amazon SageMaker batch transform. Use SageMaker Model Monitor to monitor the data quality and to send alerts.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 537,
+    "text": "An ML engineer normalized training data by using min-max normalization in AWS Glue DataBrew. The ML engineer must normalize the production inference data in the same way as the training data before passing the production inference data to the model for predictions.\n\nWhich solution will meet this requirement?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2177,
+        "text": "Apply statistics from a well-known dataset to normalize the production samples.",
+        "is_correct": false
+      },
+      {
+        "id": 2178,
+        "text": "Keep the min-max normalization statistics from the training set. Use these values to normalize the production samples.",
+        "is_correct": true
+      },
+      {
+        "id": 2179,
+        "text": "Calculate a new set of min-max normalization statistics from a batch of production samples. Use these values to normalize all the production samples.",
+        "is_correct": false
+      },
+      {
+        "id": 2180,
+        "text": "Calculate a new set of min-max normalization statistics from each production sample. Use these values to normalize all the production samples.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 538,
+    "text": "A company is planning to use Amazon SageMaker to make classification ratings that are based on images. The company has 6 ТВ of training data that is stored on an Amazon FSx for NetApp ONTAP system virtual machine (SVM). The SVM is in the same VPC as SageMaker.\n\nAn ML engineer must make the training data accessible for ML models that are in the SageMaker environment.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2181,
+        "text": "Mount the FSx for ONTAP file system as a volume to the SageMaker Instance.",
+        "is_correct": true
+      },
+      {
+        "id": 2182,
+        "text": "Create an Amazon S3 bucket. Use Mountpoint for Amazon S3 to link the S3 bucket to the FSx for ONTAP file system.",
+        "is_correct": false
+      },
+      {
+        "id": 2183,
+        "text": "Create a catalog connection from SageMaker Data Wrangler to the FSx for ONTAP file system.",
+        "is_correct": false
+      },
+      {
+        "id": 2184,
+        "text": "Create a direct connection from SageMaker Data Wrangler to the FSx for ONTAP file system.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 539,
+    "text": "A company regularly receives new training data from the vendor of an ML model. The vendor delivers cleaned and prepared data to the company's Amazon S3 bucket every 3-4 days.\n\nThe company has an Amazon SageMaker pipeline to retrain the model. An ML engineer needs to implement a solution to run the pipeline when new data is uploaded to the S3 bucket.\n\nWhich solution will meet these requirements with the LEAST operational effort?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2185,
+        "text": "Create an S3 Lifecycle rule to transfer the data to the SageMaker training instance and to initiate training.",
+        "is_correct": false
+      },
+      {
+        "id": 2186,
+        "text": "Create an AWS Lambda function that scans the S3 bucket. Program the Lambda function to initiate the pipeline when new data is uploaded.",
+        "is_correct": false
+      },
+      {
+        "id": 2187,
+        "text": "Create an Amazon EventBridge rule that has an event pattern that matches the S3 upload. Configure the pipeline as the target of the rule.",
+        "is_correct": true
+      },
+      {
+        "id": 2188,
+        "text": "Use Amazon Managed Workflows for Apache Airflow (Amazon MWAA) to orchestrate the pipeline when new data is uploaded.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 540,
+    "text": "HOTSPOT -\n\nAn ML engineer is building a generative AI application on Amazon Bedrock by using large language models (LLMs).\n\nSelect the correct generative AI term from the following list for each description. Each term should be selected one time or not at all. (Select three.)\n\n• Embedding\n\n• Retrieval Augmented Generation (RAG)\n\n• Temperature\n\n• Token",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [],
+    "comment_count": 0
+  },
+  {
+    "id": 541,
+    "text": "An ML engineer is developing a fraud detection model by using the Amazon SageMaker XGBoost algorithm. The model classifies transactions as either fraudulent or legitimate.\n\nDuring testing, the model excels at identifying fraud in the training dataset. However, the model is inefficient at identifying fraud in new and unseen transactions.\n\nWhat should the ML engineer do to improve the fraud detection for new transactions?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2189,
+        "text": "Increase the learning rate.",
+        "is_correct": false
+      },
+      {
+        "id": 2190,
+        "text": "Remove some irrelevant features from the training dataset.",
+        "is_correct": false
+      },
+      {
+        "id": 2191,
+        "text": "Increase the value of the max_depth hyperparameter.",
+        "is_correct": false
+      },
+      {
+        "id": 2192,
+        "text": "Decrease the value of the max_depth hyperparameter.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 542,
+    "text": "A company has a binary classification model in production. An ML engineer needs to develop a new version of the model.\n\nThe new model version must maximize correct predictions of positive labels and negative labels. The ML engineer must use a metric to recalibrate the model to meet these requirements.\n\nWhich metric should the ML engineer use for the model recalibration?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2193,
+        "text": "Accuracy",
+        "is_correct": true
+      },
+      {
+        "id": 2194,
+        "text": "Precision",
+        "is_correct": false
+      },
+      {
+        "id": 2195,
+        "text": "Recall",
+        "is_correct": false
+      },
+      {
+        "id": 2196,
+        "text": "Specificity",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 543,
+    "text": "A company is using Amazon SageMaker to create ML models. The company's data scientists need fine-grained control of the ML workflows that they orchestrate. The data scientists also need the ability to visualize SageMaker jobs and workflows as a directed acyclic graph (DAG). The data scientists must keep a running history of model discovery experiments and must establish model governance for auditing and compliance verifications.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2197,
+        "text": "Use AWS CodePipeline and its integration with SageMaker Studio to manage the entire ML workflows. Use SageMaker ML Lineage Tracking for the running history of experiments and for auditing and compliance verifications.",
+        "is_correct": false
+      },
+      {
+        "id": 2198,
+        "text": "Use AWS CodePipeline and its integration with SageMaker Experiments to manage the entire ML workflows. Use SageMaker Experiments for the running history of experiments and for auditing and compliance verifications.",
+        "is_correct": false
+      },
+      {
+        "id": 2199,
+        "text": "Use SageMaker Pipelines and its integration with SageMaker Studio to manage the entire ML workflows. Use SageMaker ML Lineage Tracking for the running history of experiments and for auditing and compliance verifications.",
+        "is_correct": true
+      },
+      {
+        "id": 2200,
+        "text": "Use SageMaker Pipelines and its integration with SageMaker Experiments to manage the entire ML workflows. Use SageMaker Experiments for the running history of experiments and for auditing and compliance verifications.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 544,
+    "text": "A company wants to reduce the cost of its containerized ML applications. The applications use ML models that run on Amazon EC2 instances, AWS Lambda functions, and an Amazon Elastic Container Service (Amazon ECS) cluster. The EC2 workloads and ECS workloads use Amazon Elastic Block Store (Amazon EBS) volumes to save predictions and artifacts.\n\nAn ML engineer must identify resources that are being used inefficiently. The ML engineer also must generate recommendations to reduce the cost of these resources.\n\nWhich solution will meet these requirements with the LEAST development effort?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2201,
+        "text": "Create code to evaluate each instance's memory and compute usage.",
+        "is_correct": false
+      },
+      {
+        "id": 2202,
+        "text": "Add cost allocation tags to the resources. Activate the tags in AWS Billing and Cost Management.",
+        "is_correct": false
+      },
+      {
+        "id": 2203,
+        "text": "Check AWS CloudTrail event history for the creation of the resources.",
+        "is_correct": false
+      },
+      {
+        "id": 2204,
+        "text": "Run AWS Compute Optimizer.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 545,
+    "text": "A company needs to create a central catalog for all the company's ML models. The models are in AWS accounts where the company developed the models initially. The models are hosted in Amazon Elastic Container Registry (Amazon ECR) repositories.\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2205,
+        "text": "Configure ECR cross-account replication for each existing ECR repository. Ensure that each model is visible in each AWS account.",
+        "is_correct": false
+      },
+      {
+        "id": 2206,
+        "text": "Create a new AWS account with a new ECR repository as the central catalog. Configure ECR cross-account replication between the initial ECR repositories and the central catalog.",
+        "is_correct": false
+      },
+      {
+        "id": 2207,
+        "text": "Use the Amazon SageMaker Model Registry to create a model group for models hosted in Amazon ECR. Create a new AWS account. In the new account, use the SageMaker Model Registry as the central catalog. Attach a cross-account resource policy to each model group in the initial AWS accounts.",
+        "is_correct": true
+      },
+      {
+        "id": 2208,
+        "text": "Use an AWS Glue Data Catalog to store the models. Run an AWS Glue crawler to migrate the models from the ECR repositories to the Data Catalog. Configure cross-account access to the Data Catalog.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 546,
+    "text": "A company has developed a new ML model. The company requires online model validation on 10% of the traffic before the company fully releases the model in production. The company uses an Amazon SageMaker endpoint behind an Application Load Balancer (ALB) to serve the model.\n\nWhich solution will set up the required online validation with the LEAST operational overhead?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2209,
+        "text": "Use production variants to add the new model to the existing SageMaker endpoint. Set the variant weight to 0.1 for the new model. Monitor the number of invocations by using Amazon CloudWatch.",
+        "is_correct": true
+      },
+      {
+        "id": 2210,
+        "text": "Use production variants to add the new model to the existing SageMaker endpoint. Set the variant weight to 1 for the new model. Monitor the number of invocations by using Amazon CloudWatch.",
+        "is_correct": false
+      },
+      {
+        "id": 2211,
+        "text": "Create a new SageMaker endpoint. Use production variants to add the new model to the new endpoint. Monitor the number of invocations by using Amazon CloudWatch.",
+        "is_correct": false
+      },
+      {
+        "id": 2212,
+        "text": "Configure the ALB to route 10% of the traffic to the new model at the existing SageMaker endpoint. Monitor the number of invocations by using AWS CloudTrail.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 547,
+    "text": "A company needs to develop an ML model. The model must identify an item in an image and must provide the location of the item.\n\n\n\nWhich Amazon SageMaker algorithm will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2213,
+        "text": "Image classification",
+        "is_correct": false
+      },
+      {
+        "id": 2214,
+        "text": "XGBoost",
+        "is_correct": false
+      },
+      {
+        "id": 2215,
+        "text": "Object detection",
+        "is_correct": true
+      },
+      {
+        "id": 2216,
+        "text": "K-nearest neighbors (k-NN)",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 548,
+    "text": "A company has an Amazon S3 bucket that contains 1 ТВ of files from different sources. The S3 bucket contains the following file types in the same S3 folder: CSV, JSON, XLSX, and Apache Parquet.\n\n\n\nAn ML engineer must implement a solution that uses AWS Glue DataBrew to process the data. The ML engineer also must store the final output in Amazon S3 so that AWS Glue can consume the output in the future.\n\n\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2217,
+        "text": "Use DataBrew to process the existing S3 folder. Store the output in Apache Parquet format.",
+        "is_correct": false
+      },
+      {
+        "id": 2218,
+        "text": "Use DataBrew to process the existing S3 folder. Store the output in AWS Glue Parquet format.",
+        "is_correct": false
+      },
+      {
+        "id": 2219,
+        "text": "Separate the data into a different folder for each file type. Use DataBrew to process each folder individually. Store the output in Apache Parquet format.",
+        "is_correct": true
+      },
+      {
+        "id": 2220,
+        "text": "Separate the data into a different folder for each file type. Use DataBrew to process each folder individually. Store the output in AWS Glue Parquet format.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 549,
+    "text": "A manufacturing company uses an ML model to determine whether products meet a standard for quality. The model produces an output of \"Passed\" or \"Failed.\" Robots separate the products into the two categories by using the model to analyze photos on the assembly line.\n\n\n\nWhich metrics should the company use to evaluate the model's performance? (Choose two.)",
+    "explanation": "",
+    "question_type": "multiple",
+    "answers": [
+      {
+        "id": 2221,
+        "text": "Precision and recall",
+        "is_correct": true
+      },
+      {
+        "id": 2222,
+        "text": "Root mean square error (RMSE) and mean absolute percentage error (MAPE)",
+        "is_correct": false
+      },
+      {
+        "id": 2223,
+        "text": "Accuracy and F1 score",
+        "is_correct": true
+      },
+      {
+        "id": 2224,
+        "text": "Bilingual Evaluation Understudy (BLEU) score",
+        "is_correct": false
+      },
+      {
+        "id": 2225,
+        "text": "Perplexity",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 550,
+    "text": "An ML engineer needs to encrypt all data in transit when an ML training job runs. The ML engineer must ensure that encryption in transit is applied to processes that Amazon SageMaker uses during the training job.\n\n\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2226,
+        "text": "Encrypt communication between nodes for batch processing.",
+        "is_correct": false
+      },
+      {
+        "id": 2227,
+        "text": "Encrypt communication between nodes in a training cluster.",
+        "is_correct": true
+      },
+      {
+        "id": 2228,
+        "text": "Specify an AWS Key Management Service (AWS KMS) key during creation of the training job request.",
+        "is_correct": false
+      },
+      {
+        "id": 2229,
+        "text": "Specify an AWS Key Management Service (AWS KMS) key during creation of the SageMaker domain.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 551,
+    "text": "An ML engineer needs to use metrics to assess the quality of a time-series forecasting model.\n\n\n\nWhich metrics apply to this model? (Choose two.)",
+    "explanation": "",
+    "question_type": "multiple",
+    "answers": [
+      {
+        "id": 2230,
+        "text": "Recall",
+        "is_correct": false
+      },
+      {
+        "id": 2231,
+        "text": "LogLoss",
+        "is_correct": false
+      },
+      {
+        "id": 2232,
+        "text": "Root mean square error (RMSE)",
+        "is_correct": true
+      },
+      {
+        "id": 2233,
+        "text": "InferenceLatency",
+        "is_correct": false
+      },
+      {
+        "id": 2234,
+        "text": "Average weighted quantile loss (wQL)",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 552,
+    "text": "A company runs Amazon SageMaker ML models that use accelerated instances. The models require real-time responses. Each model has different scaling requirements. The company must not allow a cold start for the models.\n\n\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2235,
+        "text": "Create a SageMaker Serverless Inference endpoint for each model. Use provisioned concurrency for the endpoints.",
+        "is_correct": false
+      },
+      {
+        "id": 2236,
+        "text": "Create a SageMaker Asynchronous Inference endpoint for each model. Create an auto scaling policy for each endpoint.",
+        "is_correct": false
+      },
+      {
+        "id": 2237,
+        "text": "Create a SageMaker endpoint. Create an inference component for each model. In the inference component settings, specify the newly created endpoint. Create an auto scaling policy for each inference component. Set the parameter for the minimum number of copies to at least 1.",
+        "is_correct": true
+      },
+      {
+        "id": 2238,
+        "text": "Create an Amazon S3 bucket. Store all the model artifacts in the S3 bucket. Create a SageMaker multi-model endpoint. Point the endpoint to the S3 bucket. Create an auto scaling policy for the endpoint. Set the parameter for the minimum number of copies to at least 1.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 553,
+    "text": "A company uses Amazon SageMaker for its ML process. A compliance audit discovers that an Amazon S3 bucket for training data uses server-side encryption with S3 managed keys (SSE-S3).\n\n\n\nThe company requires customer managed keys. An ML engineer changes the S3 bucket to use server-side encryption with AWS KMS keys (SSE-KMS). The ML engineer makes no other configuration changes.\n\n\n\nAfter the change to the encryption settings, SageMaker training jobs start to fail with AccessDenied errors.\n\n\n\nWhat should the ML engineer do to resolve this problem?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2239,
+        "text": "Update the IAM policy that is attached to the execution role for the training jobs. Include the s3:ListBucket and s3:GetObject permissions.",
+        "is_correct": false
+      },
+      {
+        "id": 2240,
+        "text": "Update the S3 bucket policy that is attached to the S3 bucket. Set the value of the aws:SecureTransport condition key to True.",
+        "is_correct": false
+      },
+      {
+        "id": 2241,
+        "text": "Update the IAM policy that is attached to the execution role for the training jobs. Include the kms:Encrypt and kms:Decrypt permissions.",
+        "is_correct": true
+      },
+      {
+        "id": 2242,
+        "text": "Update the IAM policy that is attached to the user that created the training jobs. Include the kms:CreateGrant permission.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 554,
+    "text": "A company runs training jobs on Amazon SageMaker by using a compute optimized instance. Demand for training runs will remain constant for the next 55 weeks. The instance needs to run for 35 hours each week. The company needs to reduce its model training costs.\n\n\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2243,
+        "text": "Use a serverless endpoint with a provisioned concurrency of 35 hours for each week. Run the training on the endpoint.",
+        "is_correct": false
+      },
+      {
+        "id": 2244,
+        "text": "Use SageMaker Edge Manager for the training. Specify the instance requirement in the edge device configuration. Run the training.",
+        "is_correct": false
+      },
+      {
+        "id": 2245,
+        "text": "Use the heterogeneous cluster feature of SageMaker Training. Configure the instance_type, instance_count, and instance_groups arguments to run training jobs.",
+        "is_correct": false
+      },
+      {
+        "id": 2246,
+        "text": "Opt in to a SageMaker Savings Plan with a 1-year term and an All Upfront payment. Run a SageMaker Training job on the instance.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 555,
+    "text": "A company deployed an ML model that uses the XGBoost algorithm to predict product failures. The model is hosted on an Amazon SageMaker endpoint and is trained on normal operating data. An AWS Lambda function provides the predictions to the company's application.\n\n\n\nAn ML engineer must implement a solution that uses incoming live data to detect decreased model accuracy over time.\n\n\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2247,
+        "text": "Use Amazon CloudWatch to create a dashboard that monitors real-time inference data and model predictions. Use the dashboard to detect drift.",
+        "is_correct": false
+      },
+      {
+        "id": 2248,
+        "text": "Modify the Lambda function to calculate model drift by using real-time inference data and model predictions. Program the Lambda function to send alerts.",
+        "is_correct": false
+      },
+      {
+        "id": 2249,
+        "text": "Schedule a monitoring job in SageMaker Model Monitor. Use the job to detect drift by analyzing the live data against a baseline of the training data statistics and constraints.",
+        "is_correct": true
+      },
+      {
+        "id": 2250,
+        "text": "Schedule a monitoring job in SageMaker Debugger. Use the job to detect drift by analyzing the live data against a baseline of the training data statistics and constraints.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 556,
+    "text": "A company has an ML model that uses historical transaction data to predict customer behavior. An ML engineer is optimizing the model in Amazon SageMaker to enhance the model's predictive accuracy. The ML engineer must examine the input data and the resulting predictions to identify trends that could skew the model's performance across different demographics.\n\n\n\nWhich solution will provide this level of analysis?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2251,
+        "text": "Use Amazon CloudWatch to monitor network metrics and CPU metrics for resource optimization during model training.",
+        "is_correct": false
+      },
+      {
+        "id": 2252,
+        "text": "Create AWS Glue DataBrew recipes to correct the data based on statistics from the model output.",
+        "is_correct": false
+      },
+      {
+        "id": 2253,
+        "text": "Use SageMaker Clarify to evaluate the model and training data for underlying patterns that might affect accuracy.",
+        "is_correct": true
+      },
+      {
+        "id": 2254,
+        "text": "Create AWS Lambda functions to automate data pre-processing and to ensure consistent quality of input data for the model.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 557,
+    "text": "A company uses 10 Reserved Instances of accelerated instance types to serve the current version of an ML model. An ML engineer needs to deploy a new version of the model to an Amazon SageMaker real-time inference endpoint.\n\n\n\nThe solution must use the original 10 instances to serve both versions of the model. The solution also must include one additional Reserved Instance that is available to use in the deployment process. The transition between versions must occur with no downtime or service interruptions.\n\n\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2255,
+        "text": "Configure a blue/green deployment with all-at-once traffic shifting.",
+        "is_correct": false
+      },
+      {
+        "id": 2256,
+        "text": "Configure a blue/green deployment with canary traffic shifting and a size of 10%.",
+        "is_correct": false
+      },
+      {
+        "id": 2257,
+        "text": "Configure a shadow test with a traffic sampling percentage of 10%.",
+        "is_correct": false
+      },
+      {
+        "id": 2258,
+        "text": "Configure a rolling deployment with a rolling batch size of 1.",
+        "is_correct": true
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 558,
+    "text": "An IoT company uses Amazon SageMaker to train and test an XGBoost model for object detection. ML engineers need to monitor performance metrics when they train the model with variants in hyperparameters. The ML engineers also need to send Short Message Service (SMS) text messages after training is complete.\n\n\n\nWhich solution will meet these requirements?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2259,
+        "text": "Use Amazon CloudWatch to monitor performance metrics. Use Amazon Simple Queue Service (Amazon SQS) for message delivery.",
+        "is_correct": false
+      },
+      {
+        "id": 2260,
+        "text": "Use Amazon CloudWatch to monitor performance metrics. Use Amazon Simple Notification Service (Amazon SNS) for message delivery.",
+        "is_correct": true
+      },
+      {
+        "id": 2261,
+        "text": "Use AWS CloudTrail to monitor performance metrics. Use Amazon Simple Queue Service (Amazon SQS) for message delivery.",
+        "is_correct": false
+      },
+      {
+        "id": 2262,
+        "text": "Use AWS CloudTrail to monitor performance metrics. Use Amazon Simple Notification Service (Amazon SNS) for message delivery.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  },
+  {
+    "id": 559,
+    "text": "A company is working on an ML project that will include Amazon SageMaker notebook instances. An ML engineer must ensure that the SageMaker notebook instances do not allow root access.\n\n\n\nWhich solution will prevent the deployment of notebook instances that allow root access?",
+    "explanation": "",
+    "question_type": "single",
+    "answers": [
+      {
+        "id": 2263,
+        "text": "Use IAM condition keys to stop deployments of SageMaker notebook instances that allow root access.",
+        "is_correct": true
+      },
+      {
+        "id": 2264,
+        "text": "Use AWS Key Management Service (AWS KMS) keys to stop deployments of SageMaker notebook instances that allow root access.",
+        "is_correct": false
+      },
+      {
+        "id": 2265,
+        "text": "Monitor resource creation by using Amazon EventBridge events. Create an AWS Lambda function that deletes all deployed SageMaker notebook instances that allow root access.",
+        "is_correct": false
+      },
+      {
+        "id": 2266,
+        "text": "Monitor resource creation by using AWS CloudFormation events. Create an AWS Lambda function that deletes all deployed SageMaker notebook instances that allow root access.",
+        "is_correct": false
+      }
+    ],
+    "comment_count": 0
+  }
+]
