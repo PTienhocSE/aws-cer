@@ -57,7 +57,7 @@ async function fetchDomains() {
 export default function HomePage() {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { user, setUser } = useAuthStore();
+  const { user, hydrated, setUser } = useAuthStore();
   const [courseDropdownOpen, setCourseDropdownOpen] = useState(false);
 
   const { data: banksData } = useQuery({
@@ -140,8 +140,20 @@ export default function HomePage() {
     }
   };
 
-  // If user is authenticated AND has overview, render FULL Rich Dashboard view
-  if (user && overview) {
+  // Wait for auth to resolve before rendering — prevents landing page flash
+  if (!hydrated) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="flex flex-col items-center space-y-3">
+          <div className="w-10 h-10 border-4 border-amber-500 border-t-transparent rounded-full animate-spin" />
+          <p className="text-sm font-semibold text-slate-500">Đang tải...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If user is authenticated, render FULL Rich Dashboard view (overview can be null/loading)
+  if (user) {
     const stats = overview?.stats || {
       totalQuestions: 950,
       totalAnswered: 0,

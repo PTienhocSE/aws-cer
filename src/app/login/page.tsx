@@ -35,6 +35,7 @@ export default function LoginPage() {
       setUser(data.user);
       toast.success('Đăng nhập thành công! Chào mừng bạn quay trở lại.');
       router.push('/');
+      router.refresh();
     } catch (err: any) {
       setError(err.message);
       toast.error(err.message || 'Đăng nhập thất bại');

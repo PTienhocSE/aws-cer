@@ -7,6 +7,7 @@ import { useAuthStore } from '@/store/authStore';
 
 function AuthInitializer() {
   const setUser = useAuthStore((state) => state.setUser);
+  const setHydrated = useAuthStore((state) => state.setHydrated);
 
   useEffect(() => {
     fetch('/api/auth/me')
@@ -22,10 +23,12 @@ function AuthInitializer() {
         }
       })
       .catch(() => {
-        // Token invalid or expired: reset user state silently
         setUser(null);
+      })
+      .finally(() => {
+        setHydrated(true);
       });
-  }, [setUser]);
+  }, [setUser, setHydrated]);
 
   return null;
 }
