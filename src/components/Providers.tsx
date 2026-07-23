@@ -41,6 +41,20 @@ export default function Providers({ children }: { children: React.ReactNode }) {
           queries: {
             staleTime: 60 * 1000,
             refetchOnWindowFocus: false,
+            retry: (failureCount, error: any) => {
+              if (error?.status === 401 || error?.message?.includes('401')) return false;
+              return failureCount < 2;
+            },
+          },
+          mutations: {
+            onError: (error: any) => {
+              if (error?.status === 401 || error?.message?.includes('401') || error?.message?.includes('Chưa đăng nhập')) {
+                useAuthStore.getState().logout();
+                if (typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+                  window.location.href = '/login';
+                }
+              }
+            },
           },
         },
       })
