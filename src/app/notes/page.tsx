@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import Link from 'next/link';
 import { FileText, Trash2, Search, Edit3, Save, ExternalLink } from 'lucide-react';
+import QuestionDetailModal from '@/components/QuestionDetailModal';
 
 async function fetchNotes({ domainId, search }: any) {
   const params = new URLSearchParams();
@@ -64,6 +65,8 @@ export default function NotesPage() {
     },
   });
 
+  const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null);
+
   return (
     <div className="space-y-6 pb-12">
       <div>
@@ -108,7 +111,11 @@ export default function NotesPage() {
       ) : (
         <div className="space-y-4">
           {data?.notes?.map((n: any) => (
-            <div key={n.id} className="card-saas p-5 space-y-3">
+            <div
+              key={n.id}
+              onClick={() => setSelectedQuestionId(n.questionId)}
+              className="card-saas p-5 space-y-3 cursor-pointer hover:border-amber-400/80 hover:shadow-md transition-all group"
+            >
               <div className="flex justify-between items-start">
                 <div className="flex items-center space-x-2">
                   <span className="text-[11px] font-bold px-2.5 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded">
@@ -119,7 +126,7 @@ export default function NotesPage() {
                   </span>
                 </div>
 
-                <div className="flex space-x-2">
+                <div className="flex space-x-2" onClick={(e) => e.stopPropagation()}>
                   <button
                     onClick={() => {
                       setEditingId(n.id);
@@ -141,13 +148,16 @@ export default function NotesPage() {
               </div>
 
               {/* Question snippet */}
-              <p className="text-xs font-bold text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100">
-                Câu hỏi: {n.question.questionText}
-              </p>
+              <div className="text-xs font-bold text-slate-700 bg-slate-50 p-3 rounded-lg border border-slate-100 flex justify-between items-center">
+                <span>Câu hỏi: {n.question.questionText}</span>
+                <span className="text-amber-600 font-extrabold text-[11px] group-hover:underline shrink-0 ml-2">
+                  Xem chi tiết câu hỏi →
+                </span>
+              </div>
 
               {/* Note Content */}
               {editingId === n.id ? (
-                <div className="space-y-2">
+                <div className="space-y-2" onClick={(e) => e.stopPropagation()}>
                   <textarea
                     value={editingContent}
                     onChange={(e) => setEditingContent(e.target.value)}
@@ -183,6 +193,12 @@ export default function NotesPage() {
           ))}
         </div>
       )}
+
+      {/* Question Detail Modal */}
+      <QuestionDetailModal
+        questionId={selectedQuestionId}
+        onClose={() => setSelectedQuestionId(null)}
+      />
     </div>
   );
 }

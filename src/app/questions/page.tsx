@@ -24,6 +24,7 @@ import {
 import QuestionNoteBox from '@/components/QuestionNoteBox';
 import HighlightableText from '@/components/HighlightableText';
 import MarkdownExplanation from '@/components/MarkdownExplanation';
+import QuestionDetailModal from '@/components/QuestionDetailModal';
 
 async function fetchQuestions({ domainId, difficulty, status, search, page }: any) {
   const params = new URLSearchParams();
@@ -353,150 +354,11 @@ export default function QuestionBankPage() {
         </div>
       )}
 
-      {/* Interactive Question Detail Modal using React Portal directly into document.body */}
-      {mounted && selectedQuestionId && createPortal(
-        <div
-          onClick={() => setSelectedQuestionId(null)}
-          className="fixed top-0 left-0 right-0 bottom-0 inset-0 z-[9999] bg-slate-950/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto m-0"
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="bg-white max-w-3xl w-full rounded-3xl shadow-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col my-auto"
-          >
-            {/* Modal Header */}
-            <div className="px-5 py-3.5 border-b border-slate-100 flex justify-between items-center bg-slate-50/90 gap-2">
-              <div className="flex flex-wrap items-center gap-2 min-w-0">
-                <span className="text-xs font-extrabold px-3 py-1 bg-amber-500 text-slate-950 rounded-lg whitespace-nowrap shrink-0">
-                  Câu #{selectedQuestion?.rawId || 'Chi tiết'}
-                </span>
-                {selectedQuestion && (
-                  <span className="text-xs font-extrabold px-2.5 py-1 bg-slate-200 text-slate-800 rounded-lg whitespace-nowrap shrink-0 truncate max-w-[200px] sm:max-w-none">
-                    {selectedQuestion.domainName}
-                  </span>
-                )}
-              </div>
-
-              <div className="flex items-center space-x-2 shrink-0">
-                {selectedQuestion && (
-                  <button
-                    onClick={() => toggleBookmarkMutation.mutate(selectedQuestion.id)}
-                    className={`p-2 rounded-xl border transition ${
-                      selectedQuestion.isBookmarked
-                        ? 'bg-amber-50 border-amber-300 text-amber-600'
-                        : 'bg-white border-slate-200 text-slate-400 hover:text-amber-500'
-                    }`}
-                    title="Đánh dấu câu hỏi"
-                  >
-                    <Bookmark className={`w-4 h-4 ${selectedQuestion.isBookmarked ? 'fill-amber-500' : ''}`} />
-                  </button>
-                )}
-
-                <button
-                  onClick={() => setSelectedQuestionId(null)}
-                  className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-200/80 rounded-xl transition"
-                  title="Đóng cửa sổ"
-                >
-                  <X className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
-
-            {/* Modal Content Scroll Area */}
-            <div className="p-5 sm:p-6 overflow-y-auto space-y-6 flex-1">
-              {isDetailLoading || !selectedQuestion ? (
-                <div className="py-12 text-center text-slate-400 text-sm font-semibold">
-                  Đang tải chi tiết câu hỏi...
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {/* Question Text with Interactive Highlightable Text */}
-                  <div className="space-y-2">
-                    <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center">
-                      <Highlighter className="w-3.5 h-3.5 mr-1 text-pink-500" /> Tô màu Highlight (Bôi đen từ khóa để tô màu):
-                    </div>
-                    <div className="p-4 bg-slate-50 border border-slate-200/90 rounded-2xl">
-                      <HighlightableText
-                        questionId={selectedQuestion.id}
-                        text={selectedQuestion.questionText}
-                        highlights={selectedQuestion.highlights}
-                        onHighlightCreated={() => {
-                          queryClient.invalidateQueries({ queryKey: ['questionDetail', selectedQuestion.id] });
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Options List */}
-                  <div className="space-y-2.5">
-                    <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400">
-                      Danh sách Đáp án:
-                    </div>
-                    <div className="space-y-2">
-                      {selectedQuestion.options.map((opt: any, idx: number) => {
-                        const letter = String.fromCharCode(65 + idx);
-                        const isCorrect = opt.isCorrect;
-
-                        return (
-                          <div
-                            key={opt.id}
-                            className={`p-3.5 rounded-2xl border text-xs sm:text-sm font-medium flex items-start space-x-3 ${
-                              isCorrect
-                                ? 'bg-emerald-50/90 border-emerald-300 text-emerald-950 font-bold'
-                                : 'bg-white border-slate-200 text-slate-700'
-                            }`}
-                          >
-                            <span
-                              className={`w-6 h-6 rounded-xl flex items-center justify-center font-extrabold text-xs shrink-0 ${
-                                isCorrect ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-600'
-                              }`}
-                            >
-                              {letter}
-                            </span>
-                            <div className="flex-1">
-                              <span>{opt.text}</span>
-                              {isCorrect && (
-                                <span className="ml-2 text-xs text-emerald-700 font-extrabold">
-                                  ✓ Đáp án đúng
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-
-                  {/* Detailed Explanation Rendered with Markdown Component */}
-                  {selectedQuestion.explanationText && (
-                    <div className="space-y-2">
-                      <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-400 flex items-center">
-                        <Sparkles className="w-3.5 h-3.5 mr-1 text-amber-500" /> Giải thích chi tiết:
-                      </div>
-                      <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl">
-                        <MarkdownExplanation content={selectedQuestion.explanationText} theme="light" />
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Personal Auto-Saving Note Box */}
-                  <div className="pt-2">
-                    <QuestionNoteBox
-                      questionId={selectedQuestion.id}
-                      initialNote={selectedQuestion.userNote}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Modal Footer Tip Bar */}
-            <div className="px-5 py-2.5 border-t border-slate-100 bg-slate-50/90 text-center text-xs text-slate-500 font-medium">
-              Mẹo: Bạn có thể tô màu bôi đen từ khóa và ghi chú lưu tự động vào DB. Bấm biểu tượng ✖ góc trên để đóng.
-            </div>
-          </div>
-        </div>,
-        document.body
-      )}
+      {/* Interactive Question Detail Modal Component */}
+      <QuestionDetailModal
+        questionId={selectedQuestionId}
+        onClose={() => setSelectedQuestionId(null)}
+      />
     </div>
   );
 }

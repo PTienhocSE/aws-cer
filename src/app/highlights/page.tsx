@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Highlighter, Search, Trash2, BookOpen } from 'lucide-react';
+import QuestionDetailModal from '@/components/QuestionDetailModal';
 
 export default function HighlightsPage() {
   const queryClient = useQueryClient();
@@ -34,6 +35,8 @@ export default function HighlightsPage() {
       queryClient.invalidateQueries({ queryKey: ['userHighlights'] });
     },
   });
+
+  const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null);
 
   if (isLoading) {
     return <div className="py-20 text-center text-slate-500 font-semibold text-sm">Đang tải đoạn tô màu (Highlights)...</div>;
@@ -107,13 +110,20 @@ export default function HighlightsPage() {
                 : 'bg-pink-100 text-pink-950 border-pink-300';
 
             return (
-              <div key={h.id} className="card-saas p-5 space-y-3">
+              <div
+                key={h.id}
+                onClick={() => setSelectedQuestionId(h.questionId)}
+                className="card-saas p-5 space-y-3 cursor-pointer hover:border-amber-400/80 hover:shadow-md transition-all group"
+              >
                 <div className="flex justify-between items-center text-xs">
                   <span className={`font-extrabold px-2.5 py-0.5 rounded border ${colorBg}`}>
                     {h.color}
                   </span>
                   <button
-                    onClick={() => deleteHighlightMutation.mutate(h.id)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteHighlightMutation.mutate(h.id);
+                    }}
                     className="text-slate-400 hover:text-red-600 font-extrabold flex items-center"
                     title="Xóa highlight"
                   >
@@ -125,14 +135,23 @@ export default function HighlightsPage() {
                   "{h.selectedText}"
                 </div>
 
-                <div className="text-xs text-slate-500 border-t border-slate-100 pt-2 font-medium">
-                  <strong>Câu hỏi gốc:</strong> {h.question?.questionText}
+                <div className="text-xs text-slate-500 border-t border-slate-100 pt-2 font-medium flex justify-between items-center">
+                  <span><strong>Câu hỏi gốc:</strong> {h.question?.questionText}</span>
+                  <span className="text-amber-600 font-extrabold text-[11px] group-hover:underline shrink-0 ml-2">
+                    Xem chi tiết câu hỏi →
+                  </span>
                 </div>
               </div>
             );
           })}
         </div>
       )}
+
+      {/* Question Detail Modal */}
+      <QuestionDetailModal
+        questionId={selectedQuestionId}
+        onClose={() => setSelectedQuestionId(null)}
+      />
     </div>
   );
 }
