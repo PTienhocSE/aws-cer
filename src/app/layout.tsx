@@ -3,6 +3,7 @@ import './globals.css';
 import Providers from '@/components/Providers';
 import Navbar from '@/components/Navbar';
 import { SpeedInsights } from '@vercel/speed-insights/next';
+import { Analytics } from '@vercel/analytics/next';
 
 export const metadata: Metadata = {
   title: 'AWS Certification Study Platform',
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </main>
         </Providers>
         <SpeedInsights />
+        <Analytics />
       </body>
     </html>
   );
