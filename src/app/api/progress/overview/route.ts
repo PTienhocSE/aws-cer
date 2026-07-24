@@ -11,10 +11,39 @@ export async function GET(req: NextRequest) {
     }
 
     const userId = authUser.userId;
-    const bankId = authUser.activeQuestionBankId;
+    let bankId = authUser.activeQuestionBankId;
 
     if (!bankId) {
-      return NextResponse.json(null);
+      // Find user's first enrolled bank or any published bank
+      const enrolled = await prisma.userQuestionBankEnrollment.findFirst({
+        where: { userId },
+        orderBy: { enrolledAt: 'desc' },
+      });
+      if (enrolled) {
+        bankId = enrolled.questionBankId;
+      } else {
+        const defaultBank = await prisma.questionBank.findFirst({ where: { status: 'PUBLISHED' } });
+        bankId = defaultBank?.id || null;
+      }
+    }
+
+    if (!bankId) {
+      return NextResponse.json({
+        activeQuestionBankId: null,
+        activeCertification: null,
+        stats: {
+          totalQuestions: 0,
+          totalAnswered: 0,
+          accuracyRate: 0,
+          bookmarkedCount: 0,
+          notesCount: 0,
+          streakDays: 0,
+          longestStreak: 0,
+          todayCompleted: false,
+          lastMockExamScore: null,
+          lastMockExamPassed: null,
+        },
+      });
     }
 
     // Fetch Active Question Bank & Certification

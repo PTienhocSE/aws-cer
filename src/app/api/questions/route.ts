@@ -44,26 +44,27 @@ export async function GET(req: NextRequest) {
       where.progresses = { some: { userId } };
     }
 
-    const [total, questions, totalAnswered, totalUnanswered] = await Promise.all([
+    const [total, questions] = await Promise.all([
       prisma.question.count({ where }),
       prisma.question.findMany({
         where,
         skip,
         take: limit,
-        include: {
+        select: {
+          id: true,
+          rawId: true,
+          questionBankId: true,
+          domainId: true,
+          type: true,
+          difficulty: true,
+          questionText: true,
           options: { select: { id: true, text: true, isCorrect: true } },
           domain: { select: { id: true, code: true, name: true } },
-          bookmarks: { where: { userId } },
-          notes: { where: { userId } },
-          progresses: { where: { userId } },
+          bookmarks: { where: { userId }, select: { id: true } },
+          notes: { where: { userId }, select: { content: true } },
+          progresses: { where: { userId }, select: { masteryStatus: true, lastAnswerCorrect: true } },
         },
         orderBy: { createdAt: 'desc' },
-      }),
-      prisma.question.count({
-        where: { ...where, progresses: { some: { userId } } },
-      }),
-      prisma.question.count({
-        where: { ...where, progresses: { none: { userId } } },
       }),
     ]);
 
@@ -93,11 +94,6 @@ export async function GET(req: NextRequest) {
       total,
       page,
       totalPages: Math.ceil(total / limit),
-      counts: {
-        total,
-        answered: totalAnswered,
-        unanswered: totalUnanswered,
-      },
     });
   } catch (error) {
     console.error('Questions GET error:', error);

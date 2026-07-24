@@ -155,12 +155,12 @@ export default function HomePage() {
   // If user is authenticated, render FULL Rich Dashboard view (overview can be null/loading)
   if (user) {
     const stats = overview?.stats || {
-      totalQuestions: 950,
+      totalQuestions: 0,
       totalAnswered: 0,
       accuracyRate: 0,
       bookmarkedCount: 0,
       notesCount: 0,
-      streakDays: 3,
+      streakDays: 0,
       dailyTarget: 20,
       lastMockExamScore: null,
       lastMockExamPassed: null,
@@ -196,7 +196,9 @@ export default function HomePage() {
                     <span className="text-xs font-extrabold text-amber-300 truncate max-w-[180px] sm:max-w-[340px]">
                       {activeBankObj
                         ? `${activeBankObj.certification.code}: ${activeBankObj.name}`
-                        : 'AWS Certification Bank'}
+                        : overview?.activeCertification
+                        ? `${overview.activeCertification.code}: ${overview.activeCertification.bankName}`
+                        : 'Vui lòng chọn môn học'}
                     </span>
                     <ChevronDown className={`w-3.5 h-3.5 text-amber-400 transition-transform duration-200 shrink-0 ${courseDropdownOpen ? 'rotate-180' : ''}`} />
                   </button>

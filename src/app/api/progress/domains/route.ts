@@ -16,35 +16,52 @@ export async function GET(req: NextRequest) {
     }
 
     const domains = await prisma.domain.findMany({
-      where: {
-        questionBankId: activeBankId,
-      },
-      include: {
-        questions: {
-          select: {
-            id: true,
-            progresses: {
-              where: { userId },
-            },
-          },
+      where: { questionBankId: activeBankId },
+      orderBy: { code: 'asc' },
+      select: {
+        id: true,
+        code: true,
+        name: true,
+        weightPercentage: true,
+        _count: {
+          select: { questions: true },
         },
       },
-      orderBy: { code: 'asc' },
+    });
+
+    const userProgresses = await prisma.userQuestionProgress.findMany({
+      where: {
+        userId,
+        questionBankId: activeBankId,
+      },
+      select: {
+        questionId: true,
+        lastAnswerCorrect: true,
+        question: {
+          select: { domainId: true },
+        },
+      },
+    });
+
+    // Group progress by domainId in memory
+    const domainProgressMap: Record<string, { answeredCount: number; correctCount: number }> = {};
+    userProgresses.forEach((p) => {
+      const dId = p.question?.domainId;
+      if (!dId) return;
+      if (!domainProgressMap[dId]) {
+        domainProgressMap[dId] = { answeredCount: 0, correctCount: 0 };
+      }
+      domainProgressMap[dId].answeredCount++;
+      if (p.lastAnswerCorrect) {
+        domainProgressMap[dId].correctCount++;
+      }
     });
 
     const domainStats = domains.map((d) => {
-      const totalQuestions = d.questions.length;
-      let answeredCount = 0;
-      let correctCount = 0;
-
-      d.questions.forEach((q) => {
-        if (q.progresses.length > 0) {
-          answeredCount++;
-          if (q.progresses[0].lastAnswerCorrect) {
-            correctCount++;
-          }
-        }
-      });
+      const totalQuestions = d._count.questions;
+      const prog = domainProgressMap[d.id] || { answeredCount: 0, correctCount: 0 };
+      const answeredCount = prog.answeredCount;
+      const correctCount = prog.correctCount;
 
       const accuracy = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
       const completion = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
