@@ -46,48 +46,49 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Fetch Active Question Bank & Certification
-    const bank = await prisma.questionBank.findUnique({
-      where: { id: bankId },
-      include: { certification: true },
-    });
+    // Parallelize all DB queries using Promise.all to eliminate sequential DB roundtrips
+    const [bank, progresses, bookmarkedCount, notesCount, activities, latestExam] = await Promise.all([
+      prisma.questionBank.findUnique({
+        where: { id: bankId },
+        select: {
+          id: true,
+          name: true,
+          version: true,
+          totalQuestions: true,
+          certification: {
+            select: { id: true, name: true, code: true },
+          },
+        },
+      }),
+      prisma.userQuestionProgress.findMany({
+        where: { userId, questionBankId: bankId },
+        select: { lastAnswerCorrect: true },
+      }),
+      prisma.questionBookmark.count({
+        where: { userId, questionBankId: bankId },
+      }),
+      prisma.questionNote.count({
+        where: { userId, questionBankId: bankId },
+      }),
+      prisma.dailyStudyActivity.findMany({
+        where: { userId },
+        select: { activityDate: true, answeredQuestions: true },
+        orderBy: { activityDate: 'desc' },
+      }),
+      prisma.mockExamAttempt.findFirst({
+        where: { userId, questionBankId: bankId, isCompleted: true },
+        select: { score: true, isPassed: true },
+        orderBy: { submittedAt: 'desc' },
+      }),
+    ]);
 
-    const totalQuestions = bank ? bank.totalQuestions : await prisma.question.count();
-
-    // User progresses for active bank
-    const progresses = await prisma.userQuestionProgress.findMany({
-      where: { userId, questionBankId: bankId },
-    });
-
+    const totalQuestions = bank?.totalQuestions || 0;
     const totalAnswered = progresses.length;
     const correctCount = progresses.filter((p) => p.lastAnswerCorrect === true).length;
     const accuracyRate = totalAnswered > 0 ? Math.round((correctCount / totalAnswered) * 100) : 0;
 
-    const bookmarkedCount = await prisma.questionBookmark.count({
-      where: { userId, questionBankId: bankId },
-    });
-
-    const notesCount = await prisma.questionNote.count({
-      where: { userId, questionBankId: bankId },
-    });
-
-    // Real Study Activities & Streak Calculation
-    const activities = await prisma.dailyStudyActivity.findMany({
-      where: { userId },
-      orderBy: { activityDate: 'desc' },
-    });
-
     const todayStr = new Date().toISOString().split('T')[0];
-    const streakResult = calculateStreak(
-      activities.map((a) => ({ activityDate: a.activityDate, answeredQuestions: a.answeredQuestions })),
-      todayStr
-    );
-
-    // Latest Mock Exam Result
-    const latestExam = await prisma.mockExamAttempt.findFirst({
-      where: { userId, questionBankId: bankId, isCompleted: true },
-      orderBy: { submittedAt: 'desc' },
-    });
+    const streakResult = calculateStreak(activities, todayStr);
 
     return NextResponse.json({
       activeQuestionBankId: bankId,
