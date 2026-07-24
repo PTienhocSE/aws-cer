@@ -7,7 +7,21 @@ export async function GET(req: NextRequest) {
     const authUser = await getAuthUserOrDemo(req);
     if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
     const userId = authUser.userId;
-    const activeBankId = authUser.activeQuestionBankId || 'aws-saa-c03-v1';
+    let activeBankId = authUser.activeQuestionBankId;
+
+    if (!activeBankId) {
+      // Find user's first enrolled bank or any published bank
+      const enrolled = await prisma.userQuestionBankEnrollment.findFirst({
+        where: { userId },
+        orderBy: { enrolledAt: 'desc' },
+      });
+      if (enrolled) {
+        activeBankId = enrolled.questionBankId;
+      } else {
+        const defaultBank = await prisma.questionBank.findFirst({ where: { status: 'PUBLISHED' } });
+        activeBankId = defaultBank?.id || undefined;
+      }
+    }
 
     const { searchParams } = new URL(req.url);
     const domainId = searchParams.get('domainId');
@@ -18,9 +32,10 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get('limit') || '10', 10);
     const skip = (page - 1) * limit;
 
-    const where: any = {
-      questionBankId: activeBankId,
-    };
+    const where: any = {};
+    if (activeBankId) {
+      where.questionBankId = activeBankId;
+    }
 
     if (domainId) where.domainId = domainId;
     if (difficulty) where.difficulty = difficulty;
