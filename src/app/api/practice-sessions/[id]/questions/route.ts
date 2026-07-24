@@ -80,6 +80,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         userNote: noteMap.get(q.id) || null,
         isAnswered: !!answered,
         wasCorrect: answered?.isCorrect ?? null,
+        userSelectedOptionIds: answered?.selectedOptionIds ? JSON.parse(answered.selectedOptionIds) : [],
         options: q.options.map((opt, idx) => ({
           id: opt.id,
           key: String.fromCharCode(65 + idx), // A, B, C, D...

@@ -71,13 +71,13 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
 
     questionsData.questions.forEach((q: any, idx: number) => {
       if (q.isAnswered) {
-        // Rebuild state from DB — options with isCorrect are correct ones
         const correctIds = q.options
           .filter((o: any) => o.isCorrect)
           .map((o: any) => o.id);
+        const submittedIds = q.userSelectedOptionIds?.length > 0 ? q.userSelectedOptionIds : correctIds;
         initMap[q.id] = {
-          selectedOptionIds: correctIds, // show selected = correct for already-done questions
-          submittedOptionIds: correctIds,
+          selectedOptionIds: submittedIds,
+          submittedOptionIds: submittedIds,
           correctOptionIds: correctIds,
           isSubmitted: true,
           explanation: q.explanation || null,
@@ -207,7 +207,7 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
       const res = await fetch(`/api/questions/${questionId}/answers`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ selectedOptionIds, confidenceLevel }),
+        body: JSON.stringify({ selectedOptionIds, confidenceLevel, sessionId }),
       });
       if (!res.ok) throw new Error('Submit answer failed');
       return res.json();
