@@ -419,6 +419,9 @@ export default function QuestionBankPage() {
                         questionId={selectedQuestion.id}
                         text={selectedQuestion.questionText}
                         highlights={selectedQuestion.highlights}
+                        onHighlightCreated={() => {
+                          queryClient.invalidateQueries({ queryKey: ['questionDetail', selectedQuestion.id] });
+                        }}
                       />
                     </div>
                   </div>

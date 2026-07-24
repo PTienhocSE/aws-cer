@@ -64,8 +64,24 @@ export default function HighlightableText({
     }
   };
 
+  const [localHighlights, setLocalHighlights] = useState<Highlight[]>(highlights);
+
+  // Sync with prop changes
+  React.useEffect(() => {
+    setLocalHighlights(highlights);
+  }, [highlights]);
+
   const applyHighlight = async (color: string) => {
     if (!selectionRange) return;
+
+    const newHighlight: Highlight = {
+      id: 'temp-' + Date.now(),
+      selectedText: selectionRange.selectedText,
+      color,
+    };
+
+    // Optimistically update local state immediately so user sees highlight instantly
+    setLocalHighlights((prev) => [...prev, newHighlight]);
 
     try {
       await fetch(`/api/questions/${questionId}/highlights`, {
@@ -90,21 +106,22 @@ export default function HighlightableText({
 
   // Render text with highlight marks
   const renderHighlightedText = () => {
-    if (!highlights || highlights.length === 0) {
+    const activeHighlights = localHighlights && localHighlights.length > 0 ? localHighlights : highlights;
+    if (!activeHighlights || activeHighlights.length === 0) {
       return text;
     }
 
-    let parts = [text];
+    let parts: (string | React.ReactNode)[] = [text];
 
-    highlights.forEach((h) => {
+    activeHighlights.forEach((h) => {
       const colorBg =
         h.color === 'YELLOW'
-          ? 'bg-yellow-200/90 text-yellow-950 px-1 rounded'
+          ? 'bg-yellow-200/90 text-yellow-950 px-1 rounded font-medium'
           : h.color === 'BLUE'
-          ? 'bg-blue-200/90 text-blue-950 px-1 rounded'
+          ? 'bg-blue-200/90 text-blue-950 px-1 rounded font-medium'
           : h.color === 'GREEN'
-          ? 'bg-green-200/90 text-green-950 px-1 rounded'
-          : 'bg-pink-200/90 text-pink-950 px-1 rounded';
+          ? 'bg-green-200/90 text-green-950 px-1 rounded font-medium'
+          : 'bg-pink-200/90 text-pink-950 px-1 rounded font-medium';
 
       const newParts: (string | React.ReactNode)[] = [];
 
@@ -122,7 +139,7 @@ export default function HighlightableText({
 
           if (before) newParts.push(before);
           newParts.push(
-            <mark key={h.id} className={colorBg}>
+            <mark key={h.id || idx} className={colorBg}>
               {match}
             </mark>
           );
@@ -132,7 +149,7 @@ export default function HighlightableText({
         }
       });
 
-      parts = newParts as any;
+      parts = newParts;
     });
 
     return parts;

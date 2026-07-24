@@ -457,6 +457,9 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
                 questionId={currentQuestion.id}
                 text={currentQuestion.content}
                 highlights={currentQuestion.userHighlights}
+                onHighlightCreated={() => {
+                  queryClient.invalidateQueries({ queryKey: ['practiceQuestions', sessionId] });
+                }}
               />
             </div>
 
