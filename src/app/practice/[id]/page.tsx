@@ -149,17 +149,48 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
       if (!res.ok) throw new Error('Toggle bookmark failed');
       return res.json();
     },
-    onSuccess: (data) => {
+    onMutate: async () => {
+      // Optimistically update bookmark state in local query cache
+      if (!currentQuestion) return;
+      const nextState = !currentQuestion.isBookmarked;
       queryClient.setQueryData(['practiceQuestions', sessionId], (old: any) => {
         if (!old) return old;
         return {
           ...old,
           questions: old.questions.map((q: any) =>
-            q.id === currentQuestion.id ? { ...q, isBookmarked: data.bookmarked } : q
+            q.id === currentQuestion.id ? { ...q, isBookmarked: nextState } : q
           ),
         };
       });
-      toast.success(data.bookmarked ? 'Đã đánh dấu câu hỏi!' : 'Đã bỏ đánh dấu.');
+      return { previousState: currentQuestion.isBookmarked };
+    },
+    onSuccess: (data) => {
+      if (data?.isBookmarked !== undefined) {
+        queryClient.setQueryData(['practiceQuestions', sessionId], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            questions: old.questions.map((q: any) =>
+              q.id === currentQuestion.id ? { ...q, isBookmarked: data.isBookmarked } : q
+            ),
+          };
+        });
+        toast.success(data.isBookmarked ? 'Đã đánh dấu câu hỏi!' : 'Đã bỏ đánh dấu.');
+      }
+    },
+    onError: (err, variables, context: any) => {
+      if (currentQuestion && context?.previousState !== undefined) {
+        queryClient.setQueryData(['practiceQuestions', sessionId], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            questions: old.questions.map((q: any) =>
+              q.id === currentQuestion.id ? { ...q, isBookmarked: context.previousState } : q
+            ),
+          };
+        });
+      }
+      toast.error('Không thể lưu trạng thái đánh dấu.');
     },
   });
 
