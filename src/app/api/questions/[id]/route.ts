@@ -14,13 +14,21 @@ export async function GET(
 
     const question = await prisma.question.findUnique({
       where: { id: questionId },
-      include: {
+      select: {
+        id: true,
+        rawId: true,
+        questionBankId: true,
+        domainId: true,
+        type: true,
+        difficulty: true,
+        questionText: true,
+        explanationText: true,
         options: { select: { id: true, text: true, isCorrect: true } },
         domain: { select: { id: true, code: true, name: true } },
-        bookmarks: { where: { userId } },
-        notes: { where: { userId } },
+        bookmarks: { where: { userId }, select: { id: true } },
+        notes: { where: { userId }, select: { content: true } },
         highlights: { where: { userId } },
-        progresses: { where: { userId } },
+        progresses: { where: { userId }, select: { masteryStatus: true, lastAnswerCorrect: true } },
       },
     });
 
