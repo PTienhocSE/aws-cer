@@ -2,6 +2,8 @@
 
 import { useState, useEffect, useRef, useMemo } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/store/authStore';
 import { DocItem } from '@/lib/docsData';
 import {
   ChevronLeft,
@@ -250,8 +252,17 @@ export default function DocsViewer({
     return () => document.removeEventListener('mousedown', handleDocumentMouseDown);
   }, []);
 
+  const router = useRouter();
+  const { user } = useAuthStore();
+
   // Save Highlight to DB with Optimistic Update (0ms UI latency!)
   const handleSaveHighlight = async (color: string = 'AMBER') => {
+    if (!user) {
+      toast.error('Bạn cần đăng nhập để tô màu Highlight!');
+      router.push('/login');
+      return;
+    }
+
     if (!selectionState?.text) return;
     const text = selectionState.text;
     setSelectionState(null);
@@ -305,6 +316,12 @@ export default function DocsViewer({
 
   // Open Inline Note Popup (positioned right below selection)
   const handleOpenInlineNote = () => {
+    if (!user) {
+      toast.error('Bạn cần đăng nhập để tạo Ghi chú!');
+      router.push('/login');
+      return;
+    }
+
     if (!selectionState?.text) return;
     setInlineNoteState({
       text: selectionState.text,

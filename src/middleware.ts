@@ -10,6 +10,7 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/login') ||
     pathname.startsWith('/register') ||
     pathname.startsWith('/question-banks') ||
+    pathname.startsWith('/docs') ||
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next') ||
     pathname.includes('.');

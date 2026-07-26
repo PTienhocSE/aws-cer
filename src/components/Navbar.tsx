@@ -220,6 +220,14 @@ export default function Navbar() {
             ) : (
               /* Unauthenticated Guest Landing Page Nav Links */
               <nav className="hidden md:flex items-center space-x-6 text-xs sm:text-sm font-bold text-slate-600">
+                <Link
+                  href="/docs"
+                  className={`hover:text-slate-900 transition ${
+                    pathname.startsWith('/docs') ? 'text-slate-900 font-extrabold' : ''
+                  }`}
+                >
+                  Tài liệu SAA-C03
+                </Link>
                 <Link href="/question-banks" className="hover:text-slate-900 transition">
                   Bộ câu hỏi
                 </Link>
