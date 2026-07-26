@@ -28,8 +28,25 @@ model User {
   practiceSessions PracticeSession[]
   mockExamAttempts MockExamAttempt[]
   studyActivities  DailyStudyActivity[]
+  docAnnotations   DocAnnotation[]
 
   @@index([email])
+}
+
+model DocAnnotation {
+  id           String   @id @default(uuid())
+  userId       String
+  docSlug      String
+  type         String   @default("HIGHLIGHT") // "HIGHLIGHT" | "NOTE"
+  selectedText String
+  noteContent  String?
+  color        String   @default("AMBER") // "AMBER" | "INDIGO" | "PINK" | "EMERALD"
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, docSlug])
 }
 
 model Certification {
