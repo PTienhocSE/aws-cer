@@ -1,4 +1,4 @@
-# 🎓 AWS Solutions Architect Associate (SAA-C03) - Tài Liệu Ôn Thi
+# 🎓 AWS Solutions Architect Associate (SAA-C03) — Hướng dẫn sử dụng
 
 ## 📌 Giới Thiệu
 
@@ -226,4 +226,3 @@ Nếu có thắc mắc hoặc cần giải đáp thêm:
 8. Management & Governance (CloudWatch, CloudTrail, Config, X-Ray)
 9. Migration & Transfer (DataSync, Storage Gateway, Snow Family)
 10. Developer Tools (CodeCommit, CodeBuild, CodeDeploy, CodePipeline)
-

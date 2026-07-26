@@ -18,7 +18,7 @@ export const DOC_TREE: DocCategory[] = [
     title: '📌 Giới thiệu',
     icon: '📌',
     items: [
-      { slug: 'README', title: 'Hướng dẫn sử dụng (README)', filename: 'README.md', categoryTitle: 'Giới thiệu' },
+      { slug: 'README', title: 'Hướng dẫn sử dụng (README)', filename: '00-huong-dan-su-dung.md', categoryTitle: 'Giới thiệu' },
       { slug: '00-tong-quan-overview', title: 'Tổng quan SAA-C03', filename: '00-tong-quan-overview.md', categoryTitle: 'Giới thiệu' },
       { slug: 'SUMMARY', title: 'Tóm tắt tài liệu', filename: 'SUMMARY.md', categoryTitle: 'Giới thiệu' },
     ],
