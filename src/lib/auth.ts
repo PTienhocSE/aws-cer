@@ -8,12 +8,8 @@ const SECRET = new TextEncoder().encode(
 
 export async function signToken(payload: {
   userId: string;
-  email: string;
-  name?: string;
-  role: string;
-  activeQuestionBankId?: string | null;
 }) {
-  return new SignJWT({ ...payload })
+  return new SignJWT({ userId: payload.userId })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuedAt()
     .setExpirationTime('7d')
@@ -23,13 +19,7 @@ export async function signToken(payload: {
 async function verifyToken(token: string) {
   try {
     const { payload } = await jwtVerify(token, SECRET);
-    return payload as {
-      userId: string;
-      email: string;
-      name?: string;
-      role: string;
-      activeQuestionBankId?: string | null;
-    };
+    return payload as { userId: string };
   } catch {
     return null;
   }
@@ -45,12 +35,25 @@ export async function getAuthenticatedUser(req: NextRequest) {
   const payload = await verifyToken(token);
   if (!payload?.userId) return null;
 
+  const user = await prisma.user.findUnique({
+    where: { id: payload.userId },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      activeQuestionBankId: true,
+    },
+  });
+
+  if (!user) return null;
+
   return {
-    userId: payload.userId,
-    email: payload.email,
-    name: payload.name,
-    role: payload.role,
-    activeQuestionBankId: payload.activeQuestionBankId,
+    userId: user.id,
+    email: user.email,
+    name: user.name || undefined,
+    role: user.role,
+    activeQuestionBankId: user.activeQuestionBankId,
   };
 }
 

@@ -56,10 +56,6 @@ export async function POST(req: NextRequest) {
 
     const token = await signToken({
       userId: user.id,
-      email: user.email,
-      name: user.name || undefined,
-      role: user.role,
-      activeQuestionBankId: user.activeQuestionBankId,
     });
 
     const response = NextResponse.json({
@@ -68,7 +64,7 @@ export async function POST(req: NextRequest) {
         email: user.email,
         name: user.name,
         role: user.role,
-        activeQuestionBankId: user.activeQuestionBankId || 'aws-saa-c03-v1',
+        activeQuestionBankId: user.activeQuestionBankId,
       },
       token,
     });

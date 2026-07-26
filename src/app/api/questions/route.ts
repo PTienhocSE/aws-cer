@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
         activeBankId = enrolled.questionBankId;
       } else {
         const defaultBank = await prisma.questionBank.findFirst({ where: { status: 'PUBLISHED' } });
-        activeBankId = defaultBank?.id || undefined;
+        activeBankId = defaultBank?.id || null;
       }
     }
 
