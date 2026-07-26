@@ -576,6 +576,57 @@ export default function DocsViewer({
         </div>
       </div>
 
+      {/* Top Sequential Page Navigation */}
+      {(prevDoc || nextDoc) && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {prevDoc ? (
+            <Link
+              href={`/docs/${prevDoc.slug}`}
+              scroll
+              onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })}
+              className={`group px-3 py-2.5 rounded-xl border transition flex items-center gap-2 text-left ${
+                isDark
+                  ? 'border-slate-800 bg-[#090d16]/70 hover:border-amber-500'
+                  : 'border-slate-200/90 bg-slate-50/50 hover:border-amber-400 hover:bg-amber-50/40'
+              }`}
+            >
+              <ChevronLeft className="w-4 h-4 shrink-0 text-amber-500" />
+              <div className="min-w-0">
+                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Bài trước</div>
+                <div className={`text-[11px] font-black truncate ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                  {prevDoc.title}
+                </div>
+              </div>
+            </Link>
+          ) : (
+            <div className="hidden sm:block" />
+          )}
+
+          {nextDoc ? (
+            <Link
+              href={`/docs/${nextDoc.slug}`}
+              scroll
+              onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })}
+              className={`group px-3 py-2.5 rounded-xl border transition flex items-center justify-between gap-2 text-right ${
+                isDark
+                  ? 'border-slate-800 bg-[#090d16]/70 hover:border-amber-500'
+                  : 'border-slate-200/90 bg-slate-50/50 hover:border-amber-400 hover:bg-amber-50/40'
+              }`}
+            >
+              <div className="min-w-0 w-full">
+                <div className="text-[9px] font-bold uppercase tracking-wider text-slate-400">Bài tiếp theo</div>
+                <div className={`text-[11px] font-black truncate ${isDark ? 'text-slate-200' : 'text-slate-800'}`}>
+                  {nextDoc.title}
+                </div>
+              </div>
+              <ChevronRight className="w-4 h-4 shrink-0 text-amber-500" />
+            </Link>
+          ) : (
+            <div />
+          )}
+        </div>
+      )}
+
       {/* Main Markdown Content Area */}
       <article
         ref={articleRef}
@@ -798,6 +849,8 @@ export default function DocsViewer({
           {prevDoc ? (
             <Link
               href={`/docs/${prevDoc.slug}`}
+              scroll
+              onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })}
               className={`group p-4 rounded-xl border transition flex items-center space-x-3 text-left ${
                 isDark
                   ? 'border-slate-800 bg-[#090d16]/70 hover:border-amber-500 hover:bg-amber-950/20'
@@ -837,6 +890,8 @@ export default function DocsViewer({
           {nextDoc ? (
             <Link
               href={`/docs/${nextDoc.slug}`}
+              scroll
+              onClick={() => window.scrollTo({ top: 0, left: 0, behavior: 'auto' })}
               className={`group p-4 rounded-xl border transition flex items-center justify-between space-x-3 text-right ${
                 isDark
                   ? 'border-slate-800 bg-[#090d16]/70 hover:border-amber-500 hover:bg-amber-950/20'

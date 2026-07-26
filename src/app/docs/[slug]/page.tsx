@@ -30,6 +30,12 @@ export default function DocDetailPage({ params }: PageProps) {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMobileSidebarOpen(false);
+    setMobileTocOpen(false);
+    window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+  }, [slug]);
+
+  useEffect(() => {
     setMounted(true);
     const saved = localStorage.getItem('aws_docs_theme');
     if (saved === 'dark' || saved === 'light') {
