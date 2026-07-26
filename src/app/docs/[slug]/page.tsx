@@ -64,7 +64,7 @@ export default function DocDetailPage({ params }: PageProps) {
 
   return (
     <div
-      className={`w-full min-h-screen transition-colors duration-200 -mx-4 sm:-mx-6 lg:-mx-8 px-2.5 sm:px-6 lg:px-8 -my-6 py-3.5 sm:py-6 ${
+      className={`w-full max-w-full min-w-0 overflow-x-hidden min-h-screen transition-colors duration-200 -mx-4 sm:-mx-6 lg:-mx-8 px-2.5 sm:px-6 lg:px-8 -my-6 py-3.5 sm:py-6 ${
         isDark ? 'bg-[#0b0f19]' : 'bg-transparent'
       }`}
     >
@@ -111,7 +111,7 @@ export default function DocDetailPage({ params }: PageProps) {
         </aside>
 
         {/* Middle Column: Document Viewer (Flexible) */}
-        <section className="flex-1 min-w-0">
+        <section className="w-full flex-1 min-w-0 max-w-full">
           {isLoading ? (
             <div
               className={`border rounded-2xl p-12 text-center space-y-3 shadow-xs ${

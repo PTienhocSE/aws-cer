@@ -560,3 +560,41 @@ html.dark-theme body {
   white-space: nowrap !important;
 }
 
+@media (max-width: 640px) {
+  .doc-content,
+  .doc-content > div {
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .doc-content .doc-heading,
+  .doc-content p,
+  .doc-content li,
+  .doc-content blockquote {
+    max-width: 100%;
+    white-space: normal !important;
+    overflow-wrap: anywhere;
+    word-break: normal;
+  }
+
+  .doc-content .doc-h1 {
+    font-size: 1.4rem;
+    line-height: 1.35;
+  }
+
+  .doc-content .doc-h2 {
+    font-size: 1.2rem;
+    line-height: 1.4;
+  }
+
+  .doc-content .doc-h3 {
+    font-size: 1.05rem;
+    line-height: 1.45;
+  }
+
+  .doc-content code:not(pre code) {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+}

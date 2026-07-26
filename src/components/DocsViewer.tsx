@@ -515,7 +515,7 @@ export default function DocsViewer({
 
   return (
     <div
-      className={`border rounded-2xl shadow-sm p-3.5 sm:p-6 lg:p-8 space-y-6 transition-colors duration-200 relative ${
+      className={`w-full min-w-0 max-w-full overflow-hidden border rounded-2xl shadow-sm p-3.5 sm:p-6 lg:p-8 space-y-6 transition-colors duration-200 relative ${
         isDark ? 'bg-[#131c2e] border-slate-800 text-slate-200' : 'bg-white border-slate-200/90 text-slate-800'
       }`}
     >
@@ -583,9 +583,9 @@ export default function DocsViewer({
         onMouseUp={handleArticleMouseUp}
         onMouseMove={handleArticleMouseMove}
         onMouseLeave={handleArticleMouseLeave}
-        className={`doc-content ${isDark ? 'doc-dark-mode' : ''} prose max-w-none relative`}
+        className={`doc-content w-full min-w-0 max-w-full ${isDark ? 'doc-dark-mode' : ''} prose relative`}
       >
-        <div dangerouslySetInnerHTML={{ __html: annotatedHtml }} />
+        <div className="w-full min-w-0 max-w-full" dangerouslySetInnerHTML={{ __html: annotatedHtml }} />
       </article>
 
       {/* Floating Action Popup with Multi-Color Highlight Swatches */}
