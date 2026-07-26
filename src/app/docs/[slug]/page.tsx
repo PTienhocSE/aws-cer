@@ -64,7 +64,7 @@ export default function DocDetailPage({ params }: PageProps) {
 
   return (
     <div
-      className={`w-auto min-w-0 overflow-x-hidden min-h-screen transition-colors duration-200 -mx-4 sm:-mx-6 lg:-mx-8 px-2.5 sm:px-6 lg:px-8 -my-6 py-3.5 sm:py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-6 ${
+      className={`w-auto min-w-0 overflow-x-clip min-h-screen transition-colors duration-200 -mx-4 sm:-mx-6 lg:-mx-8 px-2.5 sm:px-6 lg:px-8 -my-6 py-3.5 sm:py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] md:pb-6 ${
         isDark ? 'bg-[#0b0f19]' : 'bg-transparent'
       }`}
     >
@@ -99,7 +99,7 @@ export default function DocDetailPage({ params }: PageProps) {
       <div className="flex flex-col lg:flex-row gap-6 items-start w-full">
         {/* Left Column: Navigation Sidebar (Desktop) */}
         <aside
-          className={`hidden lg:block shrink-0 sticky top-8 h-[calc(100vh-3rem)] transition-all duration-300 ${
+          className={`hidden lg:block shrink-0 sticky top-20 h-[calc(100vh-6rem)] transition-all duration-300 ${
             leftCollapsed ? 'w-12' : 'w-[270px] xl:w-[290px]'
           }`}
         >
@@ -159,7 +159,7 @@ export default function DocDetailPage({ params }: PageProps) {
 
         {/* Right Column: Table of Contents (Desktop) */}
         <aside
-          className={`hidden lg:block shrink-0 sticky top-8 h-[calc(100vh-3rem)] transition-all duration-300 ${
+          className={`hidden lg:block shrink-0 sticky top-20 h-[calc(100vh-6rem)] transition-all duration-300 ${
             rightCollapsed ? 'w-12' : 'w-[250px] xl:w-[270px]'
           }`}
         >
