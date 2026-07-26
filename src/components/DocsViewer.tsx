@@ -43,6 +43,49 @@ interface DocsViewerProps {
   slug: string;
 }
 
+// Helper function to map normalized search indices back to exact raw character positions in HTML text nodes
+function findRawMatchIndices(rawText: string, targetText: string): { start: number; end: number } | null {
+  const cleanTarget = targetText.trim();
+  if (!cleanTarget) return null;
+
+  // 1. Try exact match first on rawText
+  const exactIndex = rawText.toLowerCase().indexOf(cleanTarget.toLowerCase());
+  if (exactIndex !== -1) {
+    return { start: exactIndex, end: exactIndex + cleanTarget.length };
+  }
+
+  // 2. Build index map between normalized string and rawText to preserve exact raw character positions
+  let normalized = '';
+  const rawIndexMap: number[] = [];
+
+  let inWhitespace = false;
+  for (let i = 0; i < rawText.length; i++) {
+    const char = rawText[i];
+    if (/\s/.test(char)) {
+      if (!inWhitespace) {
+        normalized += ' ';
+        rawIndexMap.push(i);
+        inWhitespace = true;
+      }
+    } else {
+      normalized += char;
+      rawIndexMap.push(i);
+      inWhitespace = false;
+    }
+  }
+
+  const normTarget = cleanTarget.replace(/\s+/g, ' ');
+  const normMatchIndex = normalized.toLowerCase().indexOf(normTarget.toLowerCase());
+  if (normMatchIndex === -1) return null;
+
+  const normMatchEnd = normMatchIndex + normTarget.length;
+  const rawStart = rawIndexMap[normMatchIndex];
+  const lastNormIndex = normMatchEnd - 1;
+  const rawEnd = (lastNormIndex < rawIndexMap.length ? rawIndexMap[lastNormIndex] : rawText.length - 1) + 1;
+
+  return { start: rawStart, end: rawEnd };
+}
+
 // In-Memory DOM TreeWalker to produce a 100% stable annotated HTML string for React's dangerouslySetInnerHTML
 function parseAndAnnotateHtml(rawHtml: string, annotationsList: DocAnnotationItem[]): string {
   if (!rawHtml || !annotationsList || annotationsList.length === 0) {
@@ -79,13 +122,10 @@ function parseAndAnnotateHtml(rawHtml: string, annotationsList: DocAnnotationIte
         offsets.push({ node: tNode, start, end });
       }
 
-      const normalizedFull = fullText.replace(/\s+/g, ' ');
-      const normalizedTarget = targetText.replace(/\s+/g, ' ');
-      const matchIndex = normalizedFull.toLowerCase().indexOf(normalizedTarget.toLowerCase());
+      const matchRange = findRawMatchIndices(fullText, targetText);
+      if (!matchRange) return;
 
-      if (matchIndex === -1) return;
-
-      const matchEnd = matchIndex + normalizedTarget.length;
+      const { start: matchIndex, end: matchEnd } = matchRange;
 
       const matchingNodes = offsets.filter(
         (o) => o.end > matchIndex && o.start < matchEnd
