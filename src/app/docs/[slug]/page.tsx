@@ -64,30 +64,30 @@ export default function DocDetailPage({ params }: PageProps) {
 
   return (
     <div
-      className={`w-full min-h-screen transition-colors duration-200 -mx-4 sm:-mx-6 lg:-mx-8 px-4 sm:px-6 lg:px-8 -my-6 py-6 ${
+      className={`w-full min-h-screen transition-colors duration-200 -mx-4 sm:-mx-6 lg:-mx-8 px-2.5 sm:px-6 lg:px-8 -my-6 py-3.5 sm:py-6 ${
         isDark ? 'bg-[#0b0f19]' : 'bg-transparent'
       }`}
     >
       {/* Mobile Header Bar for Toggles */}
       <div
-        className={`lg:hidden flex items-center justify-between border rounded-xl p-3 mb-4 shadow-xs ${
+        className={`lg:hidden flex items-center justify-between border rounded-xl p-2.5 mb-3 shadow-xs ${
           isDark ? 'bg-[#131c2e] border-slate-800' : 'bg-white border-slate-200'
         }`}
       >
         <button
           onClick={() => setMobileSidebarOpen(true)}
-          className={`flex items-center text-xs font-bold px-3 py-1.5 rounded-lg ${
-            isDark ? 'text-slate-200 bg-slate-800' : 'text-slate-700 bg-slate-100 hover:text-slate-900'
+          className={`flex items-center text-xs font-extrabold px-3 py-1.5 rounded-lg border transition ${
+            isDark ? 'text-slate-200 bg-[#090d16] border-slate-800' : 'text-slate-700 bg-slate-50 border-slate-200'
           }`}
         >
           <Menu className="w-4 h-4 mr-1.5 text-amber-500" />
-          <span>Danh mục bài học</span>
+          <span>Danh mục bài</span>
         </button>
 
         <button
           onClick={() => setMobileTocOpen(true)}
-          className={`flex items-center text-xs font-bold px-3 py-1.5 rounded-lg ${
-            isDark ? 'text-slate-200 bg-slate-800' : 'text-slate-700 bg-slate-100 hover:text-slate-900'
+          className={`flex items-center text-xs font-extrabold px-3 py-1.5 rounded-lg border transition ${
+            isDark ? 'text-slate-200 bg-[#090d16] border-slate-800' : 'text-slate-700 bg-slate-50 border-slate-200'
           }`}
         >
           <List className="w-4 h-4 mr-1.5 text-indigo-400" />

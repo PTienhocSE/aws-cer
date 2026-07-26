@@ -70,12 +70,12 @@ export default function Navbar() {
     <>
       {/* Top Fixed Header */}
       <header className="sticky top-0 z-50 glass-nav border-b border-slate-200/80 shadow-xs">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-[1600px] mx-auto px-3 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
             {/* Left: AWS Circular Logo Container */}
             <div className="flex items-center space-x-2.5 sm:space-x-4">
               <Link href="/" className="flex items-center space-x-2 group">
-                <div className="w-9 h-9 sm:w-10 sm:h-10 bg-amber-500 rounded-full flex items-center justify-center p-2 shadow-md shadow-amber-500/25 group-hover:scale-105 transition-transform shrink-0">
+                <div className="w-8.5 h-8.5 sm:w-10 sm:h-10 bg-amber-500 rounded-full flex items-center justify-center p-2 shadow-md shadow-amber-500/25 group-hover:scale-105 transition-transform shrink-0">
                   <img
                     src="/amazon-web-services-logo.png"
                     alt="AWS Logo"

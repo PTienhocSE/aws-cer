@@ -515,16 +515,16 @@ export default function DocsViewer({
 
   return (
     <div
-      className={`border rounded-2xl shadow-sm p-5 sm:p-8 space-y-6 transition-colors duration-200 relative ${
+      className={`border rounded-2xl shadow-sm p-3.5 sm:p-6 lg:p-8 space-y-6 transition-colors duration-200 relative ${
         isDark ? 'bg-[#131c2e] border-slate-800 text-slate-200' : 'bg-white border-slate-200/90 text-slate-800'
       }`}
     >
       {/* Top Header & Breadcrumbs */}
-      <div className={`border-b pb-5 space-y-3 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
-        <div className="flex items-center justify-between flex-wrap gap-3 text-xs">
-          <div className="flex items-center space-x-2 font-semibold">
+      <div className={`border-b pb-4 space-y-3 ${isDark ? 'border-slate-800' : 'border-slate-100'}`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+          <div className="flex items-center space-x-2 font-semibold overflow-hidden flex-wrap">
             <span
-              className={`flex items-center px-2.5 py-1 rounded-lg border font-bold ${
+              className={`flex items-center px-2.5 py-1 rounded-lg border font-bold shrink-0 ${
                 isDark
                   ? 'text-amber-300 bg-amber-950/60 border-amber-800/60'
                   : 'text-amber-600 bg-amber-50 border-amber-200/80'
@@ -534,7 +534,7 @@ export default function DocsViewer({
               {categoryTitle}
             </span>
             <span className={isDark ? 'text-slate-600' : 'text-slate-400'}>/</span>
-            <span className={`font-bold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{title}</span>
+            <span className={`font-bold truncate ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{title}</span>
           </div>
 
           <div className="flex items-center space-x-2">

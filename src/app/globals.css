@@ -546,3 +546,17 @@ html.dark-theme body {
   color: #f8fafc !important;
 }
 
+/* Responsive Markdown Tables on Mobile Touch Devices */
+.doc-content table {
+  display: block !important;
+  width: 100% !important;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  border-collapse: collapse !important;
+}
+
+.doc-content th,
+.doc-content td {
+  white-space: nowrap !important;
+}
+
