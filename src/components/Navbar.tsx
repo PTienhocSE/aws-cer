@@ -355,6 +355,15 @@ export default function Navbar() {
                 <BookOpen className="w-4.5 h-4.5 text-amber-400 shrink-0" />
                 <span>Đổi môn học</span>
               </Link>
+
+              <Link
+                href="/docs"
+                onClick={() => setMobileToolsOpen(false)}
+                className="p-3.5 rounded-2xl bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center space-x-2.5 active:scale-95 transition"
+              >
+                <FileText className="w-4.5 h-4.5 text-indigo-500 shrink-0" />
+                <span>Tài liệu SAA-C03</span>
+              </Link>
             </div>
           </div>
         </div>
