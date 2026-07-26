@@ -271,6 +271,8 @@ model PracticeSession {
   title          String?
   mode           String
   sourceType     String   @default("ALL")
+  sourceId       String?
+  questionIds    String   @default("[]")
   isCompleted    Boolean  @default(false)
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
@@ -280,6 +282,7 @@ model PracticeSession {
   answers        PracticeAnswer[]
 
   @@index([userId, questionBankId])
+  @@index([userId, questionBankId, mode, sourceId])
 }
 
 model PracticeAnswer {

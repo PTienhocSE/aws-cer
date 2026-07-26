@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUserOrDemo } from '@/lib/auth';
+import { getNextQuestionIndex } from '@/lib/practice-selection';
 
 export async function GET(req: NextRequest) {
   try {
@@ -26,22 +27,52 @@ export async function GET(req: NextRequest) {
         _count: {
           select: { questions: true },
         },
-      },
-    });
-
-    const userProgresses = await prisma.userQuestionProgress.findMany({
-      where: {
-        userId,
-        questionBankId: activeBankId,
-      },
-      select: {
-        questionId: true,
-        lastAnswerCorrect: true,
-        question: {
-          select: { domainId: true },
+        questions: {
+          select: { id: true },
+          orderBy: [{ rawId: 'asc' }, { createdAt: 'asc' }],
         },
       },
     });
+
+    const [userProgresses, domainSessions] = await Promise.all([
+      prisma.userQuestionProgress.findMany({
+        where: {
+          userId,
+          questionBankId: activeBankId,
+        },
+        select: {
+          questionId: true,
+          lastAnswerCorrect: true,
+          question: {
+            select: { domainId: true },
+          },
+        },
+      }),
+      prisma.practiceSession.findMany({
+        where: {
+          userId,
+          questionBankId: activeBankId,
+          mode: 'DOMAIN',
+          sourceId: { in: domains.map((domain) => domain.id) },
+        },
+        orderBy: { updatedAt: 'desc' },
+        select: {
+          id: true,
+          sourceId: true,
+          answers: {
+            select: { questionId: true, isCorrect: true },
+            orderBy: { createdAt: 'asc' },
+          },
+        },
+      }),
+    ]);
+
+    const domainSessionMap = new Map<string, (typeof domainSessions)[number]>();
+    for (const session of domainSessions) {
+      if (session.sourceId && !domainSessionMap.has(session.sourceId)) {
+        domainSessionMap.set(session.sourceId, session);
+      }
+    }
 
     // Group progress by domainId in memory
     const domainProgressMap: Record<string, { answeredCount: number; correctCount: number }> = {};
@@ -65,6 +96,17 @@ export async function GET(req: NextRequest) {
 
       const accuracy = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
       const completion = totalQuestions > 0 ? Math.round((answeredCount / totalQuestions) * 100) : 0;
+      const domainSession = domainSessionMap.get(d.id);
+      const latestAnswers = new Map<string, boolean>();
+      for (const answer of domainSession?.answers || []) {
+        latestAnswers.set(answer.questionId, answer.isCorrect);
+      }
+      const practiceAnsweredCount = latestAnswers.size;
+      const practiceCorrectCount = [...latestAnswers.values()].filter(Boolean).length;
+      const nextQuestionIndex = getNextQuestionIndex(
+        d.questions.map((question) => question.id),
+        latestAnswers.keys()
+      );
 
       return {
         id: d.id,
@@ -77,6 +119,14 @@ export async function GET(req: NextRequest) {
         accuracy,
         completion,
         isWeak: answeredCount > 3 && accuracy < 70,
+        practiceSessionId: domainSession?.id || null,
+        practiceAnsweredCount,
+        practiceCorrectCount,
+        practiceIncorrectCount: practiceAnsweredCount - practiceCorrectCount,
+        practiceNextQuestionNumber:
+          totalQuestions > 0 ? nextQuestionIndex + 1 : 0,
+        practiceCompletion:
+          totalQuestions > 0 ? Math.round((practiceAnsweredCount / totalQuestions) * 100) : 0,
       };
     });
 

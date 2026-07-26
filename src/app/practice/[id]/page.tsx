@@ -235,6 +235,8 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
                 ? {
                     ...q,
                     isAnswered: true,
+                    wasCorrect: data.isCorrect,
+                    userSelectedOptionIds: selectedOptionIds,
                     options: q.options.map((opt: any) => ({
                       ...opt,
                       isCorrect: data.correctOptionIds.includes(opt.id),
@@ -305,6 +307,9 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
   }, [handleKeyDown]);
 
   const handleReset = async () => {
+    if (!window.confirm('Xóa đáp án trong phiên này và học lại từ câu đầu? Lịch sử SRS tổng thể vẫn được giữ.')) {
+      return;
+    }
     setIsResetting(true);
     try {
       const res = await fetch(`/api/practice-sessions/${sessionId}/reset`, { method: 'DELETE' });
@@ -315,6 +320,7 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
       setInitialized(false);
       // Refetch questions (they'll now show as unanswered)
       queryClient.invalidateQueries({ queryKey: ['practiceQuestions', sessionId] });
+      queryClient.invalidateQueries({ queryKey: ['progressDomains'] });
       toast.success('Đã xoá toàn bộ câu trả lời. Bắt đầu luyện tập lại!');
     } catch (e) {
       toast.error('Không thể reset phiên học. Vui lòng thử lại.');
@@ -390,6 +396,61 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
             className="bg-gradient-to-r from-amber-400 to-amber-500 h-full transition-all duration-300 rounded-full"
             style={{ width: `${progressPercent}%` }}
           />
+        </div>
+
+        <div className="flex items-center gap-2">
+          <div className="flex-1 overflow-x-auto pb-1 no-scrollbar">
+            <div className="flex gap-1.5 min-w-max">
+              {questionsData.questions.map((question: any, index: number) => {
+                const state = qStateMap[question.id];
+                const isCorrect =
+                  state?.isSubmitted &&
+                  state.submittedOptionIds.length === state.correctOptionIds.length &&
+                  state.submittedOptionIds.every((optionId) => state.correctOptionIds.includes(optionId));
+                return (
+                  <button
+                    key={question.id}
+                    onClick={() => setCurrentIndex(index)}
+                    title={
+                      state?.isSubmitted
+                        ? isCorrect
+                          ? `Câu ${index + 1}: Đúng`
+                          : `Câu ${index + 1}: Sai`
+                        : `Câu ${index + 1}: Chưa làm`
+                    }
+                    className={`w-8 h-8 rounded-lg text-[11px] font-black border transition shrink-0 ${
+                      currentIndex === index
+                        ? 'ring-2 ring-amber-400 ring-offset-1'
+                        : ''
+                    } ${
+                      state?.isSubmitted
+                        ? isCorrect
+                          ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
+                          : 'bg-red-50 border-red-300 text-red-700'
+                        : 'bg-white border-slate-200 text-slate-500 hover:border-amber-300'
+                    }`}
+                  >
+                    {index + 1}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {questionsData.session?.mode === 'DOMAIN' && (
+            <button
+              onClick={handleReset}
+              disabled={isResetting}
+              className="px-3 py-2 bg-white border border-slate-200 hover:border-red-300 text-slate-600 hover:text-red-600 text-xs font-bold rounded-xl flex items-center shrink-0 disabled:opacity-50"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 mr-1 ${isResetting ? 'animate-spin' : ''}`} />
+              Học lại Domain
+            </button>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-3 text-[10px] font-bold text-slate-500">
+          <span className="flex items-center"><i className="w-2.5 h-2.5 rounded bg-emerald-100 border border-emerald-300 mr-1" /> Đúng</span>
+          <span className="flex items-center"><i className="w-2.5 h-2.5 rounded bg-red-100 border border-red-300 mr-1" /> Sai</span>
+          <span className="flex items-center"><i className="w-2.5 h-2.5 rounded bg-white border border-slate-300 mr-1" /> Chưa làm</span>
         </div>
       </div>
 

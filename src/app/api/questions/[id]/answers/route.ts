@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUserOrDemo } from '@/lib/auth';
+import { parseQuestionIds } from '@/lib/practice-selection';
 
 export async function POST(
   req: NextRequest,
@@ -105,6 +106,14 @@ export async function POST(
         where: { id: sessionId, userId },
       });
       if (session) {
+        const sessionQuestionIds = parseQuestionIds(session.questionIds);
+        const belongsToSession =
+          question.questionBankId === session.questionBankId &&
+          (sessionQuestionIds.length === 0 || sessionQuestionIds.includes(questionId));
+        if (!belongsToSession) {
+          return NextResponse.json({ error: 'Câu hỏi không thuộc phiên luyện tập này' }, { status: 400 });
+        }
+
         await prisma.practiceAnswer.upsert({
           where: {
             // Composite uniqueness not defined, use findFirst + create logic
@@ -127,6 +136,10 @@ export async function POST(
             isCorrect,
             confidenceLevel: level,
           },
+        });
+        await prisma.practiceSession.update({
+          where: { id: session.id },
+          data: { isCompleted: false },
         });
       }
     }

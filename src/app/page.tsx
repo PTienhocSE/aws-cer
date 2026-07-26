@@ -59,6 +59,7 @@ export default function HomePage() {
   const queryClient = useQueryClient();
   const { user, hydrated, setUser } = useAuthStore();
   const [courseDropdownOpen, setCourseDropdownOpen] = useState(false);
+  const [resettingDomainId, setResettingDomainId] = useState<string | null>(null);
 
   const { data: banksData } = useQuery({
     queryKey: ['landingQuestionBanks'],
@@ -112,6 +113,23 @@ export default function HomePage() {
       }
     } catch (e) {
       console.error(e);
+    }
+  };
+
+  const handleResetDomain = async (domainId: string) => {
+    if (!window.confirm('Reset tiến độ luyện tập Domain này để học lại từ câu đầu? Lịch sử SRS tổng thể vẫn được giữ.')) {
+      return;
+    }
+    setResettingDomainId(domainId);
+    try {
+      const res = await fetch(`/api/practice-sessions/domain/${domainId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Reset domain failed');
+      await queryClient.invalidateQueries({ queryKey: ['progressDomains'] });
+      toast.success('Đã reset Domain. Bạn có thể học lại từ câu đầu.');
+    } catch {
+      toast.error('Không thể reset tiến độ Domain.');
+    } finally {
+      setResettingDomainId(null);
     }
   };
 
@@ -461,17 +479,40 @@ export default function HomePage() {
                             ? 'bg-gradient-to-r from-amber-500 to-amber-400'
                             : 'bg-gradient-to-r from-red-500 to-rose-400'
                         }`}
-                        style={{ width: `${Math.max(d.completion, 6)}%` }}
+                        style={{ width: `${d.practiceCompletion > 0 ? Math.max(d.practiceCompletion, 6) : 0}%` }}
                       />
                     </div>
 
-                    <div className="flex justify-end pt-1">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
+                      <div className="text-[11px] text-slate-500 font-semibold">
+                        Lộ trình Domain: <strong className="text-slate-800">{d.practiceAnsweredCount}/{d.totalQuestions}</strong>
+                        {d.practiceAnsweredCount > 0 && (
+                          <>
+                            {' '}• <span className="text-emerald-700">{d.practiceCorrectCount} đúng</span>
+                            {' '}• <span className="text-red-700">{d.practiceIncorrectCount} sai</span>
+                            {' '}• tiếp tục câu {d.practiceNextQuestionNumber}
+                          </>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-end gap-3">
+                        {d.practiceAnsweredCount > 0 && (
+                          <button
+                            onClick={() => handleResetDomain(d.id)}
+                            disabled={resettingDomainId === d.id}
+                            className="text-xs font-bold text-slate-500 hover:text-red-600 flex items-center disabled:opacity-50"
+                          >
+                            <RotateCcw className={`w-3.5 h-3.5 mr-1 ${resettingDomainId === d.id ? 'animate-spin' : ''}`} />
+                            Reset Domain
+                          </button>
+                        )}
                       <button
-                        onClick={() => handleStartPractice('CUSTOM', d.id)}
+                        onClick={() => handleStartPractice('DOMAIN', d.id)}
                         className="text-xs font-extrabold text-amber-600 hover:text-amber-700 flex items-center group whitespace-nowrap"
                       >
-                        Luyện câu hỏi Domain này <ArrowRight className="w-3.5 h-3.5 ml-1 group-hover:translate-x-1 transition-transform" />
+                        {d.practiceAnsweredCount > 0 ? 'Tiếp tục Domain' : 'Bắt đầu Domain'}
+                        <ArrowRight className="w-3.5 h-3.5 ml-1 group-hover:translate-x-1 transition-transform" />
                       </button>
+                      </div>
                     </div>
                   </div>
                 ))}

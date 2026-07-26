@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getAuthUserOrDemo } from '@/lib/auth';
+import { getNextQuestionIndex, parseQuestionIds } from '@/lib/practice-selection';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -17,22 +18,35 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Không tìm thấy phiên luyện tập' }, { status: 404 });
     }
 
-    const { searchParams } = new URL(req.url);
-    const limitParam = searchParams.get('limit');
-    const limit = limitParam ? parseInt(limitParam) : 15;
+    const storedQuestionIds = parseQuestionIds(session.questionIds);
+    const where =
+      storedQuestionIds.length > 0
+        ? {
+            questionBankId: session.questionBankId,
+            id: { in: storedQuestionIds },
+          }
+        : {
+            questionBankId: session.questionBankId,
+            ...(session.mode === 'DOMAIN' && session.sourceId ? { domainId: session.sourceId } : {}),
+          };
 
-    // Fetch questions from the session's question bank
-    const rawQuestions = await prisma.question.findMany({
-      where: {
-        questionBankId: session.questionBankId,
-      },
+    const fetchedQuestions = await prisma.question.findMany({
+      where,
       include: {
         options: true,
         domain: true,
       },
-      take: limit,
-      orderBy: { createdAt: 'asc' },
+      ...(storedQuestionIds.length === 0 && session.mode !== 'DOMAIN' ? { take: 15 } : {}),
+      orderBy: [{ rawId: 'asc' }, { createdAt: 'asc' }],
     });
+    const byId = new Map(fetchedQuestions.map((question) => [question.id, question]));
+    const rawQuestions =
+      storedQuestionIds.length > 0
+        ? storedQuestionIds.flatMap((questionId) => {
+            const question = byId.get(questionId);
+            return question ? [question] : [];
+          })
+        : fetchedQuestions;
 
     const questionIds = rawQuestions.map((q) => q.id);
     const userId = authUser.userId;
@@ -90,7 +104,29 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       };
     });
 
-    return NextResponse.json({ questions });
+    const answeredCount = questions.filter((question) => question.isAnswered).length;
+    const correctCount = questions.filter((question) => question.wasCorrect === true).length;
+    const nextQuestionIndex = getNextQuestionIndex(
+      questions.map((question) => question.id),
+      questions.filter((question) => question.isAnswered).map((question) => question.id)
+    );
+    return NextResponse.json({
+      session: {
+        id: session.id,
+        mode: session.mode,
+        sourceType: session.sourceType,
+        sourceId: session.sourceId,
+        title: session.title,
+      },
+      progress: {
+        answeredCount,
+        correctCount,
+        incorrectCount: answeredCount - correctCount,
+        totalQuestions: questions.length,
+        nextQuestionNumber: questions.length > 0 ? nextQuestionIndex + 1 : 0,
+      },
+      questions,
+    });
   } catch (error) {
     console.error('Get practice session questions error:', error);
     return NextResponse.json({ error: 'Lỗi tải câu hỏi luyện tập' }, { status: 500 });
