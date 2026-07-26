@@ -75,7 +75,7 @@ export default function Navbar() {
             {/* Left: AWS Circular Logo Container */}
             <div className="flex items-center space-x-2.5 sm:space-x-4">
               <Link href="/" className="flex items-center space-x-2 group">
-                <div className="w-8.5 h-8.5 sm:w-10 sm:h-10 bg-amber-500 rounded-full flex items-center justify-center p-2 shadow-md shadow-amber-500/25 group-hover:scale-105 transition-transform shrink-0">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 bg-amber-500 rounded-full flex items-center justify-center p-2 shadow-md shadow-amber-500/25 group-hover:scale-105 transition-transform shrink-0">
                   <img
                     src="/amazon-web-services-logo.png"
                     alt="AWS Logo"
