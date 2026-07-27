@@ -20,6 +20,7 @@ import {
   ChevronUp,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import NoteMarkdown from '@/components/NoteMarkdown';
 
 export interface DocAnnotationItem {
   id: string;
@@ -252,6 +253,7 @@ export default function DocsViewer({
 }: DocsViewerProps) {
   const isDark = theme === 'dark';
   const articleRef = useRef<HTMLElement>(null);
+  const annotationPopoverRef = useRef<HTMLDivElement>(null);
 
   // Annotations state
   const [annotations, setAnnotations] = useState<DocAnnotationItem[]>([]);
@@ -617,6 +619,59 @@ export default function DocsViewer({
     setHoveredAnnotation(null);
   };
 
+  // Keep the popup anchored to its mark while scrolling or resizing.
+  useEffect(() => {
+    const annotationId = hoveredAnnotation?.item.id;
+    if (!annotationId) return;
+
+    let frameId = 0;
+    const updatePosition = () => {
+      cancelAnimationFrame(frameId);
+      frameId = requestAnimationFrame(() => {
+        const anchor = articleRef.current?.querySelector<HTMLElement>(
+          `[data-annotation-id="${annotationId}"]`
+        );
+        if (!anchor) return;
+
+        const rect = anchor.getBoundingClientRect();
+        const popup = annotationPopoverRef.current;
+        const popupWidth = popup?.offsetWidth || (isNoteExpanded ? 576 : 320);
+        const popupHeight = popup?.offsetHeight || 240;
+        const gutter = 12;
+        const x = Math.min(
+          Math.max(gutter, rect.left),
+          Math.max(gutter, window.innerWidth - popupWidth - gutter)
+        );
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const desiredY =
+          spaceBelow >= Math.min(popupHeight + 8, window.innerHeight * 0.6)
+            ? rect.bottom + 8
+            : rect.top - popupHeight - 8;
+        const y = Math.min(
+          Math.max(gutter, desiredY),
+          Math.max(gutter, window.innerHeight - popupHeight - gutter)
+        );
+
+        setHoveredAnnotation((current) => {
+          if (!current || current.item.id !== annotationId) return current;
+          if (Math.abs(current.x - x) < 1 && Math.abs(current.y - y) < 1) return current;
+          return { ...current, x, y };
+        });
+      });
+    };
+
+    updatePosition();
+    const transitionTimer = window.setTimeout(updatePosition, 240);
+    window.addEventListener('scroll', updatePosition, true);
+    window.addEventListener('resize', updatePosition);
+    return () => {
+      cancelAnimationFrame(frameId);
+      window.clearTimeout(transitionTimer);
+      window.removeEventListener('scroll', updatePosition, true);
+      window.removeEventListener('resize', updatePosition);
+    };
+  }, [hoveredAnnotation?.item.id, isNoteExpanded]);
+
   // Estimate reading time (~200 words per min)
   const wordCount = rawMarkdown ? rawMarkdown.split(/\s+/).length : 0;
   const readingTimeMinutes = Math.max(1, Math.ceil(wordCount / 200));
@@ -825,7 +880,7 @@ export default function DocsViewer({
           </div>
 
           <div
-            className={`text-xs p-2 rounded-lg border font-mono italic leading-relaxed line-clamp-2 ${
+            className={`mx-4 mt-3 text-xs p-2.5 rounded-xl border font-mono italic leading-relaxed line-clamp-3 ${
               isDark ? 'bg-[#090d16] border-slate-800 text-amber-300' : 'bg-amber-50 border-amber-200 text-amber-900'
             }`}
           >
@@ -835,7 +890,7 @@ export default function DocsViewer({
           <textarea
             rows={3}
             autoFocus
-            placeholder="Nhập ghi chú cá nhân của bạn..."
+            placeholder="Nhập ghi chú... Hỗ trợ Markdown: **đậm**, `code`, danh sách..."
             value={noteInputContent}
             onChange={(e) => setNoteInputContent(e.target.value)}
             className={`w-full p-2.5 rounded-xl border text-xs font-medium focus:outline-none focus:border-amber-400 transition ${
@@ -844,6 +899,9 @@ export default function DocsViewer({
                 : 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'
             }`}
           />
+          <div className="text-[10px] text-slate-400">
+            Hỗ trợ Markdown: **đậm**, *nghiêng*, `code`, link, danh sách và code block.
+          </div>
 
           <div className="flex items-center justify-end space-x-2 pt-1">
             <button
@@ -869,6 +927,7 @@ export default function DocsViewer({
       {/* Hover Popover Modal for Notes & Highlights */}
       {hoveredAnnotation && (
         <div
+          ref={annotationPopoverRef}
           id="doc-annotation-popover"
           onMouseLeave={() => {
             if (!pinnedAnnotationId) setHoveredAnnotation(null);
@@ -878,13 +937,15 @@ export default function DocsViewer({
             left: `${hoveredAnnotation.x}px`,
             top: `${hoveredAnnotation.y}px`,
           }}
-          className={`z-50 w-80 max-w-[90vw] rounded-2xl shadow-2xl border p-4 space-y-2.5 animate-in fade-in zoom-in-95 ${
+          className={`z-50 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl shadow-2xl border animate-in fade-in zoom-in-95 transition-[width] duration-200 ${
+            isNoteExpanded && hoveredAnnotation.item.type === 'NOTE' ? 'w-[36rem]' : 'w-80'
+          } ${
             isDark
               ? 'bg-[#1e293b] border-slate-700 text-slate-200'
               : 'bg-white border-slate-200 text-slate-800'
           }`}
         >
-          <div className="flex items-center justify-between border-b pb-2 border-slate-200/40">
+          <div className={`flex items-center justify-between border-b px-4 py-3 ${isDark ? 'border-slate-700 bg-slate-800/80' : 'border-slate-200 bg-slate-50'}`}>
             <span className="text-xs font-black flex items-center text-indigo-500">
               {hoveredAnnotation.item.type === 'NOTE' ? (
                 <>
@@ -917,21 +978,34 @@ export default function DocsViewer({
           </div>
 
           {hoveredAnnotation.item.type === 'NOTE' && (
-            <div className="space-y-1.5">
-              <div className="text-xs font-semibold leading-relaxed">
-                {isNoteExpanded || (hoveredAnnotation.item.noteContent?.length || 0) <= 120 ? (
-                  hoveredAnnotation.item.noteContent || '(Không có nội dung)'
-                ) : (
-                  <>
-                    {hoveredAnnotation.item.noteContent?.slice(0, 120)}...
-                  </>
-                )}
+            <div className="mx-4 mt-3 mb-4 space-y-2">
+              <div
+                className={`rounded-xl border p-3 ${
+                  isNoteExpanded ? 'max-h-[55vh] overflow-y-auto' : ''
+                } ${
+                  isDark ? 'border-slate-700 bg-slate-900/40' : 'border-slate-200 bg-slate-50/70'
+                }`}
+              >
+                <NoteMarkdown
+                  theme={isDark ? 'dark' : 'light'}
+                  content={
+                    !hoveredAnnotation.item.noteContent
+                      ? '(Không có nội dung)'
+                      : isNoteExpanded || hoveredAnnotation.item.noteContent.length <= 120
+                        ? hoveredAnnotation.item.noteContent
+                        : `${hoveredAnnotation.item.noteContent.slice(0, 120)}...`
+                  }
+                />
               </div>
 
               {(hoveredAnnotation.item.noteContent?.length || 0) > 120 && (
                 <button
                   onClick={() => setIsNoteExpanded(!isNoteExpanded)}
-                  className="text-[11px] font-bold text-amber-500 hover:text-amber-600 flex items-center transition"
+                  className={`flex w-full items-center justify-center rounded-xl border px-3 py-2 text-[11px] font-bold transition ${
+                    isDark
+                      ? 'border-slate-700 bg-slate-800 text-amber-400 hover:bg-slate-700'
+                      : 'border-slate-200 bg-slate-50 text-amber-600 hover:bg-amber-50'
+                  }`}
                 >
                   {isNoteExpanded ? (
                     <>
