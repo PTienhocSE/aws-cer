@@ -268,6 +268,7 @@ export default function DocsViewer({
     x: number;
     topY: number;
     bottomY: number;
+    popupAbove: boolean;
   } | null>(null);
 
   // Inline Note Popup state (positioned right BELOW selection)
@@ -317,8 +318,8 @@ export default function DocsViewer({
     return parseAndAnnotateHtml(html, annotations);
   }, [html, annotations]);
 
-  // Handle Text Selection Popup ONLY on Mouse Up (Prevents Jittering while Dragging)
-  const handleArticleMouseUp = () => {
+  // Handle selection after mouse release or after mobile selection handles settle.
+  const handleArticleSelectionEnd = (delay = 20) => {
     setTimeout(() => {
       const selection = window.getSelection();
       if (!selection || selection.isCollapsed) {
@@ -342,21 +343,27 @@ export default function DocsViewer({
           const startOffset = prefixRange.toString().length + leadingWhitespace;
           const endOffset = startOffset + text.length;
           const articleText = articleRef.current.textContent || '';
+          const popupAbove = rect.top >= 84;
+          const viewportWidth = window.innerWidth;
           setSelectionState({
             text,
             startOffset,
             endOffset,
             contextBefore: articleText.slice(Math.max(0, startOffset - 80), startOffset),
             contextAfter: articleText.slice(endOffset, endOffset + 80),
-            x: Math.max(20, rect.left + rect.width / 2),
+            x: Math.min(
+              Math.max(132, rect.left + rect.width / 2),
+              Math.max(132, viewportWidth - 132)
+            ),
             topY: rect.top - 10,
             bottomY: rect.bottom + 8,
+            popupAbove,
           });
         } catch (e) {
           console.error(e);
         }
       }
-    }, 20);
+    }, delay);
   };
 
   // Dismiss Selection / Inline Note Popup / Unpin on Outside Click
@@ -843,10 +850,11 @@ export default function DocsViewer({
       <article
         ref={articleRef}
         onClick={handleArticleClick}
-        onMouseUp={handleArticleMouseUp}
+        onMouseUp={() => handleArticleSelectionEnd()}
+        onTouchEnd={() => handleArticleSelectionEnd(180)}
         onMouseMove={handleArticleMouseMove}
         onMouseLeave={handleArticleMouseLeave}
-        className={`doc-content w-full min-w-0 max-w-full ${isDark ? 'doc-dark-mode' : ''} prose relative`}
+        className={`doc-content w-full min-w-0 max-w-full select-text touch-pan-y ${isDark ? 'doc-dark-mode' : ''} prose relative`}
       >
         <div className="w-full min-w-0 max-w-full" dangerouslySetInnerHTML={{ __html: annotatedHtml }} />
       </article>
@@ -859,8 +867,8 @@ export default function DocsViewer({
           style={{
             position: 'fixed',
             left: `${selectionState.x}px`,
-            top: `${selectionState.topY}px`,
-            transform: 'translate(-50%, -100%)',
+            top: `${selectionState.popupAbove ? selectionState.topY : selectionState.bottomY}px`,
+            transform: selectionState.popupAbove ? 'translate(-50%, -100%)' : 'translateX(-50%)',
           }}
           className="z-50 bg-slate-900 text-white border border-slate-700 shadow-2xl rounded-xl px-2 py-1.5 flex items-center space-x-2 animate-in fade-in zoom-in-95"
         >
