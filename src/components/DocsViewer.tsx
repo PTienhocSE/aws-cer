@@ -18,6 +18,8 @@ import {
   X,
   ChevronDown,
   ChevronUp,
+  Pencil,
+  Save,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import NoteMarkdown from '@/components/NoteMarkdown';
@@ -289,6 +291,9 @@ export default function DocsViewer({
   } | null>(null);
   const [pinnedAnnotationId, setPinnedAnnotationId] = useState<string | null>(null);
   const [isNoteExpanded, setIsNoteExpanded] = useState(false);
+  const [isEditingNote, setIsEditingNote] = useState(false);
+  const [editNoteContent, setEditNoteContent] = useState('');
+  const [isUpdatingNote, setIsUpdatingNote] = useState(false);
 
   // Fetch Annotations from DB
   const fetchAnnotations = async () => {
@@ -560,6 +565,48 @@ export default function DocsViewer({
     }
   };
 
+  const handleUpdateAnnotationNote = async () => {
+    if (!hoveredAnnotation || hoveredAnnotation.item.type !== 'NOTE') return;
+    const annotationId = hoveredAnnotation.item.id;
+    setIsUpdatingNote(true);
+
+    try {
+      const res = await fetch('/api/docs/annotations', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: annotationId, noteContent: editNoteContent }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error || 'Không thể cập nhật ghi chú');
+        return;
+      }
+
+      setAnnotations((current) =>
+        current.map((annotation) =>
+          annotation.id === annotationId
+            ? { ...annotation, noteContent: data.annotation.noteContent }
+            : annotation
+        )
+      );
+      setHoveredAnnotation((current) =>
+        current?.item.id === annotationId
+          ? {
+              ...current,
+              item: { ...current.item, noteContent: data.annotation.noteContent },
+            }
+          : current
+      );
+      setIsEditingNote(false);
+      toast.success('Đã cập nhật ghi chú!');
+    } catch (error) {
+      console.error(error);
+      toast.error('Lỗi khi cập nhật ghi chú');
+    } finally {
+      setIsUpdatingNote(false);
+    }
+  };
+
   // Handle Click on annotated mark tag to PIN popover
   const handleArticleClick = (e: React.MouseEvent<HTMLElement>) => {
     const markTarget = (e.target as HTMLElement).closest('[data-annotation-id]');
@@ -575,6 +622,7 @@ export default function DocsViewer({
         });
         setPinnedAnnotationId(item.id);
         setIsNoteExpanded(false);
+        setIsEditingNote(false);
       }
     }
   };
@@ -596,6 +644,7 @@ export default function DocsViewer({
             y: rect.bottom + 8,
           });
           setIsNoteExpanded(false);
+          setIsEditingNote(false);
         }
       }
     } else {
@@ -960,6 +1009,21 @@ export default function DocsViewer({
               )}
             </span>
 
+            <div className="flex items-center gap-1">
+              {hoveredAnnotation.item.type === 'NOTE' && !isEditingNote && (
+                <button
+                  onClick={() => {
+                    setEditNoteContent(hoveredAnnotation.item.noteContent || '');
+                    setIsEditingNote(true);
+                    setIsNoteExpanded(true);
+                    setPinnedAnnotationId(hoveredAnnotation.item.id);
+                  }}
+                  className="p-1.5 text-slate-400 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-lg transition"
+                  title="Chỉnh sửa ghi chú"
+                >
+                  <Pencil className="w-3.5 h-3.5" />
+                </button>
+              )}
             <button
               onClick={() => handleDeleteAnnotation(hoveredAnnotation.item.id)}
               className="p-1 text-slate-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition"
@@ -967,6 +1031,7 @@ export default function DocsViewer({
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
+            </div>
           </div>
 
           <div
@@ -979,26 +1044,63 @@ export default function DocsViewer({
 
           {hoveredAnnotation.item.type === 'NOTE' && (
             <div className="mx-4 mt-3 mb-4 space-y-2">
-              <div
-                className={`rounded-xl border p-3 ${
-                  isNoteExpanded ? 'max-h-[55vh] overflow-y-auto' : ''
-                } ${
-                  isDark ? 'border-slate-700 bg-slate-900/40' : 'border-slate-200 bg-slate-50/70'
-                }`}
-              >
-                <NoteMarkdown
-                  theme={isDark ? 'dark' : 'light'}
-                  content={
-                    !hoveredAnnotation.item.noteContent
-                      ? '(Không có nội dung)'
-                      : isNoteExpanded || hoveredAnnotation.item.noteContent.length <= 120
-                        ? hoveredAnnotation.item.noteContent
-                        : `${hoveredAnnotation.item.noteContent.slice(0, 120)}...`
-                  }
-                />
-              </div>
+              {isEditingNote ? (
+                <div className="space-y-2">
+                  <textarea
+                    autoFocus
+                    rows={10}
+                    value={editNoteContent}
+                    onChange={(event) => setEditNoteContent(event.target.value)}
+                    placeholder="Nhập nội dung ghi chú Markdown..."
+                    className={`max-h-[55vh] min-h-48 w-full resize-y rounded-xl border p-3 font-mono text-xs leading-relaxed outline-none transition focus:border-indigo-400 ${
+                      isDark
+                        ? 'border-slate-700 bg-slate-950 text-slate-100'
+                        : 'border-slate-200 bg-white text-slate-800'
+                    }`}
+                  />
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="text-[10px] text-slate-400">Hỗ trợ đầy đủ Markdown và bảng GFM.</span>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => setIsEditingNote(false)}
+                        disabled={isUpdatingNote}
+                        className="rounded-lg px-3 py-1.5 text-[11px] font-bold text-slate-400 hover:bg-slate-500/10 disabled:opacity-50"
+                      >
+                        Hủy
+                      </button>
+                      <button
+                        onClick={handleUpdateAnnotationNote}
+                        disabled={isUpdatingNote}
+                        className="flex items-center rounded-lg bg-indigo-600 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-indigo-500 disabled:opacity-50"
+                      >
+                        <Save className="mr-1.5 h-3.5 w-3.5" />
+                        {isUpdatingNote ? 'Đang lưu...' : 'Lưu thay đổi'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  className={`rounded-xl border p-3 ${
+                    isNoteExpanded ? 'max-h-[55vh] overflow-y-auto' : ''
+                  } ${
+                    isDark ? 'border-slate-700 bg-slate-900/40' : 'border-slate-200 bg-slate-50/70'
+                  }`}
+                >
+                  <NoteMarkdown
+                    theme={isDark ? 'dark' : 'light'}
+                    content={
+                      !hoveredAnnotation.item.noteContent
+                        ? '(Không có nội dung)'
+                        : isNoteExpanded || hoveredAnnotation.item.noteContent.length <= 120
+                          ? hoveredAnnotation.item.noteContent
+                          : `${hoveredAnnotation.item.noteContent.slice(0, 120)}...`
+                    }
+                  />
+                </div>
+              )}
 
-              {(hoveredAnnotation.item.noteContent?.length || 0) > 120 && (
+              {!isEditingNote && (hoveredAnnotation.item.noteContent?.length || 0) > 120 && (
                 <button
                   onClick={() => setIsNoteExpanded(!isNoteExpanded)}
                   className={`flex w-full items-center justify-center rounded-xl border px-3 py-2 text-[11px] font-bold transition ${

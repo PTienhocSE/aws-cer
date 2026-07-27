@@ -49,6 +49,8 @@ function renderInline(value: string, isDark: boolean): ReactNode[] {
 export default function NoteMarkdown({ content, theme = 'dark' }: NoteMarkdownProps) {
   const isDark = theme === 'dark';
   const output: ReactNode[] = [];
+  const lines = content.replace(/\r\n/g, '\n').split('\n');
+  const consumedTableLines = new Set<number>();
   let inCodeBlock = false;
   let codeLanguage = '';
   let codeLines: string[] = [];
@@ -64,7 +66,22 @@ export default function NoteMarkdown({ content, theme = 'dark' }: NoteMarkdownPr
     codeLanguage = '';
   };
 
-  content.replace(/\r\n/g, '\n').split('\n').forEach((line, index) => {
+  const parseTableCells = (line: string) =>
+    line
+      .trim()
+      .replace(/^\|/, '')
+      .replace(/\|$/, '')
+      .split('|')
+      .map((cell) => cell.trim());
+
+  const isTableSeparator = (line: string) => {
+    const cells = parseTableCells(line);
+    return cells.length > 0 && cells.every((cell) => /^:?-{3,}:?$/.test(cell));
+  };
+
+  lines.forEach((line, index) => {
+    if (consumedTableLines.has(index)) return;
+
     const fence = line.match(/^```([\w-]*)\s*$/);
     if (fence) {
       if (inCodeBlock) appendCodeBlock(`code-${index}`);
@@ -76,6 +93,49 @@ export default function NoteMarkdown({ content, theme = 'dark' }: NoteMarkdownPr
       codeLines.push(line);
       return;
     }
+
+    // GitHub-Flavored Markdown table: header row + separator row + body rows.
+    if (line.includes('|') && lines[index + 1] && isTableSeparator(lines[index + 1])) {
+      const headers = parseTableCells(line);
+      const rows: string[][] = [];
+      consumedTableLines.add(index + 1);
+
+      let rowIndex = index + 2;
+      while (rowIndex < lines.length && lines[rowIndex].trim() && lines[rowIndex].includes('|')) {
+        rows.push(parseTableCells(lines[rowIndex]));
+        consumedTableLines.add(rowIndex);
+        rowIndex++;
+      }
+
+      output.push(
+        <div key={`table-${index}`} className="my-2 max-w-full overflow-x-auto rounded-xl border border-slate-700/70">
+          <table className="w-full min-w-max border-collapse text-left text-[11px]">
+            <thead className={isDark ? 'bg-slate-950 text-indigo-300' : 'bg-slate-100 text-indigo-700'}>
+              <tr>
+                {headers.map((header, cellIndex) => (
+                  <th key={cellIndex} className="border-b border-slate-700/70 px-3 py-2 font-extrabold">
+                    {renderInline(header, isDark)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className={isDark ? 'bg-slate-900/50' : 'bg-white'}>
+              {rows.map((row, rowNumber) => (
+                <tr key={rowNumber} className={isDark ? 'border-b border-slate-800 last:border-0' : 'border-b border-slate-200 last:border-0'}>
+                  {headers.map((_, cellIndex) => (
+                    <td key={cellIndex} className="max-w-64 whitespace-normal px-3 py-2 align-top">
+                      {renderInline(row[cellIndex] || '', isDark)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      );
+      return;
+    }
+
     if (!line.trim()) {
       output.push(<div key={index} className="h-1.5" />);
       return;

@@ -132,6 +132,55 @@ export async function POST(req: NextRequest) {
   }
 }
 
+export async function PATCH(req: NextRequest) {
+  try {
+    const authUser = await getAuthenticatedUser(req);
+    if (!authUser) {
+      return NextResponse.json({ error: 'Bạn cần đăng nhập để sửa ghi chú' }, { status: 401 });
+    }
+
+    const body = await req.json();
+    const id = typeof body.id === 'string' ? body.id.trim() : '';
+    const noteContent =
+      typeof body.noteContent === 'string' ? body.noteContent.trim().slice(0, 20000) : '';
+
+    if (!id) {
+      return NextResponse.json({ error: 'id is required' }, { status: 400 });
+    }
+
+    const userId = authUser.userId;
+    const now = new Date();
+
+    if (typeof (prisma as any).docAnnotation !== 'undefined') {
+      const result = await (prisma as any).docAnnotation.updateMany({
+        where: { id, userId, type: 'NOTE' },
+        data: { noteContent, updatedAt: now },
+      });
+      if (result.count === 0) {
+        return NextResponse.json({ error: 'Không tìm thấy ghi chú' }, { status: 404 });
+      }
+    } else {
+      const updatedCount = await prisma.$executeRawUnsafe(
+        `UPDATE "DocAnnotation" SET "noteContent" = $1, "updatedAt" = $2 WHERE "id" = $3 AND "userId" = $4 AND type = 'NOTE'`,
+        noteContent,
+        now,
+        id,
+        userId
+      );
+      if (updatedCount === 0) {
+        return NextResponse.json({ error: 'Không tìm thấy ghi chú' }, { status: 404 });
+      }
+    }
+
+    return NextResponse.json({
+      annotation: { id, noteContent, updatedAt: now.toISOString() },
+    });
+  } catch (error: any) {
+    console.error('Error updating doc annotation:', error);
+    return NextResponse.json({ error: error.message || 'Internal server error' }, { status: 500 });
+  }
+}
+
 export async function DELETE(req: NextRequest) {
   try {
     const authUser = await getAuthenticatedUser(req);
