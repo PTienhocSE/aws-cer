@@ -479,7 +479,7 @@ export default function DocsViewer({
       endOffset: selectionState.endOffset,
       contextBefore: selectionState.contextBefore,
       contextAfter: selectionState.contextAfter,
-      x: selectionState.x,
+      x: window.innerWidth < 640 ? window.innerWidth / 2 : selectionState.x,
       y: selectionState.bottomY,
     });
     setNoteInputContent('');
@@ -693,7 +693,7 @@ export default function DocsViewer({
         const popup = annotationPopoverRef.current;
         const popupWidth = popup?.offsetWidth || (isNoteExpanded ? 576 : 320);
         const popupHeight = popup?.offsetHeight || 240;
-        const gutter = 12;
+        const gutter = window.innerWidth < 640 ? 8 : 12;
         const x = Math.min(
           Math.max(gutter, rect.left),
           Math.max(gutter, window.innerWidth - popupWidth - gutter)
@@ -870,7 +870,7 @@ export default function DocsViewer({
             top: `${selectionState.popupAbove ? selectionState.topY : selectionState.bottomY}px`,
             transform: selectionState.popupAbove ? 'translate(-50%, -100%)' : 'translateX(-50%)',
           }}
-          className="z-50 bg-slate-900 text-white border border-slate-700 shadow-2xl rounded-xl px-2 py-1.5 flex items-center space-x-2 animate-in fade-in zoom-in-95"
+          className="z-50 max-w-[calc(100vw-1rem)] bg-slate-900 text-white border border-slate-700 shadow-2xl rounded-xl px-2 py-1.5 flex flex-wrap sm:flex-nowrap items-center justify-center gap-2 animate-in fade-in zoom-in-95"
         >
           {/* Multi-Color Swatches */}
           <div className="flex items-center space-x-1.5 border-r border-slate-700 pr-2">
@@ -917,7 +917,7 @@ export default function DocsViewer({
             top: `${inlineNoteState.y}px`,
             transform: 'translateX(-50%)',
           }}
-          className={`z-50 w-80 max-w-[90vw] rounded-2xl p-4 space-y-3 shadow-2xl border animate-in fade-in zoom-in-95 ${
+          className={`z-50 w-[calc(100vw-1rem)] sm:w-80 max-h-[calc(100dvh-1rem)] overflow-y-auto rounded-2xl p-4 space-y-3 shadow-2xl border animate-in fade-in zoom-in-95 ${
             isDark
               ? 'bg-[#1e293b] border-slate-700 text-slate-200'
               : 'bg-white border-slate-200 text-slate-900'
@@ -994,8 +994,8 @@ export default function DocsViewer({
             left: `${hoveredAnnotation.x}px`,
             top: `${hoveredAnnotation.y}px`,
           }}
-          className={`z-50 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-2xl shadow-2xl border animate-in fade-in zoom-in-95 transition-[width] duration-200 ${
-            isNoteExpanded && hoveredAnnotation.item.type === 'NOTE' ? 'w-[36rem]' : 'w-80'
+          className={`z-50 w-[calc(100vw-1rem)] max-w-[calc(100vw-1rem)] max-h-[calc(100dvh-1rem)] overflow-y-auto sm:max-h-none sm:overflow-hidden rounded-2xl shadow-2xl border animate-in fade-in zoom-in-95 transition-[width] duration-200 ${
+            isNoteExpanded && hoveredAnnotation.item.type === 'NOTE' ? 'sm:w-[36rem]' : 'sm:w-80'
           } ${
             isDark
               ? 'bg-[#1e293b] border-slate-700 text-slate-200'
