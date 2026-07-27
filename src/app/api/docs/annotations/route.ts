@@ -27,7 +27,7 @@ export async function GET(req: NextRequest) {
     } else {
       // Fallback for raw SQL query on Neon PostgreSQL
       annotations = await prisma.$queryRawUnsafe(
-        `SELECT id, "userId", "docSlug", type, "selectedText", "noteContent", color, "createdAt" FROM "DocAnnotation" WHERE "userId" = $1 AND "docSlug" = $2 ORDER BY "createdAt" ASC`,
+        `SELECT id, "userId", "docSlug", type, "selectedText", "startOffset", "endOffset", "contextBefore", "contextAfter", "noteContent", color, "createdAt" FROM "DocAnnotation" WHERE "userId" = $1 AND "docSlug" = $2 ORDER BY "createdAt" ASC`,
         userId,
         docSlug
       );
@@ -48,7 +48,10 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { docSlug, type, selectedText, noteContent, color } = body;
+    const {
+      docSlug, type, selectedText, startOffset, endOffset,
+      contextBefore, contextAfter, noteContent, color,
+    } = body;
 
     if (!docSlug || !selectedText) {
       return NextResponse.json({ error: 'docSlug and selectedText are required' }, { status: 400 });
@@ -61,6 +64,13 @@ export async function POST(req: NextRequest) {
     const annColor = color || (annType === 'NOTE' ? 'INDIGO' : 'AMBER');
     const cleanText = String(selectedText).trim();
     const cleanNote = noteContent ? String(noteContent).trim() : null;
+    const cleanStartOffset = Number.isInteger(startOffset) && startOffset >= 0 ? startOffset : null;
+    const cleanEndOffset =
+      Number.isInteger(endOffset) && cleanStartOffset !== null && endOffset > cleanStartOffset
+        ? endOffset
+        : null;
+    const cleanContextBefore = contextBefore ? String(contextBefore).slice(-160) : null;
+    const cleanContextAfter = contextAfter ? String(contextAfter).slice(0, 160) : null;
 
     let annotation: any = null;
 
@@ -72,6 +82,10 @@ export async function POST(req: NextRequest) {
           docSlug,
           type: annType,
           selectedText: cleanText,
+          startOffset: cleanStartOffset,
+          endOffset: cleanEndOffset,
+          contextBefore: cleanContextBefore,
+          contextAfter: cleanContextAfter,
           noteContent: cleanNote,
           color: annColor,
         },
@@ -79,12 +93,16 @@ export async function POST(req: NextRequest) {
     } else {
       // Fallback using raw SQL insert on Neon PostgreSQL
       await prisma.$executeRawUnsafe(
-        `INSERT INTO "DocAnnotation" ("id", "userId", "docSlug", "type", "selectedText", "noteContent", "color", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+        `INSERT INTO "DocAnnotation" ("id", "userId", "docSlug", "type", "selectedText", "startOffset", "endOffset", "contextBefore", "contextAfter", "noteContent", "color", "createdAt", "updatedAt") VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
         id,
         userId,
         docSlug,
         annType,
         cleanText,
+        cleanStartOffset,
+        cleanEndOffset,
+        cleanContextBefore,
+        cleanContextAfter,
         cleanNote,
         annColor,
         now,
@@ -97,6 +115,10 @@ export async function POST(req: NextRequest) {
         docSlug,
         type: annType,
         selectedText: cleanText,
+        startOffset: cleanStartOffset,
+        endOffset: cleanEndOffset,
+        contextBefore: cleanContextBefore,
+        contextAfter: cleanContextAfter,
         noteContent: cleanNote,
         color: annColor,
         createdAt: now.toISOString(),

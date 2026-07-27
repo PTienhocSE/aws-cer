@@ -26,6 +26,10 @@ export interface DocAnnotationItem {
   docSlug: string;
   type: 'HIGHLIGHT' | 'NOTE';
   selectedText: string;
+  startOffset?: number | null;
+  endOffset?: number | null;
+  contextBefore?: string | null;
+  contextAfter?: string | null;
   noteContent?: string | null;
   color: string;
   createdAt: string;
@@ -44,12 +48,76 @@ interface DocsViewerProps {
 }
 
 // Helper function to map normalized search indices back to exact raw character positions in HTML text nodes
-function findRawMatchIndices(rawText: string, targetText: string): { start: number; end: number } | null {
+function findRawMatchIndices(
+  rawText: string,
+  targetText: string,
+  annotation?: Pick<DocAnnotationItem, 'startOffset' | 'endOffset' | 'contextBefore' | 'contextAfter'>
+): { start: number; end: number } | null {
   const cleanTarget = targetText.trim();
   if (!cleanTarget) return null;
 
+  // New annotations persist their exact position, so repeated text is never
+  // accidentally attached to its first occurrence.
+  const storedStart = annotation?.startOffset;
+  const storedEnd = annotation?.endOffset;
+  if (
+    typeof storedStart === 'number' &&
+    typeof storedEnd === 'number' &&
+    storedStart >= 0 &&
+    storedEnd > storedStart &&
+    storedEnd <= rawText.length &&
+    rawText.slice(storedStart, storedEnd).toLowerCase() === cleanTarget.toLowerCase()
+  ) {
+    return { start: storedStart, end: storedEnd };
+  }
+
+  // If the document was edited after the annotation was saved, use the nearby
+  // text to relocate the correct occurrence.
+  const lowerText = rawText.toLowerCase();
+  const lowerTarget = cleanTarget.toLowerCase();
+  const candidates: number[] = [];
+  let candidateIndex = lowerText.indexOf(lowerTarget);
+  while (candidateIndex !== -1) {
+    candidates.push(candidateIndex);
+    candidateIndex = lowerText.indexOf(lowerTarget, candidateIndex + 1);
+  }
+  if (candidates.length > 1 && (annotation?.contextBefore || annotation?.contextAfter)) {
+    const before = annotation.contextBefore || '';
+    const after = annotation.contextAfter || '';
+    const commonSuffixLength = (left: string, right: string) => {
+      let count = 0;
+      while (
+        count < left.length &&
+        count < right.length &&
+        left[left.length - 1 - count].toLowerCase() === right[right.length - 1 - count].toLowerCase()
+      ) count++;
+      return count;
+    };
+    const commonPrefixLength = (left: string, right: string) => {
+      let count = 0;
+      while (
+        count < left.length &&
+        count < right.length &&
+        left[count].toLowerCase() === right[count].toLowerCase()
+      ) count++;
+      return count;
+    };
+    const best = candidates
+      .map((start) => ({
+        start,
+        score:
+          commonSuffixLength(rawText.slice(Math.max(0, start - before.length), start), before) +
+          commonPrefixLength(
+            rawText.slice(start + cleanTarget.length, start + cleanTarget.length + after.length),
+            after
+          ),
+      }))
+      .sort((a, b) => b.score - a.score)[0];
+    if (best.score > 0) return { start: best.start, end: best.start + cleanTarget.length };
+  }
+
   // 1. Try exact match first on rawText
-  const exactIndex = rawText.toLowerCase().indexOf(cleanTarget.toLowerCase());
+  const exactIndex = lowerText.indexOf(lowerTarget);
   if (exactIndex !== -1) {
     return { start: exactIndex, end: exactIndex + cleanTarget.length };
   }
@@ -122,7 +190,7 @@ function parseAndAnnotateHtml(rawHtml: string, annotationsList: DocAnnotationIte
         offsets.push({ node: tNode, start, end });
       }
 
-      const matchRange = findRawMatchIndices(fullText, targetText);
+      const matchRange = findRawMatchIndices(fullText, targetText, ann);
       if (!matchRange) return;
 
       const { start: matchIndex, end: matchEnd } = matchRange;
@@ -189,6 +257,10 @@ export default function DocsViewer({
   const [annotations, setAnnotations] = useState<DocAnnotationItem[]>([]);
   const [selectionState, setSelectionState] = useState<{
     text: string;
+    startOffset: number;
+    endOffset: number;
+    contextBefore: string;
+    contextAfter: string;
     x: number;
     topY: number;
     bottomY: number;
@@ -197,6 +269,10 @@ export default function DocsViewer({
   // Inline Note Popup state (positioned right BELOW selection)
   const [inlineNoteState, setInlineNoteState] = useState<{
     text: string;
+    startOffset: number;
+    endOffset: number;
+    contextBefore: string;
+    contextAfter: string;
     x: number;
     y: number;
   } | null>(null);
@@ -242,7 +318,8 @@ export default function DocsViewer({
         return;
       }
 
-      const text = selection.toString().trim();
+      const rawSelectedText = selection.toString();
+      const text = rawSelectedText.trim();
       if (!text || text.length < 2) {
         return;
       }
@@ -251,8 +328,19 @@ export default function DocsViewer({
         try {
           const range = selection.getRangeAt(0);
           const rect = range.getBoundingClientRect();
+          const prefixRange = document.createRange();
+          prefixRange.selectNodeContents(articleRef.current);
+          prefixRange.setEnd(range.startContainer, range.startOffset);
+          const leadingWhitespace = rawSelectedText.length - rawSelectedText.trimStart().length;
+          const startOffset = prefixRange.toString().length + leadingWhitespace;
+          const endOffset = startOffset + text.length;
+          const articleText = articleRef.current.textContent || '';
           setSelectionState({
             text,
+            startOffset,
+            endOffset,
+            contextBefore: articleText.slice(Math.max(0, startOffset - 80), startOffset),
+            contextAfter: articleText.slice(endOffset, endOffset + 80),
             x: Math.max(20, rect.left + rect.width / 2),
             topY: rect.top - 10,
             bottomY: rect.bottom + 8,
@@ -315,6 +403,10 @@ export default function DocsViewer({
       docSlug: slug,
       type: 'HIGHLIGHT',
       selectedText: text,
+      startOffset: selectionState.startOffset,
+      endOffset: selectionState.endOffset,
+      contextBefore: selectionState.contextBefore,
+      contextAfter: selectionState.contextAfter,
       color,
       createdAt: new Date().toISOString(),
     };
@@ -329,6 +421,10 @@ export default function DocsViewer({
           docSlug: slug,
           type: 'HIGHLIGHT',
           selectedText: text,
+          startOffset: tempAnn.startOffset,
+          endOffset: tempAnn.endOffset,
+          contextBefore: tempAnn.contextBefore,
+          contextAfter: tempAnn.contextAfter,
           color,
         }),
       });
@@ -365,6 +461,10 @@ export default function DocsViewer({
     if (!selectionState?.text) return;
     setInlineNoteState({
       text: selectionState.text,
+      startOffset: selectionState.startOffset,
+      endOffset: selectionState.endOffset,
+      contextBefore: selectionState.contextBefore,
+      contextAfter: selectionState.contextAfter,
       x: selectionState.x,
       y: selectionState.bottomY,
     });
@@ -387,6 +487,10 @@ export default function DocsViewer({
       docSlug: slug,
       type: 'NOTE',
       selectedText: text,
+      startOffset: inlineNoteState.startOffset,
+      endOffset: inlineNoteState.endOffset,
+      contextBefore: inlineNoteState.contextBefore,
+      contextAfter: inlineNoteState.contextAfter,
       noteContent: note,
       color: 'INDIGO',
       createdAt: new Date().toISOString(),
@@ -402,6 +506,10 @@ export default function DocsViewer({
           docSlug: slug,
           type: 'NOTE',
           selectedText: text,
+          startOffset: tempAnn.startOffset,
+          endOffset: tempAnn.endOffset,
+          contextBefore: tempAnn.contextBefore,
+          contextAfter: tempAnn.contextAfter,
           noteContent: note,
           color: 'INDIGO',
         }),

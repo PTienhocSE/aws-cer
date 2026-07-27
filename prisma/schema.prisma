@@ -39,6 +39,10 @@ model DocAnnotation {
   docSlug      String
   type         String   @default("HIGHLIGHT") // "HIGHLIGHT" | "NOTE"
   selectedText String
+  startOffset  Int?
+  endOffset    Int?
+  contextBefore String?
+  contextAfter  String?
   noteContent  String?
   color        String   @default("AMBER") // "AMBER" | "INDIGO" | "PINK" | "EMERALD"
   createdAt    DateTime @default(now())
