@@ -23,11 +23,12 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import NoteMarkdown from '@/components/NoteMarkdown';
+import DocumentNoteWidget from '@/components/DocumentNoteWidget';
 
 export interface DocAnnotationItem {
   id: string;
   docSlug: string;
-  type: 'HIGHLIGHT' | 'NOTE';
+  type: 'HIGHLIGHT' | 'NOTE' | 'DOCUMENT_NOTE';
   selectedText: string;
   startOffset?: number | null;
   endOffset?: number | null;
@@ -169,6 +170,7 @@ function parseAndAnnotateHtml(rawHtml: string, annotationsList: DocAnnotationIte
     const container = doc.body;
 
     annotationsList.forEach((ann) => {
+      if (ann.type === 'DOCUMENT_NOTE') return;
       if (!ann.selectedText) return;
       const targetText = ann.selectedText.trim();
       if (!targetText) return;
@@ -1221,6 +1223,8 @@ export default function DocsViewer({
           )}
         </div>
       </div>
+
+      <DocumentNoteWidget docSlug={slug} docTitle={title} theme={theme} />
     </div>
   );
 }
