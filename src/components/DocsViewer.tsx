@@ -388,8 +388,6 @@ export default function DocsViewer({
   } | null>(null);
   const [noteInputContent, setNoteInputContent] = useState('');
   const [isSavingNote, setIsSavingNote] = useState(false);
-  const [editingInlineAnnotationId, setEditingInlineAnnotationId] = useState<string | null>(null);
-  const [composerInitialContent, setComposerInitialContent] = useState('');
 
   // Hover & Pin Popover state
   const [hoveredAnnotation, setHoveredAnnotation] = useState<{
@@ -598,8 +596,6 @@ export default function DocsViewer({
       y: selectionState.bottomY,
     });
     setNoteInputContent('');
-    setEditingInlineAnnotationId(null);
-    setComposerInitialContent('');
     setSelectionState(null);
   };
 
@@ -611,33 +607,6 @@ export default function DocsViewer({
     setInlineNoteState(null);
     setNoteInputContent('');
     window.getSelection()?.removeAllRanges();
-
-    if (editingInlineAnnotationId) {
-      const annotationId = editingInlineAnnotationId;
-      setEditingInlineAnnotationId(null);
-      setIsSavingNote(true);
-      try {
-        const response = await fetch('/api/docs/annotations', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id: annotationId, noteContent: note }),
-        });
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Không thể cập nhật note');
-        setAnnotations((current) =>
-          current.map((annotation) =>
-            annotation.id === annotationId
-              ? { ...annotation, noteContent: data.annotation.noteContent }
-              : annotation
-          )
-        );
-      } catch (error) {
-        toast.error(error instanceof Error ? error.message : 'Lỗi cập nhật note');
-      } finally {
-        setIsSavingNote(false);
-      }
-      return;
-    }
 
     const tempId = 'temp-' + Date.now();
     const tempAnn: DocAnnotationItem = {
@@ -692,19 +661,6 @@ export default function DocsViewer({
       toast.error('Lỗi khi lưu ghi chú');
     }
   };
-
-  useEffect(() => {
-    if (
-      !inlineNoteState ||
-      noteInputContent.trim().length < 2 ||
-      noteInputContent === composerInitialContent ||
-      isSavingNote
-    ) return;
-    const timer = window.setTimeout(() => {
-      void handleSaveNote();
-    }, 1200);
-    return () => window.clearTimeout(timer);
-  }, [inlineNoteState, noteInputContent, composerInitialContent, isSavingNote]);
 
   // Delete Annotation from DB
   const handleDeleteAnnotation = async (id: string) => {
@@ -1240,11 +1196,9 @@ export default function DocsViewer({
             <div className="flex items-center space-x-1.5 text-xs font-black text-amber-500">
               <FileText className="w-3.5 h-3.5" />
               <span>{
-                editingInlineAnnotationId
-                  ? 'Chỉnh sửa note trong tài liệu'
-                  : inlineNoteState.type === 'INLINE_NOTE'
-                    ? 'Chèn note vào tài liệu'
-                    : 'Ghi chú cho đoạn đã chọn'
+                inlineNoteState.type === 'INLINE_NOTE'
+                  ? 'Chèn note vào tài liệu'
+                  : 'Ghi chú cho đoạn đã chọn'
               }</span>
             </div>
             <button
@@ -1289,9 +1243,14 @@ export default function DocsViewer({
               Đóng
             </button>
 
-            <div className="rounded-xl bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-700">
-              {isSavingNote ? 'Đang tự lưu...' : noteInputContent.trim().length >= 2 ? 'Sẽ tự lưu...' : 'Nhập để tự lưu'}
-            </div>
+            <button
+              type="button"
+              onClick={handleSaveNote}
+              disabled={isSavingNote || noteInputContent.trim().length < 2}
+              className="rounded-xl bg-amber-500 px-4 py-1.5 text-xs font-bold text-slate-950 shadow-sm transition hover:bg-amber-400 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {isSavingNote ? 'Đang lưu...' : 'Lưu ghi chú'}
+            </button>
           </div>
         </div>
       )}
