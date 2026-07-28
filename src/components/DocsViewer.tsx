@@ -266,6 +266,9 @@ function parseAndAnnotateHtml(rawHtml: string, annotationsList: DocAnnotationIte
           const escapedPreview = rawPreview.slice(0, 72).replace(/[&<>"']/g, (char) => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
           }[char] || char));
+          const escapedNoteContent = (ann.noteContent || '').replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+          }[char] || char));
           inlineNote.className = 'doc-inline-note';
           inlineNote.setAttribute('data-inline-note-id', ann.id);
           inlineNote.innerHTML = `
@@ -287,6 +290,21 @@ function parseAndAnnotateHtml(rawHtml: string, annotationsList: DocAnnotationIte
               </span>
             </button>
             <span class="doc-inline-note-body">${renderSafeMarkdownHtml(ann.noteContent || '*Không có nội dung*')}</span>
+            <span class="doc-inline-note-editor">
+              <span class="doc-inline-note-editor-toolbar">
+                <span class="doc-inline-note-editor-modes">
+                  <button type="button" class="is-active" data-inline-note-mode="write">Viết Markdown</button>
+                  <button type="button" data-inline-note-mode="preview">Xem trước</button>
+                </span>
+                <span class="doc-inline-note-save-status" data-inline-note-status>Đã lưu</span>
+              </span>
+              <textarea data-inline-note-textarea="${ann.id}" spellcheck="true">${escapedNoteContent}</textarea>
+              <span class="doc-inline-note-editor-preview"></span>
+              <span class="doc-inline-note-editor-footer">
+                <span>Hỗ trợ Markdown, code và bảng GFM</span>
+                <button type="button" data-inline-note-done="${ann.id}">Xong</button>
+              </span>
+            </span>
             <span class="doc-inline-note-actions">
               <button type="button" class="doc-inline-note-edit" data-inline-note-edit="${ann.id}">Chỉnh sửa</button>
               <button type="button" class="doc-inline-note-delete" data-inline-note-delete="${ann.id}">Xóa note</button>
@@ -335,6 +353,7 @@ export default function DocsViewer({
   const isDark = theme === 'dark';
   const articleRef = useRef<HTMLElement>(null);
   const annotationPopoverRef = useRef<HTMLDivElement>(null);
+  const inlineNoteSaveTimersRef = useRef<Map<string, number>>(new Map());
 
   // Annotations state
   const [annotations, setAnnotations] = useState<DocAnnotationItem[]>([]);
@@ -393,6 +412,13 @@ export default function DocsViewer({
 
   useEffect(() => {
     fetchAnnotations();
+  }, [slug]);
+
+  useEffect(() => {
+    return () => {
+      inlineNoteSaveTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+      inlineNoteSaveTimersRef.current.clear();
+    };
   }, [slug]);
 
   // Generate 100% Stable Annotated HTML in React Memory (Preserves marks on re-render & hover!)
@@ -739,27 +765,112 @@ export default function DocsViewer({
     }
   };
 
+  const saveInlineNoteFromDocument = async (
+    annotationId: string,
+    noteContent: string,
+    refreshAnnotation = false
+  ) => {
+    const wrapper = articleRef.current?.querySelector<HTMLElement>(
+      `[data-inline-note-id="${annotationId}"]`
+    );
+    const status = wrapper?.querySelector<HTMLElement>('[data-inline-note-status]');
+    if (status) status.textContent = 'Đang lưu...';
+
+    try {
+      const response = await fetch('/api/docs/annotations', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: annotationId, noteContent }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Không thể cập nhật note');
+
+      if (refreshAnnotation) {
+        setAnnotations((current) =>
+          current.map((annotation) =>
+            annotation.id === annotationId
+              ? { ...annotation, noteContent: data.annotation.noteContent }
+              : annotation
+          )
+        );
+      } else if (status) {
+        status.textContent = 'Đã tự lưu';
+      }
+    } catch (error) {
+      if (status) status.textContent = 'Lỗi lưu';
+      toast.error(error instanceof Error ? error.message : 'Lỗi cập nhật note');
+    }
+  };
+
+  const handleArticleInput = (e: React.FormEvent<HTMLElement>) => {
+    const textarea = (e.target as HTMLElement).closest<HTMLTextAreaElement>(
+      '[data-inline-note-textarea]'
+    );
+    if (!textarea) return;
+
+    const annotationId = textarea.getAttribute('data-inline-note-textarea');
+    if (!annotationId) return;
+    const wrapper = textarea.closest<HTMLElement>('[data-inline-note-id]');
+    const status = wrapper?.querySelector<HTMLElement>('[data-inline-note-status]');
+    if (status) status.textContent = 'Chờ tự lưu...';
+
+    const previousTimer = inlineNoteSaveTimersRef.current.get(annotationId);
+    if (previousTimer) window.clearTimeout(previousTimer);
+    const timer = window.setTimeout(() => {
+      inlineNoteSaveTimersRef.current.delete(annotationId);
+      void saveInlineNoteFromDocument(annotationId, textarea.value);
+    }, 900);
+    inlineNoteSaveTimersRef.current.set(annotationId, timer);
+  };
+
   // Handle Click on annotated mark tag to PIN popover
   const handleArticleClick = (e: React.MouseEvent<HTMLElement>) => {
     const editInlineTarget = (e.target as HTMLElement).closest('[data-inline-note-edit]');
     if (editInlineTarget) {
       const annotationId = editInlineTarget.getAttribute('data-inline-note-edit');
-      const annotation = annotations.find((item) => item.id === annotationId);
-      if (annotation) {
-        const rect = editInlineTarget.getBoundingClientRect();
-        setInlineNoteState({
-          type: 'INLINE_NOTE',
-          text: annotation.selectedText,
-          startOffset: annotation.startOffset || 0,
-          endOffset: annotation.endOffset || 0,
-          contextBefore: annotation.contextBefore || '',
-          contextAfter: annotation.contextAfter || '',
-          x: window.innerWidth < 640 ? window.innerWidth / 2 : Math.max(160, rect.left),
-          y: Math.max(8, Math.min(window.innerHeight - 280, rect.bottom + 8)),
-        });
-        setNoteInputContent(annotation.noteContent || '');
-        setComposerInitialContent(annotation.noteContent || '');
-        setEditingInlineAnnotationId(annotation.id);
+      const wrapper = editInlineTarget.closest<HTMLElement>('[data-inline-note-id]');
+      if (annotationId && wrapper) {
+        wrapper.classList.add('is-expanded', 'is-editing');
+        wrapper.classList.remove('is-previewing');
+        const textarea = wrapper.querySelector<HTMLTextAreaElement>('[data-inline-note-textarea]');
+        const modeButtons = wrapper.querySelectorAll<HTMLElement>('[data-inline-note-mode]');
+        modeButtons.forEach((button) =>
+          button.classList.toggle('is-active', button.getAttribute('data-inline-note-mode') === 'write')
+        );
+        window.setTimeout(() => textarea?.focus(), 0);
+      }
+      return;
+    }
+
+    const inlineModeTarget = (e.target as HTMLElement).closest<HTMLElement>('[data-inline-note-mode]');
+    if (inlineModeTarget) {
+      const wrapper = inlineModeTarget.closest<HTMLElement>('[data-inline-note-id]');
+      if (!wrapper) return;
+      const mode = inlineModeTarget.getAttribute('data-inline-note-mode');
+      const textarea = wrapper.querySelector<HTMLTextAreaElement>('[data-inline-note-textarea]');
+      const preview = wrapper.querySelector<HTMLElement>('.doc-inline-note-editor-preview');
+      wrapper.classList.toggle('is-previewing', mode === 'preview');
+      wrapper.querySelectorAll<HTMLElement>('[data-inline-note-mode]').forEach((button) =>
+        button.classList.toggle('is-active', button === inlineModeTarget)
+      );
+      if (mode === 'preview' && preview && textarea) {
+        preview.innerHTML = renderSafeMarkdownHtml(textarea.value || '*Không có nội dung*');
+      } else {
+        window.setTimeout(() => textarea?.focus(), 0);
+      }
+      return;
+    }
+
+    const inlineDoneTarget = (e.target as HTMLElement).closest<HTMLElement>('[data-inline-note-done]');
+    if (inlineDoneTarget) {
+      const annotationId = inlineDoneTarget.getAttribute('data-inline-note-done');
+      const wrapper = inlineDoneTarget.closest<HTMLElement>('[data-inline-note-id]');
+      const textarea = wrapper?.querySelector<HTMLTextAreaElement>('[data-inline-note-textarea]');
+      if (annotationId && textarea) {
+        const pendingTimer = inlineNoteSaveTimersRef.current.get(annotationId);
+        if (pendingTimer) window.clearTimeout(pendingTimer);
+        inlineNoteSaveTimersRef.current.delete(annotationId);
+        void saveInlineNoteFromDocument(annotationId, textarea.value, true);
       }
       return;
     }
@@ -767,9 +878,16 @@ export default function DocsViewer({
     const deleteInlineTarget = (e.target as HTMLElement).closest('[data-inline-note-delete]');
     if (deleteInlineTarget) {
       const annotationId = deleteInlineTarget.getAttribute('data-inline-note-delete');
-      if (annotationId) handleDeleteAnnotation(annotationId);
+      if (annotationId) {
+        const pendingTimer = inlineNoteSaveTimersRef.current.get(annotationId);
+        if (pendingTimer) window.clearTimeout(pendingTimer);
+        inlineNoteSaveTimersRef.current.delete(annotationId);
+        handleDeleteAnnotation(annotationId);
+      }
       return;
     }
+
+    if ((e.target as HTMLElement).closest('.doc-inline-note-editor')) return;
 
     const inlineNoteTarget = (e.target as HTMLElement).closest<HTMLElement>('[data-inline-note-id]');
     if (inlineNoteTarget) {
@@ -1011,6 +1129,7 @@ export default function DocsViewer({
       <article
         ref={articleRef}
         onClick={handleArticleClick}
+        onInput={handleArticleInput}
         onMouseUp={() => handleArticleSelectionEnd()}
         onTouchEnd={() => handleArticleSelectionEnd(180)}
         onMouseMove={handleArticleMouseMove}
