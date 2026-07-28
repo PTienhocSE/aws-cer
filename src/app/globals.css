@@ -514,6 +514,113 @@ mark.doc-note-mark:hover {
   box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.5) !important;
 }
 
+/* Notes inserted directly into the document flow */
+.doc-inline-note {
+  display: block;
+  width: 100%;
+  margin: 0.85rem 0;
+  border: 1px solid #fcd34d;
+  border-radius: 0.85rem;
+  background: #fffbeb;
+  color: #0f172a;
+  overflow: hidden;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.12);
+}
+
+.doc-inline-note-toggle {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.65rem 0.8rem;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.doc-inline-note-label {
+  flex: none;
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: #d97706;
+}
+
+.doc-inline-note-preview {
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.doc-inline-note-chevron {
+  flex: none;
+  transition: transform 0.2s ease;
+}
+
+.doc-inline-note-body,
+.doc-inline-note-delete {
+  display: none;
+}
+
+.doc-inline-note.is-expanded .doc-inline-note-chevron {
+  transform: rotate(180deg);
+}
+
+.doc-inline-note.is-expanded .doc-inline-note-body {
+  display: block;
+  padding: 0.85rem;
+  border-top: 1px solid #fde68a;
+  background: #ffffff;
+  color: #334155;
+  font-size: 0.82rem;
+  line-height: 1.65;
+}
+
+.doc-inline-note.is-expanded .doc-inline-note-delete {
+  display: block;
+  margin: 0 0.85rem 0.85rem auto;
+  border: 0;
+  background: transparent;
+  color: #ef4444;
+  font-size: 0.7rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.doc-inline-note-body > :first-child {
+  margin-top: 0;
+}
+
+.doc-inline-note-body > :last-child {
+  margin-bottom: 0;
+}
+
+.doc-dark-mode .doc-inline-note {
+  border-color: #d97706;
+  background: rgba(120, 53, 15, 0.3);
+  color: #fef3c7;
+}
+
+.doc-dark-mode .doc-inline-note-label {
+  color: #fbbf24;
+}
+
+.doc-dark-mode .doc-inline-note-preview {
+  color: #cbd5e1;
+}
+
+.doc-dark-mode .doc-inline-note.is-expanded .doc-inline-note-body {
+  border-top-color: #92400e;
+  background: #0f172a;
+  color: #e2e8f0;
+}
+
 /* Dark Mode Mark styles */
 .doc-dark-mode mark.doc-highlight,
 .doc-dark-mode mark.doc-highlight-amber {

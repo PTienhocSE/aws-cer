@@ -22,13 +22,14 @@ import {
   Save,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { marked } from 'marked';
 import NoteMarkdown from '@/components/NoteMarkdown';
 import DocumentNoteWidget from '@/components/DocumentNoteWidget';
 
 export interface DocAnnotationItem {
   id: string;
   docSlug: string;
-  type: 'HIGHLIGHT' | 'NOTE' | 'DOCUMENT_NOTE';
+  type: 'HIGHLIGHT' | 'NOTE' | 'INLINE_NOTE' | 'DOCUMENT_NOTE';
   selectedText: string;
   startOffset?: number | null;
   endOffset?: number | null;
@@ -158,6 +159,37 @@ function findRawMatchIndices(
   return { start: rawStart, end: rawEnd };
 }
 
+function renderSafeMarkdownHtml(content: string): string {
+  const parsed = marked.parse(content || '', { async: false }) as string;
+  const parser = new DOMParser();
+  const markdownDoc = parser.parseFromString(parsed, 'text/html');
+  const allowedTags = new Set([
+    'P', 'BR', 'STRONG', 'EM', 'CODE', 'PRE', 'UL', 'OL', 'LI',
+    'BLOCKQUOTE', 'A', 'H1', 'H2', 'H3', 'TABLE', 'THEAD', 'TBODY',
+    'TR', 'TH', 'TD', 'DEL', 'HR',
+  ]);
+
+  Array.from(markdownDoc.body.querySelectorAll('*')).forEach((element) => {
+    if (!allowedTags.has(element.tagName)) {
+      element.replaceWith(...Array.from(element.childNodes));
+      return;
+    }
+    Array.from(element.attributes).forEach((attribute) => {
+      if (element.tagName === 'A' && attribute.name === 'href') {
+        if (!/^(https?:\/\/|mailto:)/i.test(attribute.value)) element.removeAttribute('href');
+      } else {
+        element.removeAttribute(attribute.name);
+      }
+    });
+    if (element.tagName === 'A' && element.hasAttribute('href')) {
+      element.setAttribute('target', '_blank');
+      element.setAttribute('rel', 'noopener noreferrer');
+    }
+  });
+
+  return markdownDoc.body.innerHTML;
+}
+
 // In-Memory DOM TreeWalker to produce a 100% stable annotated HTML string for React's dangerouslySetInnerHTML
 function parseAndAnnotateHtml(rawHtml: string, annotationsList: DocAnnotationItem[]): string {
   if (!rawHtml || !annotationsList || annotationsList.length === 0) {
@@ -169,7 +201,15 @@ function parseAndAnnotateHtml(rawHtml: string, annotationsList: DocAnnotationIte
     const doc = parser.parseFromString(rawHtml, 'text/html');
     const container = doc.body;
 
-    annotationsList.forEach((ann) => {
+    const orderedAnnotations = [...annotationsList].sort((left, right) => {
+      const leftInline = left.type === 'INLINE_NOTE';
+      const rightInline = right.type === 'INLINE_NOTE';
+      if (leftInline !== rightInline) return leftInline ? 1 : -1;
+      if (leftInline && rightInline) return (right.startOffset || 0) - (left.startOffset || 0);
+      return 0;
+    });
+
+    orderedAnnotations.forEach((ann) => {
       if (ann.type === 'DOCUMENT_NOTE') return;
       if (!ann.selectedText) return;
       const targetText = ann.selectedText.trim();
@@ -219,6 +259,29 @@ function parseAndAnnotateHtml(rawHtml: string, annotationsList: DocAnnotationIte
 
         range.setStart(firstObj.node, startOffsetInFirst);
         range.setEnd(lastObj.node, endOffsetInLast);
+
+        if (ann.type === 'INLINE_NOTE') {
+          const inlineNote = doc.createElement('span');
+          const rawPreview = (ann.noteContent || '').replace(/\s+/g, ' ').trim();
+          const escapedPreview = rawPreview.slice(0, 72).replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+          }[char] || char));
+          inlineNote.className = 'doc-inline-note';
+          inlineNote.setAttribute('data-inline-note-id', ann.id);
+          inlineNote.innerHTML = `
+            <button type="button" class="doc-inline-note-toggle">
+              <span class="doc-inline-note-icon">📝</span>
+              <span class="doc-inline-note-label">Note</span>
+              <span class="doc-inline-note-preview">“${escapedPreview}${rawPreview.length > 72 ? '…' : ''}”</span>
+              <span class="doc-inline-note-chevron">⌄</span>
+            </button>
+            <span class="doc-inline-note-body">${renderSafeMarkdownHtml(ann.noteContent || '*Không có nội dung*')}</span>
+            <button type="button" class="doc-inline-note-delete" data-inline-note-delete="${ann.id}">Xóa note</button>
+          `;
+          range.collapse(false);
+          range.insertNode(inlineNote);
+          return;
+        }
 
         const mark = doc.createElement('mark');
         mark.setAttribute('data-annotation-id', ann.id);
@@ -275,6 +338,7 @@ export default function DocsViewer({
 
   // Inline Note Popup state (positioned right BELOW selection)
   const [inlineNoteState, setInlineNoteState] = useState<{
+    type: 'NOTE' | 'INLINE_NOTE';
     text: string;
     startOffset: number;
     endOffset: number;
@@ -467,7 +531,7 @@ export default function DocsViewer({
   };
 
   // Open Inline Note Popup (positioned right below selection)
-  const handleOpenInlineNote = () => {
+  const handleOpenInlineNote = (type: 'NOTE' | 'INLINE_NOTE' = 'NOTE') => {
     if (!user) {
       toast.error('Bạn cần đăng nhập để tạo Ghi chú!');
       router.push('/login');
@@ -476,6 +540,7 @@ export default function DocsViewer({
 
     if (!selectionState?.text) return;
     setInlineNoteState({
+      type,
       text: selectionState.text,
       startOffset: selectionState.startOffset,
       endOffset: selectionState.endOffset,
@@ -501,7 +566,7 @@ export default function DocsViewer({
     const tempAnn: DocAnnotationItem = {
       id: tempId,
       docSlug: slug,
-      type: 'NOTE',
+      type: inlineNoteState.type,
       selectedText: text,
       startOffset: inlineNoteState.startOffset,
       endOffset: inlineNoteState.endOffset,
@@ -520,7 +585,7 @@ export default function DocsViewer({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           docSlug: slug,
-          type: 'NOTE',
+          type: inlineNoteState.type,
           selectedText: text,
           startOffset: tempAnn.startOffset,
           endOffset: tempAnn.endOffset,
@@ -550,6 +615,14 @@ export default function DocsViewer({
       toast.error('Lỗi khi lưu ghi chú');
     }
   };
+
+  useEffect(() => {
+    if (!inlineNoteState || noteInputContent.trim().length < 2 || isSavingNote) return;
+    const timer = window.setTimeout(() => {
+      void handleSaveNote();
+    }, 1200);
+    return () => window.clearTimeout(timer);
+  }, [inlineNoteState, noteInputContent, isSavingNote]);
 
   // Delete Annotation from DB
   const handleDeleteAnnotation = async (id: string) => {
@@ -618,6 +691,19 @@ export default function DocsViewer({
 
   // Handle Click on annotated mark tag to PIN popover
   const handleArticleClick = (e: React.MouseEvent<HTMLElement>) => {
+    const deleteInlineTarget = (e.target as HTMLElement).closest('[data-inline-note-delete]');
+    if (deleteInlineTarget) {
+      const annotationId = deleteInlineTarget.getAttribute('data-inline-note-delete');
+      if (annotationId) handleDeleteAnnotation(annotationId);
+      return;
+    }
+
+    const inlineNoteTarget = (e.target as HTMLElement).closest<HTMLElement>('[data-inline-note-id]');
+    if (inlineNoteTarget) {
+      inlineNoteTarget.classList.toggle('is-expanded');
+      return;
+    }
+
     const markTarget = (e.target as HTMLElement).closest('[data-annotation-id]');
     if (markTarget) {
       const annId = markTarget.getAttribute('data-annotation-id');
@@ -899,11 +985,19 @@ export default function DocsViewer({
           </div>
 
           <button
-            onClick={handleOpenInlineNote}
-            className="flex items-center px-2 py-1 rounded-lg text-xs font-bold hover:bg-indigo-600 transition text-indigo-300 hover:text-white cursor-pointer"
+            onClick={() => handleOpenInlineNote('NOTE')}
+            className="flex items-center px-2 py-1 rounded-lg text-xs font-bold hover:bg-amber-500 transition text-amber-300 hover:text-slate-950 cursor-pointer"
           >
             <FileText className="w-3.5 h-3.5 mr-1" />
             <span>Ghi chú</span>
+          </button>
+          <button
+            onClick={() => handleOpenInlineNote('INLINE_NOTE')}
+            className="flex items-center px-2 py-1 rounded-lg text-xs font-bold hover:bg-amber-500 transition text-amber-300 hover:text-slate-950 cursor-pointer"
+            title="Chèn note trực tiếp vào nội dung"
+          >
+            <FileText className="w-3.5 h-3.5 mr-1" />
+            <span>Chèn note</span>
           </button>
         </div>
       )}
@@ -926,9 +1020,9 @@ export default function DocsViewer({
           }`}
         >
           <div className="flex items-center justify-between border-b pb-2 border-slate-200/40">
-            <div className="flex items-center space-x-1.5 text-xs font-black text-indigo-400">
+            <div className="flex items-center space-x-1.5 text-xs font-black text-amber-500">
               <FileText className="w-3.5 h-3.5" />
-              <span>Ghi chú cho đoạn đã chọn</span>
+              <span>{inlineNoteState.type === 'INLINE_NOTE' ? 'Chèn note vào tài liệu' : 'Ghi chú cho đoạn đã chọn'}</span>
             </div>
             <button
               onClick={() => setInlineNoteState(null)}
@@ -969,16 +1063,12 @@ export default function DocsViewer({
                 isDark ? 'text-slate-400 hover:bg-slate-800' : 'text-slate-600 hover:bg-slate-100'
               }`}
             >
-              Hủy
+              Đóng
             </button>
 
-            <button
-              onClick={handleSaveNote}
-              disabled={isSavingNote}
-              className="px-4 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition disabled:opacity-50"
-            >
-              {isSavingNote ? 'Đang lưu...' : 'Lưu ghi chú'}
-            </button>
+            <div className="rounded-xl bg-amber-100 px-3 py-1.5 text-xs font-bold text-amber-700">
+              {isSavingNote ? 'Đang tự lưu...' : noteInputContent.trim().length >= 2 ? 'Sẽ tự lưu...' : 'Nhập để tự lưu'}
+            </div>
           </div>
         </div>
       )}
