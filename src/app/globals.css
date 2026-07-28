@@ -546,18 +546,18 @@ html.dark-theme body {
   color: #f8fafc !important;
 }
 
-/* Responsive Markdown Tables on Mobile Touch Devices */
+/* Markdown tables fill their content column on tablet/desktop. */
 .doc-content table {
-  display: block !important;
+  display: table !important;
   width: 100% !important;
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch !important;
+  table-layout: fixed;
   border-collapse: collapse !important;
 }
 
 .doc-content th,
 .doc-content td {
-  white-space: nowrap !important;
+  white-space: normal !important;
+  overflow-wrap: break-word;
 }
 
 @media (max-width: 640px) {
@@ -596,5 +596,20 @@ html.dark-theme body {
   .doc-content code:not(pre code) {
     white-space: normal;
     overflow-wrap: anywhere;
+  }
+
+  /* On phones the table keeps readable columns and scrolls inside itself. */
+  .doc-content table {
+    display: block !important;
+    table-layout: auto;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .doc-content th,
+  .doc-content td {
+    min-width: 8rem;
+    white-space: nowrap !important;
+    overflow-wrap: normal;
   }
 }
