@@ -525,6 +525,8 @@ mark.doc-note-mark:hover {
   color: #0f172a;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(245, 158, 11, 0.12);
+  font-family: inherit;
+  font-weight: 400 !important;
 }
 
 .doc-inline-note-toggle {
@@ -538,6 +540,31 @@ mark.doc-note-mark:hover {
   color: inherit;
   text-align: left;
   cursor: pointer;
+  min-height: 2.75rem;
+  font-family: inherit;
+  font-weight: 400;
+}
+
+.doc-inline-note-icon,
+.doc-inline-note-chevron {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+}
+
+.doc-inline-note-icon {
+  width: 1rem;
+  height: 1rem;
+  color: #d97706;
+}
+
+.doc-inline-note-icon svg,
+.doc-inline-note-chevron svg {
+  display: block;
+  width: 100%;
+  height: 100%;
 }
 
 .doc-inline-note-label {
@@ -554,17 +581,19 @@ mark.doc-note-mark:hover {
   text-overflow: ellipsis;
   white-space: nowrap;
   font-size: 0.75rem;
-  font-weight: 600;
+  font-weight: 400;
   color: #64748b;
 }
 
 .doc-inline-note-chevron {
-  flex: none;
+  width: 1rem;
+  height: 1rem;
+  color: #64748b;
   transition: transform 0.2s ease;
 }
 
 .doc-inline-note-body,
-.doc-inline-note-delete {
+.doc-inline-note-actions {
   display: none;
 }
 
@@ -580,17 +609,57 @@ mark.doc-note-mark:hover {
   color: #334155;
   font-size: 0.82rem;
   line-height: 1.65;
+  font-family: inherit !important;
+  font-weight: 400 !important;
 }
 
-.doc-inline-note.is-expanded .doc-inline-note-delete {
-  display: block;
-  margin: 0 0.85rem 0.85rem auto;
+.doc-inline-note-body p,
+.doc-inline-note-body li,
+.doc-inline-note-body td,
+.doc-inline-note-body th,
+.doc-inline-note-body blockquote {
+  font-family: inherit !important;
+  font-weight: 400 !important;
+}
+
+.doc-inline-note-body strong {
+  font-weight: 700 !important;
+}
+
+.doc-inline-note.is-expanded .doc-inline-note-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  padding: 0.45rem 0.75rem 0.65rem;
+  background: #ffffff;
+}
+
+.doc-inline-note-edit,
+.doc-inline-note-delete {
   border: 0;
   background: transparent;
-  color: #ef4444;
+  border-radius: 0.5rem;
+  padding: 0.35rem 0.55rem;
   font-size: 0.7rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+.doc-inline-note-edit {
+  color: #d97706;
+}
+
+.doc-inline-note-edit:hover {
+  background: #fef3c7;
+}
+
+.doc-inline-note-delete {
+  color: #ef4444;
+}
+
+.doc-inline-note-delete:hover {
+  background: #fef2f2;
 }
 
 .doc-inline-note-body > :first-child {
@@ -619,6 +688,10 @@ mark.doc-note-mark:hover {
   border-top-color: #92400e;
   background: #0f172a;
   color: #e2e8f0;
+}
+
+.doc-dark-mode .doc-inline-note.is-expanded .doc-inline-note-actions {
+  background: #0f172a;
 }
 
 /* Dark Mode Mark styles */

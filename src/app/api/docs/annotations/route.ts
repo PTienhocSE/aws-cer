@@ -153,7 +153,7 @@ export async function PATCH(req: NextRequest) {
 
     if (typeof (prisma as any).docAnnotation !== 'undefined') {
       const result = await (prisma as any).docAnnotation.updateMany({
-        where: { id, userId, type: 'NOTE' },
+        where: { id, userId, type: { in: ['NOTE', 'INLINE_NOTE'] } },
         data: { noteContent, updatedAt: now },
       });
       if (result.count === 0) {
@@ -161,7 +161,7 @@ export async function PATCH(req: NextRequest) {
       }
     } else {
       const updatedCount = await prisma.$executeRawUnsafe(
-        `UPDATE "DocAnnotation" SET "noteContent" = $1, "updatedAt" = $2 WHERE "id" = $3 AND "userId" = $4 AND type = 'NOTE'`,
+        `UPDATE "DocAnnotation" SET "noteContent" = $1, "updatedAt" = $2 WHERE "id" = $3 AND "userId" = $4 AND type IN ('NOTE', 'INLINE_NOTE')`,
         noteContent,
         now,
         id,

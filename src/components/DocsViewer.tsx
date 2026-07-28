@@ -270,13 +270,27 @@ function parseAndAnnotateHtml(rawHtml: string, annotationsList: DocAnnotationIte
           inlineNote.setAttribute('data-inline-note-id', ann.id);
           inlineNote.innerHTML = `
             <button type="button" class="doc-inline-note-toggle">
-              <span class="doc-inline-note-icon">📝</span>
+              <span class="doc-inline-note-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <path d="M14 2v6h6"></path>
+                  <path d="M9 15h6"></path>
+                  <path d="M9 18h4"></path>
+                </svg>
+              </span>
               <span class="doc-inline-note-label">Note</span>
               <span class="doc-inline-note-preview">“${escapedPreview}${rawPreview.length > 72 ? '…' : ''}”</span>
-              <span class="doc-inline-note-chevron">⌄</span>
+              <span class="doc-inline-note-chevron" aria-hidden="true">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m6 9 6 6 6-6"></path>
+                </svg>
+              </span>
             </button>
             <span class="doc-inline-note-body">${renderSafeMarkdownHtml(ann.noteContent || '*Không có nội dung*')}</span>
-            <button type="button" class="doc-inline-note-delete" data-inline-note-delete="${ann.id}">Xóa note</button>
+            <span class="doc-inline-note-actions">
+              <button type="button" class="doc-inline-note-edit" data-inline-note-edit="${ann.id}">Chỉnh sửa</button>
+              <button type="button" class="doc-inline-note-delete" data-inline-note-delete="${ann.id}">Xóa note</button>
+            </span>
           `;
           range.collapse(false);
           range.insertNode(inlineNote);
@@ -349,6 +363,8 @@ export default function DocsViewer({
   } | null>(null);
   const [noteInputContent, setNoteInputContent] = useState('');
   const [isSavingNote, setIsSavingNote] = useState(false);
+  const [editingInlineAnnotationId, setEditingInlineAnnotationId] = useState<string | null>(null);
+  const [composerInitialContent, setComposerInitialContent] = useState('');
 
   // Hover & Pin Popover state
   const [hoveredAnnotation, setHoveredAnnotation] = useState<{
@@ -550,6 +566,8 @@ export default function DocsViewer({
       y: selectionState.bottomY,
     });
     setNoteInputContent('');
+    setEditingInlineAnnotationId(null);
+    setComposerInitialContent('');
     setSelectionState(null);
   };
 
@@ -561,6 +579,33 @@ export default function DocsViewer({
     setInlineNoteState(null);
     setNoteInputContent('');
     window.getSelection()?.removeAllRanges();
+
+    if (editingInlineAnnotationId) {
+      const annotationId = editingInlineAnnotationId;
+      setEditingInlineAnnotationId(null);
+      setIsSavingNote(true);
+      try {
+        const response = await fetch('/api/docs/annotations', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id: annotationId, noteContent: note }),
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Không thể cập nhật note');
+        setAnnotations((current) =>
+          current.map((annotation) =>
+            annotation.id === annotationId
+              ? { ...annotation, noteContent: data.annotation.noteContent }
+              : annotation
+          )
+        );
+      } catch (error) {
+        toast.error(error instanceof Error ? error.message : 'Lỗi cập nhật note');
+      } finally {
+        setIsSavingNote(false);
+      }
+      return;
+    }
 
     const tempId = 'temp-' + Date.now();
     const tempAnn: DocAnnotationItem = {
@@ -617,12 +662,17 @@ export default function DocsViewer({
   };
 
   useEffect(() => {
-    if (!inlineNoteState || noteInputContent.trim().length < 2 || isSavingNote) return;
+    if (
+      !inlineNoteState ||
+      noteInputContent.trim().length < 2 ||
+      noteInputContent === composerInitialContent ||
+      isSavingNote
+    ) return;
     const timer = window.setTimeout(() => {
       void handleSaveNote();
     }, 1200);
     return () => window.clearTimeout(timer);
-  }, [inlineNoteState, noteInputContent, isSavingNote]);
+  }, [inlineNoteState, noteInputContent, composerInitialContent, isSavingNote]);
 
   // Delete Annotation from DB
   const handleDeleteAnnotation = async (id: string) => {
@@ -691,6 +741,29 @@ export default function DocsViewer({
 
   // Handle Click on annotated mark tag to PIN popover
   const handleArticleClick = (e: React.MouseEvent<HTMLElement>) => {
+    const editInlineTarget = (e.target as HTMLElement).closest('[data-inline-note-edit]');
+    if (editInlineTarget) {
+      const annotationId = editInlineTarget.getAttribute('data-inline-note-edit');
+      const annotation = annotations.find((item) => item.id === annotationId);
+      if (annotation) {
+        const rect = editInlineTarget.getBoundingClientRect();
+        setInlineNoteState({
+          type: 'INLINE_NOTE',
+          text: annotation.selectedText,
+          startOffset: annotation.startOffset || 0,
+          endOffset: annotation.endOffset || 0,
+          contextBefore: annotation.contextBefore || '',
+          contextAfter: annotation.contextAfter || '',
+          x: window.innerWidth < 640 ? window.innerWidth / 2 : Math.max(160, rect.left),
+          y: Math.max(8, Math.min(window.innerHeight - 280, rect.bottom + 8)),
+        });
+        setNoteInputContent(annotation.noteContent || '');
+        setComposerInitialContent(annotation.noteContent || '');
+        setEditingInlineAnnotationId(annotation.id);
+      }
+      return;
+    }
+
     const deleteInlineTarget = (e.target as HTMLElement).closest('[data-inline-note-delete]');
     if (deleteInlineTarget) {
       const annotationId = deleteInlineTarget.getAttribute('data-inline-note-delete');
@@ -1022,7 +1095,13 @@ export default function DocsViewer({
           <div className="flex items-center justify-between border-b pb-2 border-slate-200/40">
             <div className="flex items-center space-x-1.5 text-xs font-black text-amber-500">
               <FileText className="w-3.5 h-3.5" />
-              <span>{inlineNoteState.type === 'INLINE_NOTE' ? 'Chèn note vào tài liệu' : 'Ghi chú cho đoạn đã chọn'}</span>
+              <span>{
+                editingInlineAnnotationId
+                  ? 'Chỉnh sửa note trong tài liệu'
+                  : inlineNoteState.type === 'INLINE_NOTE'
+                    ? 'Chèn note vào tài liệu'
+                    : 'Ghi chú cho đoạn đã chọn'
+              }</span>
             </div>
             <button
               onClick={() => setInlineNoteState(null)}

@@ -128,7 +128,7 @@ export default function DocumentNoteWidget({ docSlug, docTitle, theme }: Documen
   }
 
   return (
-    <section className={`fixed bottom-20 right-2 z-[60] flex h-[min(55dvh,38rem)] w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-2xl border shadow-2xl sm:h-[50vh] sm:w-[50vw] sm:min-w-[30rem] sm:max-w-[48rem] md:bottom-6 md:right-6 ${
+    <section className={`fixed bottom-20 right-2 z-[60] flex h-[min(55dvh,38rem)] w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-2xl border shadow-2xl sm:h-[50vh] sm:min-h-[20rem] sm:max-h-[calc(100dvh-3rem)] sm:w-[50vw] sm:min-w-[30rem] sm:max-w-[calc(100vw-3rem)] sm:resize md:bottom-6 md:right-6 ${
       isDark ? 'border-slate-700 bg-slate-900 text-slate-100' : 'border-slate-200 bg-white text-slate-800'
     }`}>
       <header className={`flex items-center justify-between gap-3 border-b px-4 py-3 ${isDark ? 'border-slate-700 bg-slate-800/90' : 'border-slate-200 bg-slate-50'}`}>
@@ -190,6 +190,10 @@ export default function DocumentNoteWidget({ docSlug, docTitle, theme }: Documen
           )}
         </div>
       </footer>
+      <span
+        aria-hidden="true"
+        className="pointer-events-none absolute bottom-1 right-1 hidden h-3 w-3 border-b-2 border-r-2 border-amber-500/70 sm:block"
+      />
     </section>
   );
 }
