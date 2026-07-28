@@ -909,7 +909,14 @@ export default function DocsViewer({
 
     const inlineNoteTarget = (e.target as HTMLElement).closest<HTMLElement>('[data-inline-note-id]');
     if (inlineNoteTarget) {
-      inlineNoteTarget.classList.toggle('is-expanded');
+      if (inlineNoteTarget.classList.contains('is-expanded')) {
+        inlineNoteTarget.classList.remove('is-expanded', 'is-editing', 'is-previewing');
+        window.requestAnimationFrame(() => {
+          inlineNoteTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      } else {
+        inlineNoteTarget.classList.add('is-expanded');
+      }
       return;
     }
 
