@@ -755,6 +755,7 @@ mark.doc-note-mark:hover {
   cursor: pointer;
 }
 
+.doc-inline-note-collapse,
 .doc-inline-note-edit,
 .doc-inline-note-delete {
   border: 0;
@@ -764,6 +765,24 @@ mark.doc-note-mark:hover {
   font-size: 0.7rem;
   font-weight: 700;
   cursor: pointer;
+}
+
+.doc-inline-note-collapse {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  margin-right: auto;
+  color: #475569;
+}
+
+.doc-inline-note-collapse:hover {
+  background: #f1f5f9;
+  color: #0f172a;
+}
+
+.doc-inline-note-collapse svg {
+  width: 0.85rem;
+  height: 0.85rem;
 }
 
 .doc-inline-note-edit {
@@ -812,6 +831,15 @@ mark.doc-note-mark:hover {
 
 .doc-dark-mode .doc-inline-note.is-expanded .doc-inline-note-actions {
   background: #0f172a;
+}
+
+.doc-dark-mode .doc-inline-note-collapse {
+  color: #cbd5e1;
+}
+
+.doc-dark-mode .doc-inline-note-collapse:hover {
+  background: #1e293b;
+  color: #ffffff;
 }
 
 .doc-dark-mode .doc-inline-note.is-editing .doc-inline-note-editor {

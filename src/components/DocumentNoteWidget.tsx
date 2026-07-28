@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { BookOpen, Check, ChevronUp, Eye, FileText, Loader2, Minimize2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -18,6 +18,7 @@ type WidgetMode = 'bubble' | 'collapsed' | 'expanded';
 export default function DocumentNoteWidget({ docSlug, docTitle, theme }: DocumentNoteWidgetProps) {
   const { user } = useAuthStore();
   const isDark = theme === 'dark';
+  const panelRef = useRef<HTMLElement>(null);
   const [mode, setMode] = useState<WidgetMode>('bubble');
   const [content, setContent] = useState('');
   const [savedContent, setSavedContent] = useState('');
@@ -81,6 +82,33 @@ export default function DocumentNoteWidget({ docSlug, docTitle, theme }: Documen
     }
   };
 
+  const handleResizeStart = (event: React.PointerEvent<HTMLButtonElement>) => {
+    const panel = panelRef.current;
+    if (!panel || window.innerWidth < 640) return;
+    event.preventDefault();
+
+    const startX = event.clientX;
+    const startY = event.clientY;
+    const startWidth = panel.offsetWidth;
+    const startHeight = panel.offsetHeight;
+    const maxWidth = window.innerWidth - 48;
+    const maxHeight = window.innerHeight - 48;
+
+    const handlePointerMove = (moveEvent: PointerEvent) => {
+      const width = Math.min(maxWidth, Math.max(480, startWidth - (moveEvent.clientX - startX)));
+      const height = Math.min(maxHeight, Math.max(320, startHeight - (moveEvent.clientY - startY)));
+      panel.style.width = `${width}px`;
+      panel.style.height = `${height}px`;
+    };
+    const handlePointerUp = () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerUp);
+    };
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerUp);
+  };
+
   useEffect(() => {
     if (!user || isLoading || content === savedContent) return;
     const timer = window.setTimeout(() => {
@@ -128,10 +156,23 @@ export default function DocumentNoteWidget({ docSlug, docTitle, theme }: Documen
   }
 
   return (
-    <section className={`fixed bottom-20 right-2 z-[60] flex h-[min(55dvh,38rem)] w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-2xl border shadow-2xl sm:h-[50vh] sm:min-h-[20rem] sm:max-h-[calc(100dvh-3rem)] sm:w-[50vw] sm:min-w-[30rem] sm:max-w-[calc(100vw-3rem)] sm:resize md:bottom-6 md:right-6 ${
+    <section ref={panelRef} className={`fixed bottom-20 right-2 z-[60] flex h-[min(55dvh,38rem)] w-[calc(100vw-1rem)] flex-col overflow-hidden rounded-2xl border shadow-2xl sm:h-[50vh] sm:min-h-[20rem] sm:max-h-[calc(100dvh-3rem)] sm:w-[50vw] sm:min-w-[30rem] sm:max-w-[calc(100vw-3rem)] md:bottom-6 md:right-6 ${
       isDark ? 'border-slate-700 bg-slate-900 text-slate-100' : 'border-slate-200 bg-white text-slate-800'
     }`}>
-      <header className={`flex items-center justify-between gap-3 border-b px-4 py-3 ${isDark ? 'border-slate-700 bg-slate-800/90' : 'border-slate-200 bg-slate-50'}`}>
+      <button
+        type="button"
+        onPointerDown={handleResizeStart}
+        className={`absolute left-1 top-1 z-10 hidden h-5 w-5 cursor-nwse-resize items-center justify-center rounded sm:flex ${
+          isDark ? 'text-white/80 hover:bg-white/10' : 'text-slate-900 hover:bg-slate-200'
+        }`}
+        title="Kéo để thay đổi kích thước"
+        aria-label="Thay đổi kích thước ghi chú"
+      >
+        <svg viewBox="0 0 16 16" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round">
+          <path d="M3 10.5 10.5 3M3 6.5 6.5 3M7 13l6-6" />
+        </svg>
+      </button>
+      <header className={`flex items-center justify-between gap-3 border-b px-4 py-3 sm:pl-8 ${isDark ? 'border-slate-700 bg-slate-800/90' : 'border-slate-200 bg-slate-50'}`}>
         <div className="flex min-w-0 items-center gap-2">
           <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-amber-500 text-slate-950">
             <BookOpen className="h-4 w-4" />
@@ -190,10 +231,6 @@ export default function DocumentNoteWidget({ docSlug, docTitle, theme }: Documen
           )}
         </div>
       </footer>
-      <span
-        aria-hidden="true"
-        className="pointer-events-none absolute bottom-1 right-1 hidden h-3 w-3 border-b-2 border-r-2 border-amber-500/70 sm:block"
-      />
     </section>
   );
 }

@@ -306,6 +306,12 @@ function parseAndAnnotateHtml(rawHtml: string, annotationsList: DocAnnotationIte
               </span>
             </span>
             <span class="doc-inline-note-actions">
+              <button type="button" class="doc-inline-note-collapse" data-inline-note-collapse="${ann.id}">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="m18 15-6-6-6 6"></path>
+                </svg>
+                Thu gọn
+              </button>
               <button type="button" class="doc-inline-note-edit" data-inline-note-edit="${ann.id}">Chỉnh sửa</button>
               <button type="button" class="doc-inline-note-delete" data-inline-note-delete="${ann.id}">Xóa note</button>
             </span>
@@ -825,6 +831,18 @@ export default function DocsViewer({
 
   // Handle Click on annotated mark tag to PIN popover
   const handleArticleClick = (e: React.MouseEvent<HTMLElement>) => {
+    const collapseInlineTarget = (e.target as HTMLElement).closest('[data-inline-note-collapse]');
+    if (collapseInlineTarget) {
+      const wrapper = collapseInlineTarget.closest<HTMLElement>('[data-inline-note-id]');
+      if (wrapper) {
+        wrapper.classList.remove('is-expanded', 'is-editing', 'is-previewing');
+        window.requestAnimationFrame(() => {
+          wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+      }
+      return;
+    }
+
     const editInlineTarget = (e.target as HTMLElement).closest('[data-inline-note-edit]');
     if (editInlineTarget) {
       const annotationId = editInlineTarget.getAttribute('data-inline-note-edit');
