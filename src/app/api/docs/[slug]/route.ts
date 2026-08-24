@@ -25,11 +25,27 @@ export async function GET(
     const { slug } = await params;
     const { docItem, prevDoc, nextDoc } = getDocBySlug(slug);
 
-    if (!docItem) {
-      return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+    let filePath: string;
+    let resolvedTitle: string;
+    let resolvedCategoryTitle: string;
+
+    if (docItem) {
+      filePath = path.join(process.cwd(), 'docs', docItem.filename);
+      resolvedTitle = docItem.title;
+      resolvedCategoryTitle = docItem.categoryTitle;
+    } else {
+      // Fallback: try reading docs/{slug}.md directly (for hidden docs not in sidebar)
+      filePath = path.join(process.cwd(), 'docs', `${slug}.md`);
+      if (!fs.existsSync(filePath)) {
+        return NextResponse.json({ error: 'Document not found' }, { status: 404 });
+      }
+      // Extract title from first H1 heading in the markdown
+      const tempContent = fs.readFileSync(filePath, 'utf-8');
+      const h1Match = tempContent.match(/^#\s+(.+)$/m);
+      resolvedTitle = h1Match ? h1Match[1].replace(/[*_`]/g, '').trim() : slug;
+      resolvedCategoryTitle = 'Interview Prep';
     }
 
-    const filePath = path.join(process.cwd(), 'docs', docItem.filename);
     if (!fs.existsSync(filePath)) {
       return NextResponse.json({ error: 'File does not exist on disk' }, { status: 404 });
     }
@@ -68,10 +84,10 @@ export async function GET(
     const html = await markedInstance.parse(rawMarkdown);
 
     return NextResponse.json({
-      slug: docItem.slug,
-      title: docItem.title,
-      categoryTitle: docItem.categoryTitle,
-      filename: docItem.filename,
+      slug: docItem?.slug ?? slug,
+      title: resolvedTitle,
+      categoryTitle: resolvedCategoryTitle,
+      filename: docItem?.filename ?? `${slug}.md`,
       rawMarkdown,
       html,
       toc,

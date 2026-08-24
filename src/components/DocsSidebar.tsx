@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { DOC_TREE, DocCategory } from '@/lib/docsData';
+import { AWS_DOC_TREE, INTERVIEW_DOC_TREE, DocCategory } from '@/lib/docsData';
 import {
   ChevronDown,
   ChevronRight,
@@ -11,6 +11,8 @@ import {
   FileText,
   PanelLeftClose,
   PanelLeftOpen,
+  GraduationCap,
+  Cloud,
 } from 'lucide-react';
 
 interface DocsSidebarProps {
@@ -28,27 +30,38 @@ export default function DocsSidebar({
 }: DocsSidebarProps) {
   const pathname = usePathname();
   const [searchTerm, setSearchTerm] = useState('');
+  const [activeTab, setActiveTab] = useState<'aws' | 'interview'>('aws');
   const isDark = theme === 'dark';
 
+  // Automatically switch tab based on current pathname
+  useEffect(() => {
+    if (pathname && pathname.includes('interview-devops')) {
+      setActiveTab('interview');
+    } else {
+      setActiveTab('aws');
+    }
+  }, [pathname]);
+
   // Track open state for categories. Default all open
-  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({
-    intro: true,
-    services: true,
-    architecture: true,
-    'exam-prep': true,
-  });
+  const [openCategories, setOpenCategories] = useState<Record<string, boolean>>({});
 
   const toggleCategory = (id: string) => {
-    setOpenCategories((prev) => ({ ...prev, [id]: !prev[id] }));
+    setOpenCategories((prev) => ({ ...prev, [id]: prev[id] === false ? true : false }));
   };
 
-  const filteredTree: DocCategory[] = DOC_TREE.map((cat) => {
-    if (!searchTerm.trim()) return cat;
-    const filteredItems = cat.items.filter((item) =>
-      item.title.toLowerCase().includes(searchTerm.toLowerCase())
-    );
-    return { ...cat, items: filteredItems };
-  }).filter((cat) => cat.items.length > 0);
+  const activeTree: DocCategory[] = activeTab === 'interview' ? INTERVIEW_DOC_TREE : AWS_DOC_TREE;
+
+  const filteredTree: DocCategory[] = activeTree
+    .map((cat) => {
+      if (!searchTerm.trim()) return cat;
+      const filteredItems = cat.items.filter((item) =>
+        item.title.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      return { ...cat, items: filteredItems };
+    })
+    .filter((cat) => cat.items.length > 0);
+
+  const totalCount = activeTab === 'interview' ? 56 : 30;
 
   // If collapsed view (desktop compact bar)
   if (isCollapsed) {
@@ -82,7 +95,7 @@ export default function DocsSidebar({
               isDark ? 'text-slate-400 group-hover:text-slate-200' : 'text-slate-500 group-hover:text-slate-800'
             }`}
           >
-            Sơ đồ tài liệu
+            {activeTab === 'interview' ? 'Phỏng vấn System & DevOps' : 'Sơ đồ tài liệu'}
           </div>
         </div>
 
@@ -91,7 +104,7 @@ export default function DocsSidebar({
             isDark ? 'bg-slate-900 text-slate-300' : 'bg-slate-100 text-slate-500'
           }`}
         >
-          30
+          {totalCount}
         </div>
       </div>
     );
@@ -103,16 +116,16 @@ export default function DocsSidebar({
         isDark ? 'bg-[#131c2e] border-slate-800 text-slate-200' : 'bg-white border-slate-200/90 text-slate-800'
       }`}
     >
-      {/* Sidebar Header & Search */}
-      <div className="space-y-2 shrink-0">
-        <div className="flex items-center justify-between px-1.5 pt-1">
+      {/* Sidebar Header & Tab Switcher */}
+      <div className="space-y-2.5 shrink-0">
+        <div className="flex items-center justify-between px-1.5 pt-0.5">
           <span
             className={`text-xs font-black uppercase tracking-wider flex items-center ${
               isDark ? 'text-slate-200' : 'text-slate-800'
             }`}
           >
             <FileText className="w-4 h-4 mr-1.5 text-amber-500" />
-            Tài liệu SAA-C03
+            {activeTab === 'interview' ? 'Phỏng vấn System & DevOps' : 'Tài liệu SAA-C03'}
           </span>
 
           <div className="flex items-center space-x-1">
@@ -123,7 +136,7 @@ export default function DocsSidebar({
                   : 'bg-amber-100 text-amber-900 border-amber-200'
               }`}
             >
-              30 Bài
+              {totalCount} Bài
             </span>
             {onToggleCollapse && (
               <button
@@ -137,6 +150,45 @@ export default function DocsSidebar({
               </button>
             )}
           </div>
+        </div>
+
+        {/* Tab Selection Switcher */}
+        <div
+          className={`grid grid-cols-2 p-1 rounded-xl gap-1 text-xs font-extrabold ${
+            isDark ? 'bg-[#090d16] border border-slate-800' : 'bg-slate-100 border border-slate-200/80'
+          }`}
+        >
+          <button
+            onClick={() => setActiveTab('aws')}
+            className={`flex items-center justify-center py-1.5 px-2 rounded-lg transition-all ${
+              activeTab === 'aws'
+                ? isDark
+                  ? 'bg-amber-500/20 text-amber-300 shadow-xs'
+                  : 'bg-white text-slate-900 shadow-xs'
+                : isDark
+                ? 'text-slate-400 hover:text-slate-200'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <Cloud className="w-3.5 h-3.5 mr-1" />
+            SAA-C03
+          </button>
+
+          <button
+            onClick={() => setActiveTab('interview')}
+            className={`flex items-center justify-center py-1.5 px-2 rounded-lg transition-all ${
+              activeTab === 'interview'
+                ? isDark
+                  ? 'bg-amber-500/20 text-amber-300 shadow-xs'
+                  : 'bg-white text-slate-900 shadow-xs'
+                : isDark
+                ? 'text-slate-400 hover:text-slate-200'
+                : 'text-slate-500 hover:text-slate-800'
+            }`}
+          >
+            <GraduationCap className="w-3.5 h-3.5 mr-1 text-amber-500" />
+            Phỏng vấn
+          </button>
         </div>
 
         <div className="relative">
@@ -169,10 +221,10 @@ export default function DocsSidebar({
                   isDark ? 'text-slate-200 hover:bg-slate-800/60' : 'text-slate-800 hover:bg-slate-100/80'
                 }`}
               >
-                <div className="flex items-center space-x-1.5 font-bold">
+                <div className="flex items-center space-x-1.5 font-bold truncate">
                   <span>{category.title}</span>
                 </div>
-                <div className="text-slate-400 group-hover:text-slate-300 transition">
+                <div className="text-slate-400 group-hover:text-slate-300 transition shrink-0">
                   {isOpen ? <ChevronDown className="w-3.5 h-3.5" /> : <ChevronRight className="w-3.5 h-3.5" />}
                 </div>
               </button>
