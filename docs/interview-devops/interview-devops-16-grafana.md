@@ -1,107 +1,157 @@
-# Grafana — Cẩm nang phỏng vấn
+# 16. Grafana
 
-# 1. Mục tiêu học
-datasource, dashboard, variables, panels, alerting, permissions và provisioning; liên hệ concept với vận hành, failure mode và quyết định production.
+## 1. Why This Matters
+Grafana là phần "mặt tiền" (UI) của toàn bộ hệ thống Observability. Đối với System Engineer tại Enterprise, khả năng trực quan hóa hệ thống phân tán, thiết kế Dashboard thông minh, và biến hàng triệu con số khô khan thành thông tin có ý nghĩa (actionable insights) để báo cáo lãnh đạo hoặc debug sự cố là kỹ năng bắt buộc. 
 
-# 2. Kiến thức nền cần có
-Linux, networking, storage, identity, scripting, observability và change management.
+## 2. Interview Priority
+> 🔴 MUST KNOW
 
-# 3. Tổng quan kiến trúc
-Mô tả control plane, data plane, state, dependency, traffic flow và failure domain của Grafana.
+## 3. CV Connection
+- **Bạn đã biết (từ CV):** Đã triển khai Grafana cùng Prometheus trên EKS.
+- **Phỏng vấn có thể hỏi:** Best practices khi thiết kế Dashboard. Cấu hình Data source, quản lý Dashboards as Code, phân quyền trong Grafana.
+- **Khoảng trống cần bù đắp:** Quản lý Grafana quy mô doanh nghiệp (SSO/AD integration, Provisioning qua GitOps, Plugin ecosystem).
 
-# 4. Cách hoạt động
-Mô tả lifecycle từ request/config đến execution, persistence, response, audit và metric.
+## 4. Prerequisites
+- Đã nắm rõ Prometheus (Chương 15).
+- Hiểu biết về PromQL và các khái niệm time-series.
 
-# 5. Thành phần và failure mode
-Grafana có thể gặp resource exhaustion, network partition, stale state, permission error, disk failure hoặc bad change; xác định impact của từng lỗi.
+## 5. Core Concepts
 
-# 6. Concepts quan trọng
-Availability, durability, consistency, latency, throughput, capacity, timeout, retry, idempotency và least privilege.
+### 5.1 Grafana Architecture & Data Sources
 
-# 7. Ví dụ thực tế
-Triển khai theo môi trường, version-control config, baseline metric, health check, backup và rollback.
+#### Definition
+Grafana không tự lưu trữ time-series metrics (ngoại trừ log nội bộ và database của chính nó dùng lưu cấu hình, user, dashboard như SQLite/PostgreSQL). Nó hoạt động như một cỗ máy truy vấn, kết nối tới các **Data Sources** (Prometheus, Loki, Elasticsearch, CloudWatch...) lấy dữ liệu về và vẽ.
 
-# 8. Command / Tool cần biết
-Grafana UI/API, JSON model, folders, provisioning
+#### Why It Exists
+Cung cấp một điểm truy cập duy nhất (Single Pane of Glass) để xem dữ liệu từ vô số các backend khác nhau mà không cần nhảy qua nhiều công cụ.
 
-# 9. Log và cách đọc
-Correlate timestamp, host/component, request ID, version và user. Giữ evidence trước khi restart hoặc xóa state.
+#### How It Works
+- User mở Dashboard.
+- Grafana parse các panels, dịch thành câu query gửi qua API xuống Data Sources.
+- Data Sources trả về JSON, Grafana Render thành biểu đồ trên trình duyệt.
 
-# 10. Metrics
-CPU, memory, disk/inode, network, latency, error rate, queue/connection, replication/lag và SLO.
+### 5.2 Dashboard Design & Variables
 
-# 11. Configuration mẫu
-Config phải review, có timeout/limit, secret ngoài source, permission tối thiểu, health check và rollback.
+#### Definition
+- **Dashboard:** Tập hợp các Panel hiển thị thông tin.
+- **Variables (Templating):** Biến số có thể thay đổi trên UI (dropdown menu) để tự động hóa thay đổi query. VD: Biến `$datacenter`, `$namespace`, `$pod`.
 
-# 12. Troubleshooting methodology
-Xác định scope; kiểm tra first bad timestamp và recent change; thu logs/metrics; lập hypothesis; mitigation reversible; verify; RCA.
+#### Best Practices
+1. Nguyên tắc "Top-Down" (Nhìn từ trên xuống): Trên cùng hiển thị RED metrics (Business/App level), cuộn xuống dưới là USE metrics (Hạ tầng/Node level).
+2. Không nhồi nhét: Dùng Row để ẩn/hiện bớt các Panel không cần thiết.
+3. Dùng Variables để tránh việc phải tạo 100 Dashboards cho 100 Pods.
 
-# 13. Năm production incidents
-1. Service unavailable: kiểm tra process/listener/health check/dependency.
-2. Latency tăng: kiểm tra saturation, queue, storage và network.
-3. Disk đầy: tìm consumer, cleanup theo policy và mở rộng an toàn.
-4. Permission/TLS lỗi: kiểm tra identity, expiry, chain và recent rotation.
-5. Replication/cluster lỗi: xác định quorum, lag, fencing và failover plan.
+### 5.3 Dashboards as Code (Provisioning)
 
-# 14. So sánh
-Managed giảm vận hành control plane nhưng giảm tùy biến; active-active tăng availability nhưng khó consistency; cache tăng latency tốt nhưng cần invalidation; snapshot nhanh nhưng không thay thế backup.
+#### Definition
+Phương pháp lưu trữ định nghĩa Dashboard (file JSON) và Data Sources (file YAML) trên Git, và Grafana tự động load chúng lúc khởi động (thường kết hợp với ConfigMap trong K8s hoặc Ansible).
 
-# 15. Common mistakes
-Không có baseline; alert quá rộng; retry vô hạn; quyền admin; backup chưa restore test; sửa nhiều biến cùng lúc; bỏ qua change record.
+#### Why It Exists
+- Không bị mất Dashboard nếu server Grafana sập (Disaster Recovery).
+- Version control được lịch sử thay đổi (Ai vừa phá Dashboard?).
+- Triển khai hàng loạt dễ dàng.
 
-# 16. Knowledge check
-Giải thích flow, failure domain, metric quan trọng, cách khoanh vùng và tiêu chí rollback của Grafana.
+### 5.4 Annotations (Chú thích)
 
-# 17. Câu hỏi phỏng vấn
-Thiết kế HA; debug outage; bảo mật access; capacity planning; backup/restore; patch/upgrade; monitoring và RCA.
+#### Definition
+Là các đường gạch dọc trên biểu đồ đánh dấu một sự kiện quan trọng.
+VD: Có một đường Annotation gạch xuống báo hiệu "Lúc 9:00 AM có đợt Deploy mới", sau đường đó thì thấy CPU tăng vọt => Giúp dễ dàng nhận diện nguyên nhân lỗi.
 
-# 18. Đáp án phỏng vấn mẫu
-Nêu assumption, scope, evidence, hypothesis, mitigation, verification và trade-off; tách rõ kinh nghiệm production và lab.
+## 6. Architecture
 
-# 19. Follow-up question tree
-Lỗi đơn lẻ hay toàn hệ thống? Có recent change? Component nào chung? Resource/permission/dependency nào bất thường? Action nào an toàn để giảm impact?
+```text
+[ Users (Browser) ]
+        |
+        v
++-----------------------+
+|    Grafana Server     | <--- Config DB (MySQL/PostgreSQL: lưu user/dashboards)
+| (Authentication SSO)  |
++-----------------------+
+  |        |         | (Plugins / API Queries)
+  v        v         v
+[Prom]   [Loki]  [CloudWatch]   (Data Sources)
+```
 
-# 20. Checklist sau khi học
-- [ ] Vẽ architecture và dependency.
-- [ ] Chạy được command cơ bản.
-- [ ] Viết runbook incident và rollback.
-- [ ] Có backup/restore hoặc recovery test.
+## 7. Hands-on Commands / Configuration
 
-# 21. Flashcards
-SLI là phép đo; SLO là mục tiêu; RTO là thời gian phục hồi; RPO là dữ liệu mất; p99 là tail latency; quorum tránh split-brain; health check quyết định failover; least privilege giảm blast radius; idempotency an toàn khi retry; RCA cần prevention.
+**Grafana Provisioning Data Source (YAML):**
+```yaml
+apiVersion: 1
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus-server:9090
+    isDefault: true
+```
 
-# 22. Phải hiểu và phải nhớ
-Hiểu causal chain và trade-off; nhớ lifecycle, trạng thái, command, log, metric và escalation.
+**K8s ConfigMap approach (kết hợp Helm `grafana` chart):**
+Trong helm chart, dùng sidecar quét các configmap có label `grafana_dashboard: "1"` để tự động nạp dashboard.
 
-# 23. Phân biệt “phải nhớ” và “phải hiểu”
-Nhớ cú pháp không đủ; phải hiểu tác động của workload, baseline, failure domain và dependency.
+## 8. Common Interview Questions
 
-# 24. Liên hệ với JD
-Map vào system administration, platform operations, cloud, monitoring, security, incident và change management.
+### Q1: Giải thích sự khác biệt giữa Grafana Alerting và Prometheus Alertmanager?
+**Model Answer:**
+- Prometheus Alertmanager là công cụ chuyên trách, hiệu năng cao, thường được ưu tiên dùng trong hệ thống thuần Prometheus.
+- Grafana Alerting thân thiện với người dùng hơn, hỗ trợ alert đa nguồn (alert từ nhiều data source khác nhau như MySQL, CloudWatch, Prometheus cùng lúc). Từ bản Grafana 8, Grafana Alerting đã hợp nhất và mượn kiến trúc từ Alertmanager, cho phép setup các quy tắc Routing trực tiếp trên UI. Ở hệ thống doanh nghiệp lớn quản lý bằng code, em thường dùng Alertmanager; nhưng nếu có team non-tech cần tự tạo rule, Grafana Alert là lựa chọn tốt.
 
-# 25. Liên hệ với CV
-Nêu rõ quy mô, vai trò, metric trước/sau, công cụ và bài học; không biến lab thành production claim.
+### Q2: Nếu Dashboard load quá chậm, em tối ưu bằng cách nào?
+**Model Answer:**
+Dashboard chậm thường do query nặng hoặc quá nhiều dữ liệu hiển thị. Em tối ưu qua các bước:
+1. Giảm thiểu khoảng thời gian truy vấn mặc định (ví dụ xem 1h thay vì 30 ngày).
+2. Tránh sử dụng query regex quá rộng (`.*`).
+3. Sử dụng **Recording Rules** ở phía Prometheus để tính toán trước các chỉ số phức tạp, Grafana chỉ việc lôi metric đã tính ra hiển thị.
+4. Điều chỉnh thông số `Min step` trong các panel cho phù hợp để không lấy quá nhiều điểm dữ liệu li ti (data points).
 
-# 26. Enterprise / data center scenario
-Thiết kế HA theo failure domain, access/audit tập trung, backup immutable, DR site, break-glass và vendor escalation.
+### Q3: Làm sao để tích hợp Grafana với hệ thống quản lý user của Công ty (ví dụ: Active Directory của Enterprise)?
+**Model Answer:**
+Em sẽ cấu hình Grafana tích hợp với Active Directory thông qua giao thức LDAP hoặc SAML/OIDC.
+Cấu hình mapping role: nhóm `Domain Admins` trong AD sẽ tương ứng với quyền `Admin` trên Grafana; nhóm `DevTeam` tương ứng `Viewer` hoặc `Editor` trên một số Folder nhất định. Điều này giúp quản lý user tập trung (SSO) không cần tạo tài khoản tay.
 
-# 27. Hands-on lab
-Tạo workload lab, ghi baseline, gây lỗi có kiểm soát, thu evidence, khắc phục, kiểm tra recovery và viết RCA.
+### Q4: Kể tên một số loại Panel phổ biến và khi nào dùng chúng?
+**Model Answer:**
+- **Time series / Graph:** Hiển thị sự thay đổi qua thời gian (CPU, RAM).
+- **Stat:** Số tổng hợp (Current CPU %, Total Error Rate).
+- **Gauge:** Đo lường có giới hạn (Đồng hồ công tơ mét biểu diễn % disk usage).
+- **Table:** Hiển thị Top N (Ví dụ top 10 pods ăn CPU nhiều nhất).
+- **Logs:** Đọc dữ liệu từ Loki/Elasticsearch.
 
-# 28. Troubleshooting decision tree
-Alert → scope → process/config → network/dependency → resource/storage → state/replication → mitigation → verify → prevention.
+## 9. Scenario-Based Questions
 
-# 29. Production readiness review
-SLO, dashboard, alert, capacity, security, ownership, runbook, backup/restore, rollback, patch plan và game day.
+### Scenario 1: Quản trị Dashboard ở quy mô lớn
+**Situation:** Enterprise có 20 team dev, mỗi team tự lên Grafana bấm tạo Dashboard rồi tạo ra hàng trăm Dashboard lộn xộn, bị ghi đè. Em giải quyết sao?
+**How to approach:** Chuyển sang GitOps và RBAC.
+**Model Answer:**
+1. Khóa quyền Edit trên UI đối với phần lớn user. Áp dụng Dashboards as Code.
+2. Ai muốn tạo Dashboard phải viết file JSON, tạo Pull Request lên GitLab. Hệ thống CI/CD sẽ validate và deploy qua API hoặc K8s ConfigMap.
+3. Tổ chức cấu trúc thư mục (Folders) trên Grafana, phân quyền RBAC: Team A chỉ được xem/edit trong thư mục của Team A.
 
-# 30. Self-assessment
-Beginner: giải thích concept. Intermediate: vận hành và debug. Advanced: thiết kế HA/DR, cost, security và migration.
+### Scenario 2: Tracing sự cố sau triển khai
+**Situation:** App tự nhiên dở chứng lúc 10h sáng. Làm sao để Dashboard Grafana giúp phát hiện nhanh lỗi do bản deploy lúc 9h55?
+**How to approach:** Sử dụng Annotations API.
+**Model Answer:**
+Trong pipeline CI/CD, ở bước cuối cùng sau khi deploy thành công, em sẽ thêm một lệnh `curl` gọi vào API Grafana Annotations để tạo một đường vạch đánh dấu (Tag: 'deploy-prod-v1.2'). Khi sự cố xảy ra, kỹ sư nhìn lên dashboard sẽ thấy ngay một đường kẻ vạch ngay trước mốc thời gian metric bắt đầu bất thường, xác nhận ngay nguyên nhân là do bản deploy mới.
 
-# 31. Interview priority
-Architecture → lifecycle → command/evidence → failure mode → mitigation → trade-off → security/DR.
+## 10. Troubleshooting Exercises
 
-# 32. Final checklist
-- [ ] Trình bày được cơ chế đúng chủ đề Grafana.
-- [ ] Debug được incident theo evidence.
-- [ ] Nêu được HA, backup, security, rollback và prevention.
+### Problem 1: No Data trên Panel
+**Symptoms:** Một panel hiển thị `No Data`.
+**Root Cause:**
+- Query bị sai hoặc metric đó đã không còn được expose.
+- Variable trên dropdown không match với giá trị thực tế của môi trường.
+- Data source không kết nối được (Time drift giữa Grafana và TSDB).
+**Solution:** Click "Edit Panel" -> bật "Query Inspector" để xem chuỗi JSON request/response và câu query cuối cùng được generate để debug thẳng bằng tay trên Prometheus UI.
 
+## 11. Key Takeaways
+- Grafana không lưu metrics, nó chỉ query.
+- Dùng Variables để làm Dashboard "động" (Dynamic).
+- Dashboards as Code (Provisioning) là bắt buộc trong DevOps/SRE.
+- Kết hợp Annotations và SSO cho môi trường doanh nghiệp.
+
+## 12. Quick Reference
+| Tính năng | Tác dụng |
+|---|---|
+| Provisioning | Load Data Sources / Dashboards từ file |
+| Variables | Templating, tạo dropdown list |
+| Annotations | Đánh dấu sự kiện trên trục thời gian |
+| Role-based Access | Phân quyền Admin/Editor/Viewer |

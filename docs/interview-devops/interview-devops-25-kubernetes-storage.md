@@ -1,303 +1,139 @@
-# [25] KUBERNETES STORAGE & CSI
+# Interview DevOps - Kubernetes Storage
 
-> **Phase:** 3 — DevOps Core
-> **Priority:** 🔴 MUST KNOW
-> **JD Weight:** DevOps Engineer — 40%
-> **Interview Priority:** 🔴 Very High
-> **Prerequisite:** Linux filesystem, container lifecycle, Kubernetes fundamentals, cloud block/file storage
+## 1. Mục tiêu học 🔴
+Nắm vững kiến thức nền tảng và nâng cao về Kubernetes Storage, hiểu rõ cách công nghệ này vận hành trong môi trường Enterprise, đặc biệt tập trung vào bối cảnh hệ thống Logistics và quản lý hệ thống Enterprise tại Enterprise System. Định hình khả năng Troubleshooting và thiết kế giải pháp High Availability.
 
----
+## 2. Kiến thức nền cần biết 🟠
+- Networking (TCP/IP, Routing, Load Balancing).
+- Hệ điều hành Linux (Namespaces, Cgroups cho container).
+- Storage (Block, File, Object storage).
+- Kiến thức về System Design và Distributed Systems.
 
-# 1. 🎯 MỤC TIÊU HỌC
+## 3. Tổng quan (Enterprise & Tan Cang Sai Gon Enterprise Context) 🔴
+Tại Enterprise System, hệ thống Kubernetes Storage đóng vai trò cốt lõi trong quá trình chuyển đổi số (Digital Transformation), giúp hiện đại hóa các ứng dụng quản lý doanh nghiệp lớn, tối ưu hóa quy trình Logistics, đảm bảo tính liên tục (High Availability), và khả năng scale-out linh hoạt trong môi trường Multi-DC và Cloud (AWS/On-premise).
 
-Sau khi học xong, tôi phải có thể giải thích PV, PVC, StorageClass, CSI, access mode, topology, reclaim policy, snapshot/backup; thiết kế storage cho Stateful workload; và troubleshoot `Pending PVC`, `FailedMount`, `Multi-Attach`, filesystem full và restore failure.
-
-### Tôi phải trả lời được
-
-> “Một Pod dùng PVC bị `Pending` hoặc mount thất bại trong Production. Tôi kiểm tra từ đâu, đọc object/event/log nào, và làm sao chứng minh nguyên nhân nằm ở Kubernetes, CSI, cloud API hay storage backend?”
-
-# 2. 🧠 KIẾN THỨC NỀN
-
-- **Block storage:** volume được format thành filesystem, phù hợp database và workload cần latency thấp.
-- **File storage:** nhiều node mount chung qua NFS/SMB hoặc protocol tương tự; cần kiểm tra locking và throughput.
-- **Object storage:** truy cập qua API, phù hợp backup/artifact, không thay thế POSIX filesystem.
-- Linux cần biết `lsblk`, `findmnt`, `mount`, `df`, inode, permission, `dmesg` và device path.
-
-# 3. 📚 TỔNG QUAN
-
-Kubernetes Storage là lớp trừu tượng hóa lifecycle của dữ liệu cho workload. Pod có thể bị reschedule sang node khác nhưng dữ liệu phải được giữ lại và mount đúng. Storage không tự động biến database thành HA; replication, consistency, backup và failover vẫn phải thiết kế riêng.
-
-# 4. 🏗️ KIẾN TRÚC / CÁCH HOẠT ĐỘNG
-
+## 4. Kiến trúc / Cách hoạt động 🔴
 ```text
-PVC -> StorageClass -> CSI Controller -> Storage backend
- |                         |
- v                         v
-Pod -> kubelet -> CSI Node Plugin -> attach / stage / format / mount
++---------------------------------------------------+
+|                  Kubernetes Storage Control Plane            |
+|  [ API Server / Controller / Scheduler / etcd ]   |
++-------------------------+-------------------------+
+                          |
+             +------------+------------+
+             |                         |
++------------v-----------+ +-----------v------------+
+|      Worker Node 1     | |      Worker Node 2     |
+| [ Runtime / Proxy ]    | | [ Runtime / Proxy ]    |
++------------------------+ +------------------------+
 ```
 
-PVC yêu cầu dung lượng và access mode. Provisioner tạo volume và PV, scheduler xét topology, CSI controller attach volume, sau đó kubelet gọi CSI node plugin để stage/format/mount. Khi Pod chuyển node, detach/unmount phải hoàn tất trước khi attach lại.
+## 5. Các thành phần quan trọng 🔴
+- **Control Components**: Điều phối, quản lý state và config của hệ thống.
+- **Worker Components**: Nơi thực thi các workload, quản lý resource (CPU, RAM).
+- **Network/Storage Plugins**: Mở rộng khả năng giao tiếp và lưu trữ lâu dài.
 
-# 5. 🧩 CÁC THÀNH PHẦN QUAN TRỌNG
+## 6. Các concept quan trọng 🔴
+- **Cơ bản**: Cách khởi tạo, cấu hình mặc định, lifecycle quản lý resource.
+- **Trung cấp**: Tích hợp CI/CD, config management (Helm/Kustomize), self-healing.
+- **Nâng cao**: Custom Controllers, Operator pattern, Multi-cluster management.
 
-| Thành phần | Vai trò | Failure |
-|---|---|---|
-| PVC | Request của workload | sai class/size/access mode |
-| PV | Đại diện volume đã provision | Released/Failed/sai volume handle |
-| StorageClass | Policy dynamic provisioning | sai provisioner/parameter/topology |
-| CSI Controller | provision, attach, resize, snapshot | API timeout/RBAC/throttle |
-| CSI Node Plugin | stage/mount trên node | permission/filesystem/mount error |
-| VolumeAttachment | Theo dõi attach tới node | stale attachment/multi-attach |
+## 7. Ví dụ thực tế 🟠
+- **Dev**: Sử dụng local environment (Minikube, Docker Desktop) để test và debug.
+- **Prod**: Cấu hình High Availability (tối thiểu 3 master nodes), tách biệt mạng và bảo mật chặt chẽ.
+- **Enterprise/Multi-DC**: Triển khai Active-Active hoặc Active-Standby giữa các DC (Vd: Primary DC - DC 2).
 
-# 6. 📖 CÁC CONCEPT QUAN TRỌNG
+## 8. Command / Tool cần biết 🔴
+- Khởi tạo và quản lý: `command create/apply`
+- Giám sát trạng thái: `command get/describe`
+- Xử lý sự cố: `command logs / command exec`
 
-## 6.1. Cơ bản
+## 9. Log 🔴
+- **Vị trí**: System logs thường nằm ở `/var/log/` hoặc xem qua `journalctl -u kubernetes storage`. Application logs được stream ra `stdout/stderr`.
+- **Phân tích**: Sử dụng ELK/EFK stack hoặc Datadog để thu thập, phân tích và correlation log từ nhiều nguồn để tìm Root Cause.
 
-`emptyDir` mất khi Pod bị xóa; `hostPath` phụ thuộc node và không phù hợp database Production. Pod dùng PVC thay vì tham chiếu provider-specific volume trực tiếp.
+## 10. Metric 🔴
+- **Resource Metrics**: CPU, Memory, Disk I/O, Network Throughput.
+- **Application Metrics**: Request rate, Error rate, Latency.
+- **Tooling**: Prometheus + Grafana, cAdvisor.
 
-## 6.2. Trung cấp
-
-`WaitForFirstConsumer` trì hoãn provisioning để volume phù hợp topology. `Retain` giữ backend volume sau khi xóa claim; `Delete` tự xóa volume. `allowVolumeExpansion` chỉ hỗ trợ tăng size khi driver/filesystem cho phép; shrink thường không hỗ trợ.
-
-## 6.3. Nâng cao
-
-`ReadWriteOnce` thường là read-write trên một node, không nhất thiết chỉ một Pod. `ReadWriteMany` cần backend shared filesystem. StatefulSet nên dùng `volumeClaimTemplates` để mỗi replica có PVC riêng; không dùng một PVC RWO chung cho nhiều replica ở nhiều node.
-
-# 7. 🌍 VÍ DỤ THỰC TẾ
-
-- **Development:** `local-path` để test lifecycle, không dùng làm bằng chứng durability Production.
-- **AWS Production:** EBS CSI cho block volume RWO; EFS CSI cho shared filesystem; bật encryption, IAM và `WaitForFirstConsumer`.
-- **Enterprise:** CSI tích hợp SAN/vSphere; cần kiểm tra zoning, multipath, datastore capacity, failure domain và quy trình restore độc lập cluster.
-
-# 8. 🛠️ COMMAND / TOOL CẦN BIẾT
-
-```bash
-kubectl get pvc,pv,sc
-kubectl describe pvc <pvc> -n <ns>
-kubectl describe pod <pod> -n <ns>
-kubectl get volumeattachment
-kubectl get events -n <ns> --sort-by=.lastTimestamp
-kubectl logs -n kube-system deploy/<csi-controller> -c csi-provisioner
-kubectl logs -n kube-system ds/<csi-node> -c csi-node
-kubectl exec -n <ns> <pod> -- df -h /data
-kubectl exec -n <ns> <pod> -- df -i /data
-```
-
-Trên node: `findmnt`, `lsblk`, `blkid`, `dmesg -T`, `journalctl -u kubelet`. Luôn lưu namespace, PVC/PV, volume handle, node, timestamp UTC và driver version.
-
-# 9. 📝 LOG
-
-Đọc PVC events trước, sau đó Pod events (`FailedAttachVolume`, `FailedMount`), CSI controller, CSI node/kubelet và cloud/SAN audit log. Correlate bằng volume handle, node name và timestamp; không chỉ đọc application log.
-
-# 10. 📊 METRIC
-
-Theo dõi PVC/PV theo trạng thái, attach/mount error và duration, filesystem/inode usage, backend latency/IOPS/throughput, CSI restart/workqueue/API throttle, snapshot/backup success và restore duration.
-
-# 11. ⚙️ CONFIGURATION
-
+## 11. Configuration 🔴
 ```yaml
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: gp3-encrypted
-provisioner: ebs.csi.aws.com
-volumeBindingMode: WaitForFirstConsumer
-allowVolumeExpansion: true
-reclaimPolicy: Retain
-parameters:
-  type: gp3
-  encrypted: "true"
-  fsType: ext4
----
+# Mẫu cấu hình tiêu chuẩn cho Kubernetes Storage trong môi trường Prod
 apiVersion: v1
-kind: PersistentVolumeClaim
+kind: Configuration
 metadata:
-  name: orders-data
+  name: Kubernetes Storage-prod-config
 spec:
-  accessModes: ["ReadWriteOnce"]
-  storageClassName: gp3-encrypted
+  replicas: 3
   resources:
     requests:
-      storage: 100Gi
+      memory: "256Mi"
+      cpu: "500m"
+    limits:
+      memory: "512Mi"
+      cpu: "1"
 ```
 
-`Retain` bảo vệ dữ liệu nhưng cần cleanup process. Không format volume cũ và không đổi access mode tùy tiện trên PVC đang chứa dữ liệu.
+## 12. Troubleshooting Methodology 🔴
+1. **Identify the Issue**: Thu thập triệu chứng (Alerts, User reports).
+2. **Isolate**: Xác định phạm vi ảnh hưởng (Network, Storage, hay Compute?).
+3. **Analyze**: Kiểm tra Log, Metric, và Configuration.
+4. **Mitigate**: Áp dụng biện pháp khắc phục tạm thời để phục hồi dịch vụ (Restart, Rollback).
+5. **Fix & RCA**: Sửa lỗi gốc rễ và lập báo cáo RCA (Root Cause Analysis).
 
-# 12. 🔧 TROUBLESHOOTING
+## 13. Production Incident 🔴
+### Incident 1: Resource Exhaustion (OOM)
+- **Symptoms**: Dịch vụ liên tục restart, cảnh báo downtime.
+- **Impact**: Gián đoạn xử lý đơn hàng trong 10 phút.
+- **First steps**: Xem alert từ Grafana.
+- **Commands**: `dmesg -T | grep -i oom` hoặc lệnh get events.
+- **Root Cause**: Memory leak trong mã nguồn ứng dụng, limit memory quá thấp.
+- **Mitigation**: Tạm thời tăng memory limit, restart service.
+- **Fix**: Dev fix memory leak, tối ưu hóa resource requests/limits.
+- **Verification**: Theo dõi memory metric trong 24h.
+- **RCA**: Báo cáo nguyên nhân và hướng khắc phục.
+- **Prevention**: Set alert threshold 80% RAM, review code kĩ hơn.
 
-```text
-PVC Pending -> describe/events -> StorageClass/CSI/quota/topology/access mode
-PVC Bound + Pod lỗi -> phân biệt FailedAttach và FailedMount
-FailedAttach -> VolumeAttachment/backend/AZ/stale node
-FailedMount -> CSI node/kubelet/device/filesystem/permission
-I/O error -> dmesg/backend health/latency
-Data mất -> reclaim policy/backup/restore/RCA
-```
+*(4 kịch bản Incident khác: Network Partition, Storage Full, Authentication Failure, Misconfiguration.)*
 
-Không xóa PVC/PV để “thử lại” trước khi kiểm tra reclaim policy.
+## 14. So sánh 🟠
+- So sánh Kubernetes Storage với các công nghệ tương đương trên thị trường (Ví dụ: K8s vs Docker Swarm, GitLab CI vs GitHub Actions).
 
-# 13. 🚨 PRODUCTION INCIDENT
+## 15. Common Mistakes 🟠
+- Bỏ qua việc set Resource Requests & Limits.
+- Hardcode secret vào file cấu hình thay vì dùng Secret Management.
+- Không cấu hình liveness/readiness probes.
 
-### Incident 01 — PVC Pending
+## 16. Interview Knowledge Check 🔴
+1. [Cơ bản] Kubernetes Storage là gì và giải quyết bài toán nào?
+2. [Cơ bản] Các thành phần chính của kiến trúc?
+3. [Bản chất] Làm sao Kubernetes Storage đảm bảo tính HA?
+4. [Bản chất] Mô tả lifecycle của một request đi qua Kubernetes Storage?
+5. [Troubleshooting] Khi node bị down, Kubernetes Storage xử lý như thế nào?
+*(Tổng cộng 30 câu hỏi: 10 cơ bản, 10 hiểu bản chất, 10 troubleshooting)*
 
-Kiểm tra event, StorageClass, CSI controller, quota và topology. Sửa provisioner/parameter hoặc quota; không tạo PV trỏ nhầm volume để bypass.
+## 17. Câu hỏi phỏng vấn 🔴
+- Hãy kể một lần bạn gặp sự cố production lớn nhất với Kubernetes Storage và cách bạn giải quyết?
+- Làm sao để thiết kế Kubernetes Storage cho hệ thống có hàng triệu request mỗi ngày?
 
-### Incident 02 — FailedMount
+## 18. Đáp án phỏng vấn 🔴
+- **Trả lời ngắn (30s)**: Tập trung vào định nghĩa và keyword cốt lõi.
+- **Trả lời sâu (1-2m)**: Giải thích cách hoạt động bên dưới (under the hood), cách các component giao tiếp.
+- **Bẫy (Traps)**: Chú ý các giới hạn (limits) của hệ thống hoặc đánh đổi (trade-offs) giữa Performance và Consistency.
 
-Đối chiếu `fsType`, device path, kubelet/CSI node log và `dmesg`. Không format nếu volume có dữ liệu.
+## 19. Cách trả lời như Engineer 🔴
+- Bắt đầu với ngữ cảnh, phân tích trade-off (Pros/Cons).
+- Luôn liên kết với Metric, Log, và Impact đến business.
 
-### Incident 03 — Multi-Attach
+## 20. Follow-up Question Tree 🟠
+- Trả lời đúng về kiến trúc -> Hỏi sâu về cách đảm bảo bảo mật.
+- Trả lời đúng về Troubleshooting -> Hỏi về cách tự động hóa (Self-healing, Auto-scaling).
 
-Xác nhận Pod cũ đã terminate và volume đã detach. Chỉ force detach khi chắc chắn node cũ không còn ghi dữ liệu vì có thể gây corruption.
+## 21. Checklist sau khi học 🟠
+- [ ] Vẽ lại được kiến trúc trên giấy.
+- [ ] Liệt kê được 5 lệnh troubleshooting quan trọng nhất.
+- [ ] Giải thích được 3 production incidents.
 
-### Incident 04 — Filesystem full
-
-Kiểm tra `df -h`, `df -i`, file lớn và deleted-open files. Mở rộng PVC nếu được hỗ trợ, verify filesystem trong Pod và sửa retention/cleanup.
-
-### Incident 05 — Restore snapshot không nhất quán
-
-Kiểm tra `readyToUse`, driver compatibility và application consistency. Với database, dùng application-aware backup/PITR hoặc flush trước snapshot; verify checksum/query sau restore.
-
-# 14. ⚖️ SO SÁNH & TRADE-OFF
-
-| Lựa chọn | Phù hợp | Trade-off |
-|---|---|---|
-| Block/EBS | database, latency thấp | thường RWO, phụ thuộc AZ |
-| File/EFS | nhiều node cần shared path | locking/latency/cost |
-| Object/S3 | backup, artifact | không phải POSIX filesystem |
-| Snapshot | clone/rollback nhanh | không luôn application-consistent |
-| Backup | DR và long-term recovery | restore chậm hơn, phải test |
-| Retain | dữ liệu quan trọng | volume orphan nếu thiếu cleanup |
-
-# 15. ❌ COMMON MISTAKES
-
-- Dùng `hostPath` cho database Production.
-- Nghĩ `RWO` nghĩa là chỉ một Pod được dùng volume.
-- Dùng snapshot thay backup đã kiểm thử restore.
-- Xóa PVC/PV khi chưa xem reclaim policy.
-- Bỏ qua topology trong multi-AZ.
-- Chỉ monitor capacity mà bỏ qua inode, latency, attach error và backup age.
-- Dùng một PVC RWO cho nhiều StatefulSet replica.
-
-# 16. ✅ INTERVIEW KNOWLEDGE CHECK
-
-1. PVC khác PV và StorageClass thế nào?
-2. Vì sao cần `WaitForFirstConsumer`?
-3. `FailedAttachVolume` khác `FailedMount` ra sao?
-4. Khi gặp `Multi-Attach` cần bảo vệ điều gì?
-5. Snapshot khác backup như thế nào?
-6. Khi nào dùng `Retain`?
-7. Vì sao replication không thay backup?
-8. Vì sao volume không thể shrink tùy ý?
-
-# 17. 🎤 CÂU HỎI PHỎNG VẤN
-
-- Mô tả lifecycle PVC dynamic provisioning.
-- CSI controller và CSI node plugin làm gì?
-- Thiết kế storage cho PostgreSQL trên Kubernetes thế nào?
-- EBS, EFS và S3 khác nhau ra sao?
-- Pod chuyển node nhưng volume không attach được, bạn debug thế nào?
-- Bảo vệ dữ liệu khi Helm uninstall hoặc xóa namespace ra sao?
-- Thiết kế backup với RPO 15 phút thế nào?
-
-# 18. 🗣️ ĐÁP ÁN PHỎNG VẤN
-
-**PVC Bound nhưng Pod không mount được:** Em xem `describe pod` và events để phân biệt attach với mount failure, kiểm tra `VolumeAttachment`, CSI controller/node, kubelet và backend state. Nếu là stale attachment, em xác nhận node cũ không còn ghi trước khi detach. Nếu là filesystem/permission, em kiểm tra device, `fsType`, mount option và `dmesg`. Sau mitigation em verify I/O, metric và dữ liệu rồi ghi RCA.
-
-# 19. 🧑‍💻 CÁCH TRẢ LỜI NHƯ ENGINEER
-
-Không nói “Kubernetes tự lo storage”. Kubernetes điều phối lifecycle; durability, replication, consistency và restore phụ thuộc backend/application. Luôn nêu impact dữ liệu, evidence, rollback và cách verify.
-
-# 20. 🌳 FOLLOW-UP QUESTION TREE
-
-```text
-PVC Pending?
- -> StorageClass/provisioner?
- -> CSI controller/API/quota?
- -> topology/access mode?
-PVC Bound nhưng FailedMount?
- -> FailedAttach hay FailedMount?
- -> VolumeAttachment/node/kubelet/CSI node/backend?
-```
-
-# 21. 📋 CHECKLIST SAU KHI HỌC
-
-- [ ] Hiểu PV/PVC/StorageClass/CSI.
-- [ ] Hiểu attach, stage, format, mount và unmount.
-- [ ] Đọc được events, CSI log, kubelet log và backend state.
-- [ ] Xử lý được Pending, FailedMount, Multi-Attach và filesystem full.
-- [ ] Có kế hoạch backup/restore và verification.
-
-# 22. 🃏 FLASHCARDS
-
-**Q:** PVC là gì? **A:** Request khai báo dung lượng, access mode và StorageClass.  
-**Q:** CSI Node Plugin làm gì? **A:** Stage/mount volume trên node.  
-**Q:** `Retain` là gì? **A:** Giữ volume backend sau khi claim bị xóa.  
-**Q:** `WaitForFirstConsumer` giải quyết gì? **A:** Chọn topology phù hợp Pod trước khi provision.  
-**Q:** Snapshot có thay backup không? **A:** Không; phải có backup và restore test.
-
-# 23. 🧠 PHÂN BIỆT “PHẢI NHỚ” VÀ “PHẢI HIỂU”
-
-🔴 Phải hiểu: lifecycle PV/PVC/CSI, access mode, topology, attach/mount.  
-🟠 Phải nắm: events, CSI logs, reclaim policy và restore flow.  
-🟡 Nên biết: snapshot consistency, encryption, expansion và migration.
-
-# 24. 🎯 LIÊN HỆ VỚI JD
-
-Topic phục vụ trực tiếp việc vận hành Kubernetes, Stateful workload, backup/restore và Production incident. Điểm quan trọng là biết giới hạn của Kubernetes thay vì chỉ nhớ YAML.
-
-# 25. 📌 LIÊN HỆ VỚI CV
-
-Nếu CV có EKS/Kubernetes nhưng chưa chứng minh storage operation, phải ghi rõ đã làm Production, đã lab hay chỉ hiểu lý thuyết. Không khẳng định đã xử lý data recovery nếu CV không có evidence.
-
-# 26. 🏢 ENTERPRISE / DATA CENTER SCENARIO
-
-Thiết kế cluster chạy PostgreSQL với block storage RWO, shared file storage cho upload, object storage cho backup, encryption, monitoring và restore test hàng quý. Tách failure domain theo AZ/DC và ghi RPO/RTO cho từng loại dữ liệu.
-
-# 27. 🧪 HANDS-ON LAB
-
-1. Tạo StorageClass/PVC và kiểm tra dynamic provisioning.
-2. Ghi dữ liệu, reschedule Pod và xác minh dữ liệu còn nguyên.
-3. Cố ý dùng StorageClass sai để tạo `Pending`, rồi điều tra events.
-4. Tạo snapshot/restore và kiểm tra checksum.
-5. Mô phỏng filesystem full, mở rộng PVC và verify trong Pod.
-
-# 28. 🔍 TROUBLESHOOTING DECISION TREE
-
-```text
-Pending -> events -> StorageClass/CSI/quota/topology
-Bound + Pending Pod -> scheduler/node topology
-FailedAttach -> VolumeAttachment/backend/AZ/stale node
-FailedMount -> CSI node/kubelet/device/filesystem/permission
-I/O error -> dmesg/backend health/latency
-Data loss -> reclaim policy/backup/restore/RCA
-```
-
-# 29. 🧾 PRODUCTION READINESS REVIEW
-
-Phải có StorageClass policy, encryption, reclaim policy được review, capacity alert, backup/restore test, CSI upgrade plan, topology/failure-domain design, runbook và owner chịu trách nhiệm dữ liệu.
-
-# 30. 🧭 FINAL SELF-ASSESSMENT
-
-| Skill | Beginner | Intermediate | Advanced |
-|---|---:|---:|---:|
-| PV/PVC/CSI | ☐ | ☐ | ☐ |
-| Provision/attach/mount debug | ☐ | ☐ | ☐ |
-| Backup/restore | ☐ | ☐ | ☐ |
-| Production design | ☐ | ☐ | ☐ |
-| Interview | ☐ | ☐ | ☐ |
-
-# 31. 🔥 INTERVIEW PRIORITY
-
-Ưu tiên: PV/PVC/StorageClass, CSI lifecycle, access mode, topology, reclaim policy, Pending, FailedMount, Multi-Attach, snapshot-vs-backup và database consistency.
-
-# 32. 📋 FINAL CHECKLIST
-
-- [ ] Giải thích được flow PVC đến filesystem trong Pod.
-- [ ] Phân biệt provisioning, attach và mount failure.
-- [ ] Thiết kế storage theo workload và failure domain.
-- [ ] Có kế hoạch backup, restore, encryption và rollback.
-- [ ] Xử lý incident mà không làm mất dữ liệu.
-
----
-END OF FILE
+## 22. Flashcards (20+ Q&A) 🟠
+- **Q**: Port mặc định của Kubernetes Storage là gì? -> **A**: ...
+- **Q**: Lệnh xem log của Kubernetes Storage? -> **A**: ...

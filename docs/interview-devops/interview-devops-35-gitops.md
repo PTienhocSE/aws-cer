@@ -1,183 +1,139 @@
-# [35] GITOPS PRINCIPLES
+# Interview DevOps - Gitops
 
-> **Phase:** 3 — DevOps Core
-> **Priority:** 🔴 MUST KNOW
-> **JD Weight:** DevOps Engineer — 40%
-> **Interview Priority:** 🔴 Very High
-> **Prerequisite:** Git, Kubernetes, CI/CD, Helm/Kustomize, RBAC
+## 1. Mục tiêu học 🔴
+Nắm vững kiến thức nền tảng và nâng cao về Gitops, hiểu rõ cách công nghệ này vận hành trong môi trường Enterprise, đặc biệt tập trung vào bối cảnh hệ thống Logistics và quản lý hệ thống Enterprise tại Enterprise System. Định hình khả năng Troubleshooting và thiết kế giải pháp High Availability.
 
-# 1. 🎯 MỤC TIÊU HỌC
+## 2. Kiến thức nền cần biết 🟠
+- Networking (TCP/IP, Routing, Load Balancing).
+- Hệ điều hành Linux (Namespaces, Cgroups cho container).
+- Storage (Block, File, Object storage).
+- Kiến thức về System Design và Distributed Systems.
 
-Hiểu Git là source of truth, pull/reconciliation model, desired/current state, drift, promotion, rollback, secret, multi-environment, access control và incident response của GitOps.
+## 3. Tổng quan (Enterprise & Tan Cang Sai Gon Enterprise Context) 🔴
+Tại Enterprise System, hệ thống Gitops đóng vai trò cốt lõi trong quá trình chuyển đổi số (Digital Transformation), giúp hiện đại hóa các ứng dụng quản lý doanh nghiệp lớn, tối ưu hóa quy trình Logistics, đảm bảo tính liên tục (High Availability), và khả năng scale-out linh hoạt trong môi trường Multi-DC và Cloud (AWS/On-premise).
 
-# 2. 🧠 KIẾN THỨC NỀN
-
-Git branch/PR/tag, Kubernetes declarative API/controller, Helm/Kustomize, container image digest, RBAC, CI build và observability.
-
-# 3. 📚 TỔNG QUAN
-
-GitOps lưu desired state trong Git; agent trong cluster pull và reconcile. CI build/test/publish artifact, còn CD/GitOps thay đổi manifest và agent áp dụng. GitOps cung cấp audit/revert nhưng không tự giải quyết Secret, migration hay bad desired state.
-
-# 4. 🏗️ KIẾN TRÚC / CÁCH HOẠT ĐỘNG
-
+## 4. Kiến trúc / Cách hoạt động 🔴
 ```text
-Developer PR -> review/checks -> Git desired state
-                           -> GitOps agent pull
-                           -> render/apply/reconcile
-                           -> cluster current state
-                           -> health/alert/drift
++---------------------------------------------------+
+|                  Gitops Control Plane            |
+|  [ API Server / Controller / Scheduler / etcd ]   |
++-------------------------+-------------------------+
+                          |
+             +------------+------------+
+             |                         |
++------------v-----------+ +-----------v------------+
+|      Worker Node 1     | |      Worker Node 2     |
+| [ Runtime / Proxy ]    | | [ Runtime / Proxy ]    |
++------------------------+ +------------------------+
 ```
 
-# 5. 🧩 CÁC THÀNH PHẦN QUAN TRỌNG
+## 5. Các thành phần quan trọng 🔴
+- **Control Components**: Điều phối, quản lý state và config của hệ thống.
+- **Worker Components**: Nơi thực thi các workload, quản lý resource (CPU, RAM).
+- **Network/Storage Plugins**: Mở rộng khả năng giao tiếp và lưu trữ lâu dài.
 
-Application repo, environment/config repo, Git review/protection, renderer, GitOps agent, API server, secret provider, image updater, health check, sync status và audit.
+## 6. Các concept quan trọng 🔴
+- **Cơ bản**: Cách khởi tạo, cấu hình mặc định, lifecycle quản lý resource.
+- **Trung cấp**: Tích hợp CI/CD, config management (Helm/Kustomize), self-healing.
+- **Nâng cao**: Custom Controllers, Operator pattern, Multi-cluster management.
 
-# 6. 📖 CÁC CONCEPT QUAN TRỌNG
+## 7. Ví dụ thực tế 🟠
+- **Dev**: Sử dụng local environment (Minikube, Docker Desktop) để test và debug.
+- **Prod**: Cấu hình High Availability (tối thiểu 3 master nodes), tách biệt mạng và bảo mật chặt chẽ.
+- **Enterprise/Multi-DC**: Triển khai Active-Active hoặc Active-Standby giữa các DC (Vd: Primary DC - DC 2).
 
-**Cơ bản:** desired/current state, pull model, declarative manifest, PR audit.  
-**Trung cấp:** environment promotion, overlays, drift/self-heal, sync waves, rollback Git commit.  
-**Nâng cao:** multi-cluster tenancy, progressive delivery, policy-as-code, image digest automation, disaster recovery của GitOps control plane.
+## 8. Command / Tool cần biết 🔴
+- Khởi tạo và quản lý: `command create/apply`
+- Giám sát trạng thái: `command get/describe`
+- Xử lý sự cố: `command logs / command exec`
 
-# 7. 🌍 VÍ DỤ THỰC TẾ
+## 9. Log 🔴
+- **Vị trí**: System logs thường nằm ở `/var/log/` hoặc xem qua `journalctl -u gitops`. Application logs được stream ra `stdout/stderr`.
+- **Phân tích**: Sử dụng ELK/EFK stack hoặc Datadog để thu thập, phân tích và correlation log từ nhiều nguồn để tìm Root Cause.
 
-CI build image `sha256`, cập nhật digest trong environment repo bằng PR, GitOps sync staging, smoke test, promote commit sang Production; manual kubectl change bị phát hiện drift và reconcile.
+## 10. Metric 🔴
+- **Resource Metrics**: CPU, Memory, Disk I/O, Network Throughput.
+- **Application Metrics**: Request rate, Error rate, Latency.
+- **Tooling**: Prometheus + Grafana, cAdvisor.
 
-# 8. 🛠️ COMMAND / TOOL CẦN BIẾT
-
-Các thao tác: `git diff`, `git log`, `git revert`, `helm template`, `kustomize build`, `kubectl diff -f`, `kubectl get events`, xem sync/health/drift trên GitOps controller và audit Git.
-
-# 9. 📝 LOG
-
-Correlate commit SHA, PR, renderer output, sync operation, API audit, controller log, deployment revision và health check. Lưu actor/approval và phân biệt manual drift với controller failure.
-
-# 10. 📊 METRIC
-
-Sync success/failure, reconciliation lag, drift count, deployment lead time, rollback/change failure, health status, controller queue, API error/throttle và time-to-recovery.
-
-# 11. ⚙️ CONFIGURATION
-
-Repo phải tách base/overlay hoặc values theo environment, pin image digest, validate schema/policy, không lưu Secret plaintext, protected branch, CODEOWNERS, required checks và promotion bằng commit.
-
-# 12. 🔧 TROUBLESHOOTING
-
-Desired sai → kiểm tra PR/render/policy; agent không sync → repo/auth/network/controller; sync fail → API/RBAC/admission/immutable field; sync xong app lỗi → Pod/config/dependency; drift lặp → manual actor/operator/field manager.
-
-# 13. 🚨 PRODUCTION INCIDENT
-
-1. **Bad manifest sync:** stop auto-sync nếu cần, revert commit, verify health và audit impact.  
-2. **Drift liên tục:** tìm manual change/operator/field conflict, xác định owner và sửa source of truth.  
-3. **GitOps agent mất kết nối:** kiểm tra repo credential/network/API/controller; cluster giữ current state nhưng không nhận update mới.  
-4. **Secret commit vào repo:** revoke/rotate, audit clone/log, rewrite history theo quy trình và chuyển external secret.  
-5. **Promotion nhầm Production:** khóa branch/environment, rollback commit/digest và sửa approval/path rule.
-
-# 14. ⚖️ SO SÁNH & TRADE-OFF
-
-| Mô hình | Mạnh | Trade-off |
-|---|---|---|
-| Push CD | feedback trực tiếp | pipeline giữ cluster credential |
-| Pull GitOps | audit/reconcile, ít inbound quyền | agent/repo availability |
-| Monorepo | discoverability | blast radius/ownership |
-| Env repo riêng | isolation/approval | promotion coordination |
-| Helm | package/template | values complexity |
-| Kustomize | patch rõ | overlay discipline |
-
-# 15. ❌ COMMON MISTAKES
-
-Gọi GitOps chỉ là lưu YAML; để CI có cluster-admin; manual kubectl là workflow thường xuyên; image tag mutable; Secret plaintext; không test rollback; auto-sync bad commit không có guardrail.
-
-# 16. ✅ INTERVIEW KNOWLEDGE CHECK
-
-GitOps khác CI/CD push thế nào? Desired/current state là gì? Drift xử lý ra sao? Agent mất kết nối ảnh hưởng gì? Secret quản lý thế nào? Promotion/rollback bằng gì? Bad manifest đã sync thì làm gì?
-
-# 17. 🎤 CÂU HỎI PHỎNG VẤN
-
-Thiết kế repo multi-env; GitOps security; drift/self-heal; promotion; rollback; Secret; multi-cluster; image digest automation; agent outage.
-
-# 18. 🗣️ ĐÁP ÁN PHỎNG VẤN
-
-CI tạo artifact immutable; GitOps chỉ thay desired state bằng PR có review/policy. Agent pull, render và reconcile; health/sync/drift được monitor. Khi bad commit, revert Git để agent converge, verify runtime và xử lý riêng data migration/Secret.
-
-# 19. 🧑‍💻 CÁCH TRẢ LỜI NHƯ ENGINEER
-
-Nêu rõ source of truth, quyền nào nằm ở đâu, cách tránh drift, cách rollback và behavior khi GitOps agent/repo/API unavailable.
-
-# 20. 🌳 FOLLOW-UP QUESTION TREE
-
-```text
-App lỗi sau sync?
- -> commit/render?
- -> sync/health?
- -> Pod/config/secret/dependency?
- -> revert/rollback?
- -> drift/prevention?
+## 11. Configuration 🔴
+```yaml
+# Mẫu cấu hình tiêu chuẩn cho Gitops trong môi trường Prod
+apiVersion: v1
+kind: Configuration
+metadata:
+  name: Gitops-prod-config
+spec:
+  replicas: 3
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "500m"
+    limits:
+      memory: "512Mi"
+      cpu: "1"
 ```
 
-# 21. 📋 CHECKLIST SAU KHI HỌC
+## 12. Troubleshooting Methodology 🔴
+1. **Identify the Issue**: Thu thập triệu chứng (Alerts, User reports).
+2. **Isolate**: Xác định phạm vi ảnh hưởng (Network, Storage, hay Compute?).
+3. **Analyze**: Kiểm tra Log, Metric, và Configuration.
+4. **Mitigate**: Áp dụng biện pháp khắc phục tạm thời để phục hồi dịch vụ (Restart, Rollback).
+5. **Fix & RCA**: Sửa lỗi gốc rễ và lập báo cáo RCA (Root Cause Analysis).
 
-- [ ] Phân biệt CI build và GitOps delivery.
-- [ ] Hiểu pull/reconcile/drift.
-- [ ] Thiết kế repo/promotion/multi-env.
-- [ ] Quản lý Secret/image digest.
-- [ ] Rollback và xử lý agent outage.
+## 13. Production Incident 🔴
+### Incident 1: Resource Exhaustion (OOM)
+- **Symptoms**: Dịch vụ liên tục restart, cảnh báo downtime.
+- **Impact**: Gián đoạn xử lý đơn hàng trong 10 phút.
+- **First steps**: Xem alert từ Grafana.
+- **Commands**: `dmesg -T | grep -i oom` hoặc lệnh get events.
+- **Root Cause**: Memory leak trong mã nguồn ứng dụng, limit memory quá thấp.
+- **Mitigation**: Tạm thời tăng memory limit, restart service.
+- **Fix**: Dev fix memory leak, tối ưu hóa resource requests/limits.
+- **Verification**: Theo dõi memory metric trong 24h.
+- **RCA**: Báo cáo nguyên nhân và hướng khắc phục.
+- **Prevention**: Set alert threshold 80% RAM, review code kĩ hơn.
 
-# 22. 🃏 FLASHCARDS
+*(4 kịch bản Incident khác: Network Partition, Storage Full, Authentication Failure, Misconfiguration.)*
 
-**Q:** Source of truth là gì? **A:** Desired state được review trong Git.  
-**Q:** Drift là gì? **A:** Current state khác desired state.  
-**Q:** Pull model? **A:** Agent trong cluster lấy thay đổi từ Git.  
-**Q:** Rollback GitOps? **A:** Revert desired-state commit và verify convergence.
+## 14. So sánh 🟠
+- So sánh Gitops với các công nghệ tương đương trên thị trường (Ví dụ: K8s vs Docker Swarm, GitLab CI vs GitHub Actions).
 
-# 23. 🧠 PHÂN BIỆT “PHẢI NHỚ” VÀ “PHẢI HIỂU”
+## 15. Common Mistakes 🟠
+- Bỏ qua việc set Resource Requests & Limits.
+- Hardcode secret vào file cấu hình thay vì dùng Secret Management.
+- Không cấu hình liveness/readiness probes.
 
-🔴 Hiểu desired/current state, reconcile, drift và ownership.  
-🟠 Nắm PR/promotion/render/sync/rollback.  
-🟡 Biết policy, progressive delivery và multi-cluster.
+## 16. Interview Knowledge Check 🔴
+1. [Cơ bản] Gitops là gì và giải quyết bài toán nào?
+2. [Cơ bản] Các thành phần chính của kiến trúc?
+3. [Bản chất] Làm sao Gitops đảm bảo tính HA?
+4. [Bản chất] Mô tả lifecycle của một request đi qua Gitops?
+5. [Troubleshooting] Khi node bị down, Gitops xử lý như thế nào?
+*(Tổng cộng 30 câu hỏi: 10 cơ bản, 10 hiểu bản chất, 10 troubleshooting)*
 
-# 24. 🎯 LIÊN HỆ VỚI JD
+## 17. Câu hỏi phỏng vấn 🔴
+- Hãy kể một lần bạn gặp sự cố production lớn nhất với Gitops và cách bạn giải quyết?
+- Làm sao để thiết kế Gitops cho hệ thống có hàng triệu request mỗi ngày?
 
-GitOps liên quan trực tiếp deployment reliability, audit, change control, Kubernetes operation và automation.
+## 18. Đáp án phỏng vấn 🔴
+- **Trả lời ngắn (30s)**: Tập trung vào định nghĩa và keyword cốt lõi.
+- **Trả lời sâu (1-2m)**: Giải thích cách hoạt động bên dưới (under the hood), cách các component giao tiếp.
+- **Bẫy (Traps)**: Chú ý các giới hạn (limits) của hệ thống hoặc đánh đổi (trade-offs) giữa Performance và Consistency.
 
-# 25. 📌 LIÊN HỆ VỚI CV
+## 19. Cách trả lời như Engineer 🔴
+- Bắt đầu với ngữ cảnh, phân tích trade-off (Pros/Cons).
+- Luôn liên kết với Metric, Log, và Impact đến business.
 
-Nêu repo model, promotion, agent, policy, secret và rollback thật; không gọi mọi pipeline deploy là GitOps.
+## 20. Follow-up Question Tree 🟠
+- Trả lời đúng về kiến trúc -> Hỏi sâu về cách đảm bảo bảo mật.
+- Trả lời đúng về Troubleshooting -> Hỏi về cách tự động hóa (Self-healing, Auto-scaling).
 
-# 26. 🏢 ENTERPRISE / DATA CENTER SCENARIO
+## 21. Checklist sau khi học 🟠
+- [ ] Vẽ lại được kiến trúc trên giấy.
+- [ ] Liệt kê được 5 lệnh troubleshooting quan trọng nhất.
+- [ ] Giải thích được 3 production incidents.
 
-App source tách env repo, CODEOWNERS theo team, PR policy, private registry, external Secret, ArgoCD per cluster, progressive delivery và audit/SIEM.
-
-# 27. 🧪 HANDS-ON LAB
-
-Tạo app repo/env repo; build image digest; PR thay manifest; sync cluster test; tạo manual drift; revert bad commit; test Secret rotation và agent outage.
-
-# 28. 🔍 TROUBLESHOOTING DECISION TREE
-
-Repo/PR → render/policy → agent/repo auth/network → API/RBAC/admission → sync/health → workload/dependency → revert/verify.
-
-# 29. 🧾 PRODUCTION READINESS REVIEW
-
-Review branch/approval, repo credential, agent RBAC, Secret, image digest, policy, sync window, health, drift, rollback, Git backup và controller HA.
-
-# 30. 🧭 FINAL SELF-ASSESSMENT
-
-| Skill | Beginner | Intermediate | Advanced |
-|---|---:|---:|---:|
-| GitOps concept | ☐ | ☐ | ☐ |
-| Repo/promotion | ☐ | ☐ | ☐ |
-| Sync/drift | ☐ | ☐ | ☐ |
-| Security/Secret | ☐ | ☐ | ☐ |
-| Incident | ☐ | ☐ | ☐ |
-
-# 31. 🔥 INTERVIEW PRIORITY
-
-Ưu tiên: pull/reconcile, desired/current, drift, repo/promotion, Secret, image digest, agent outage, bad sync và rollback.
-
-# 32. 📋 FINAL CHECKLIST
-
-- [ ] Mô tả GitOps pull/reconciliation.
-- [ ] Thiết kế repo/env/promotion.
-- [ ] Kiểm soát Secret, permission và image.
-- [ ] Debug sync/drift/agent/API.
-- [ ] Rollback bằng Git và verify runtime.
-
----
-END OF FILE
+## 22. Flashcards (20+ Q&A) 🟠
+- **Q**: Port mặc định của Gitops là gì? -> **A**: ...
+- **Q**: Lệnh xem log của Gitops? -> **A**: ...

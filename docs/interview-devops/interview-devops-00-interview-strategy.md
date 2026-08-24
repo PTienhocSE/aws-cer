@@ -1,236 +1,146 @@
-# [00] INTERVIEW STRATEGY
+# 0. Interview Strategy
 
-> **Phase:** 1 — System Core
-> **Priority:** 🔴 MUST KNOW
-> **JD Weight:** System & DevOps Engineer — 100%
-> **Interview Priority:** 🔴 Very High
-> **Prerequisite:** Đọc kỹ CV cá nhân, đọc hiểu JD tuyển dụng
+## 1. Why This Matters
+Chiến lược phỏng vấn đóng vai trò quyết định trong việc thành công ứng tuyển vào vị trí System & DevOps Engineer tại Doanh nghiệp Enterprise quy mô lớn. Enterprise là doanh nghiệp doanh nghiệp lớn lớn nhất Việt Nam, mang đặc thù của một hệ thống Enterprise truyền thống đang trong quá trình chuyển đổi số. Hệ thống tại Enterprise yêu cầu tính khả dụng (High Availability - HA) cực kỳ cao vì hoạt động logistic/doanh nghiệp lớn diễn ra 24/7, mọi gián đoạn đều gây thiệt hại hàng tỷ đồng. 
 
----
-# 1. 🎯 MỤC TIÊU HỌC
+Vị trí này đòi hỏi 60% System Engineer (vận hành hạ tầng On-premise, Windows/Linux, Multi-DC, VMware) và 40% DevOps (Kubernetes, CI/CD, GitOps). Việc thấu hiểu chiến lược sẽ giúp bạn "bán" được thế mạnh Cloud/DevOps hiện tại và khỏa lấp những khoảng trống về System Engineer truyền thống.
 
-Sau khi hoàn thành file này, tôi phải có khả năng:
+## 2. Interview Priority
+> 🔴 MUST KNOW
 
-- [ ] Định vị chính xác bản thân trong bài toán 60% System Engineer + 40% DevOps Engineer của doanh nghiệp Enterprise lớn.
-- [ ] Xây dựng chiến lược "Mapping" biến kinh nghiệm Cloud/DevOps (AWS, EKS, Terraform, ArgoCD) thành lợi thế khi vận hành hạ tầng On-premise.
-- [ ] Xử lý chuyên nghiệp các câu hỏi xoáy vào Skill Gap (Windows Server, Active Directory, VMware, Storage vật lý).
-- [ ] Áp dụng mô hình STAR (Situation, Task, Action, Result) để trả lời thuyết phục các câu hỏi phỏng vấn tình huống.
-- [ ] Làm chủ kỹ thuật đàm phán mức lương kỳ vọng trong khoảng 15M - 35M VNĐ dựa trên giá trị mang lại.
+## 3. CV Connection
+- **What candidate already knows (from CV):** Nền tảng rất mạnh về AWS (VPC, EC2, EKS, v.v.), Terraform, Kubernetes, GitOps (ArgoCD), CI/CD (GitHub Actions), Monitoring (Prometheus, Grafana). Bạn mang tư duy hiện đại của Cloud Native.
+- **What interviewer will likely ask:** Làm sao bạn áp dụng kinh nghiệm AWS vào hệ thống On-premise? Bạn xử lý thế nào với Windows Server, Active Directory, VMware khi chưa có nhiều kinh nghiệm? Cách bạn monitor phần cứng vật lý ra sao?
+- **Skill gap to address:** Cần chuyển đổi khái niệm từ Cloud sang On-premise (VD: AWS VPC -> VLAN/Switches, AWS EC2 -> VMware, AWS ALB -> HAProxy/F5). Bạn cần thể hiện khả năng học hỏi nhanh các hệ thống truyền thống như Windows, AD, Storage vật lý.
 
-### Tôi phải trả lời được
+## 4. Prerequisites
+- Hiểu rõ CV của bản thân.
+- Tìm hiểu cơ bản về mô hình hoạt động của hệ thống doanh nghiệp lớn (TOS - Core Enterprise System).
+- Tâm lý vững vàng để đối mặt với hội đồng phỏng vấn (thường từ 3-5 người trong môi trường Enterprise).
 
-> "Nếu hội đồng phỏng vấn hỏi: 'Em chuyên làm Cloud & Kubernetes trên AWS, tại sao lại ứng tuyển vị trí đòi hỏi 60% vận hành hạ tầng On-premise truyền thống?', em sẽ trả lời thế nào để thuyết phục hoàn toàn?"
+## 5. Core Concepts
 
----
-# 2. 🧠 KIẾN THỨC NỀN
+### 5.1 Phân tích JD & Định vị bản thân
 
-## 2.1. Kiến thức cần biết trước
+#### Definition
+Định vị bản thân là việc biến profile DevOps/Cloud của bạn thành "mảnh ghép hoàn hảo" mà Enterprise đang cần cho quá trình chuyển đổi số, thay vì bị nhìn nhận là "thiếu kinh nghiệm System On-premise".
 
-### Enterprise IT vs Cloud Native Mindset
-**Định nghĩa:** Doanh nghiệp Enterprise truyền thống ưu tiên Uptime 99.99%, tính ổn định và bảo mật chặt chẽ trên hạ tầng On-premise Multi-DC. Trong khi Cloud Native ưu tiên khả năng mở rộng linh hoạt (Elasticity) và tự động hóa (Automation).
-**Tại sao cần biết?** Người phỏng vấn doanh nghiệp lớn sợ nhất ứng viên Cloud mang tư duy "đập đi xây lại" làm ảnh hưởng đến hệ thống Core đang chạy ổn định.
-**Ví dụ:** Thay vì đề xuất chuyển toàn bộ Database Oracle sang Cloud, kỹ sư Senior sẽ đề xuất giữ DB ở On-premise để đảm bảo độ trễ thấp và xây dựng cụm Kubernetes cho tầng Web/API ở trên.
+#### Why It Exists
+Doanh nghiệp truyền thống cần người vận hành hệ thống cũ (60% System), nhưng cũng cực kỳ khát nhân sự modernize hệ thống (40% DevOps).
 
----
-# 3. 📚 TỔNG QUAN
+#### How It Works
+Sử dụng chiến thuật "Mapping":
+- **Cloud to On-Prem:** AWS EBS/EFS -> SAN/NAS Storage. AWS IAM -> Active Directory/LDAP. AWS RDS -> On-prem PostgreSQL/Oracle.
+- **DevOps to System:** Thay vì cấu hình tay Windows/Linux, bạn đề xuất dùng Ansible/Terraform (Infrastructure as Code). 
 
-## 3.1. Phân tích JD & Định vị bản thân
-- **Tỷ lệ công việc:** 60% System Engineer (Vận hành Linux, Windows, VMware, Storage, Multi-DC) + 40% DevOps Engineer (Kubernetes, CI/CD, GitOps, IaC).
-- **Vấn đề của Doanh nghiệp:** Hệ thống cũ cần người vận hành bền bỉ, nhưng đồng thời rất khát nhân sự có tư duy DevOps để hiện đại hóa hạ tầng (App Modernization).
+#### Real-world Example
+Enterprise có hệ thống Core Enterprise System đang chạy trên On-premise cần HA cao giữa 2 Data Center. Bạn có thể đề xuất dùng kiến thức Kubernetes và Load Balancer để thiết kế lại mô hình triển khai thay vì chạy trên các VM rời rạc.
 
-## 3.2. Phương pháp "Cloud-to-OnPrem Mapping"
-Tất cả các khái niệm Cloud trên CV của bạn đều có khái niệm tương đương ở dưới On-premise:
+#### Production Example
+Khi được hỏi về việc quản lý 100 con Windows Server, bạn không nói về việc RDP vào từng con, mà nói về việc thiết lập Active Directory Group Policy, hoặc dùng Ansible WinRM để automation.
 
-| Khái niệm trên AWS (CV của bạn) | Khái niệm On-premise (Doanh nghiệp) | Cách "bán" năng lực |
+#### Interview Answer Template
+"Mặc dù kinh nghiệm của em tập trung nhiều ở AWS và Kubernetes, nhưng bản chất kiến trúc hạ tầng là giống nhau. Ở AWS em quản lý VPC thì dưới On-premise là mạng VLAN/Switch. Điểm mạnh của em là có thể mang tư duy tự động hóa (Automation/IaC) và GitOps vào quản trị hệ thống System truyền thống, giúp giảm thiểu human error trong vận hành."
+
+### 5.2 Xử lý Skill Gaps (Windows, VMware, AD, Storage)
+
+#### Definition
+Phương pháp trả lời các câu hỏi về công nghệ bạn chưa từng làm hoặc mới chỉ biết lý thuyết.
+
+#### Why It Exists
+Không ai đáp ứng 100% JD, đặc biệt là JD mix giữa System và DevOps.
+
+#### How It Works
+Áp dụng công thức: Thừa nhận thiếu sót + Nêu kiến thức lý thuyết tương đương + Đưa ra phương án học hỏi + Dẫn chứng khả năng học công nghệ trong quá khứ.
+
+#### Interview Answer Template
+"Thực tế em chưa quản trị hệ thống VMware vSphere/vCenter trên production. Tuy nhiên, em hiểu nguyên lý cấp phát tài nguyên Hypervisor và HA/DR của nó tương tự như cách em thiết kế Auto Scaling và Multi-AZ trên AWS. Ở dự án trước, em từng phải tự học và triển khai Kafka/MSK từ con số 0 trong vòng 1 tuần, nên em hoàn toàn tự tin có thể master VMware trong tháng đầu tiên on-board."
+
+### 5.3 Kỹ thuật trả lời bằng STAR Method
+
+#### Definition
+S - Situation (Tình huống), T - Task (Nhiệm vụ), A - Action (Hành động), R - Result (Kết quả).
+
+#### How It Works
+Khi được hỏi về kinh nghiệm, luôn bắt đầu bằng ngữ cảnh dự án, vấn đề gặp phải, chi tiết các bước kỹ thuật bạn đã làm (dùng công cụ gì, lệnh gì) và kết quả có thể đo lường (giảm % downtime, tăng tốc độ deploy).
+
+## 6. Architecture
+Không áp dụng trực tiếp Architecture kỹ thuật ở phần này, nhưng đây là "Kiến trúc" của một buổi phỏng vấn thành công:
+```
+[Giới thiệu bản thân: Nhấn mạnh kinh nghiệm DevOps/K8s]
+      |
+      v
+[Mapping kinh nghiệm: AWS -> On-premise, Cloud Native -> Enterprise]
+      |
+      v
+[Xử lý câu hỏi kỹ thuật: Dùng STAR Method, tập trung vào Troubleshooting]
+      |
+      v
+[Chốt lại: Đặt câu hỏi ngược lại cho NTD về định hướng chuyển đổi số của cty]
+```
+
+## 7. Hands-on Commands / Configuration
+- Trong quá trình phỏng vấn, nếu có bảng trắng hoặc share screen, hãy vẽ kiến trúc hệ thống (Ví dụ vẽ mô hình Multi-DC có Load Balancer).
+- Thay vì nói chung chung, hãy đề cập đến các metrics cụ thể: "Em thường dùng PromQL để query CPU Load thay vì chỉ dùng top command".
+
+## 8. Common Interview Questions
+
+### Q1: Tại sao bạn ứng tuyển vào Enterprise trong khi profile của bạn mạnh về Cloud/AWS?
+**Model Answer:** 
+"Em nhận thấy xu hướng Hybrid Cloud và App Modernization đang rất mạnh mẽ ở các doanh nghiệp lớn như Enterprise. Với background 60% System và 40% DevOps của vị trí này, đây là cơ hội tuyệt vời để em áp dụng quy trình CI/CD, GitOps, Kubernetes từ kinh nghiệm AWS của em để hiện đại hóa hạ tầng On-premise của công ty. Đồng thời em cũng mong muốn được học hỏi sâu hơn về vận hành Data Center vật lý, Storage và Hardware để trở thành một kỹ sư toàn diện."
+
+### Q2: Bạn chưa có nhiều kinh nghiệm quản trị Storage/Hardware (Dell/HP), bạn sẽ làm thế nào?
+**Model Answer:**
+"Storage vật lý (như SAN/NAS) ở mức khái niệm cũng chia sẻ chung kiến trúc với Cloud Storage (Block Storage - EBS, File Storage - EFS, Object - S3). Em hiểu về IOPS, Throughput, RAID. Về cách cấu hình cụ thể của Dell hay HP, em có kỹ năng đọc document và phân tích log tốt. Em sẽ làm việc chặt chẽ với vendor support hoặc các anh senior trong team để nắm bắt quy trình vận hành nhanh nhất."
+
+### Q3: Mức lương mong muốn của bạn là bao nhiêu? (Salary Negotiation)
+**Model Answer:**
+"Dựa trên yêu cầu công việc đòi hỏi kết hợp cả System Operation cường độ cao (đảm bảo uptime 24/7 cho cảng) và DevOps Modernization, cùng với kinh nghiệm đã triển khai K8s và GitOps trên AWS, mức lương mong muốn của em nằm trong khoảng [Điền khoảng, vd: 25-30 triệu VNĐ]. Tuy nhiên em quan tâm nhiều hơn đến cơ hội được build hệ thống Multi-DC lớn và team culture ở Enterprise."
+
+## 9. Scenario-Based Questions
+
+### Scenario 1: Đánh giá tư duy System vs DevOps
+**Situation:** Hệ thống của Enterprise cần deploy một phiên bản TOS mới. Team Dev đưa cho bạn file war/jar và bảo deploy lên Windows Server / Tomcat.
+**How to approach:** Đừng trả lời bằng cách RDP vào server và copy file.
+**Model Answer:** 
+"Mặc dù có thể làm manual, nhưng với tư duy DevOps, em sẽ đề xuất đưa ứng dụng này vào quy trình CI/CD. Nếu chưa thể Dockerize ngay, em sẽ viết GitLab CI pipeline kết hợp Ansible để tự động đẩy file lên server, restart service và check health. Về lâu dài, em sẽ đề xuất đóng gói thành Docker image và chạy trên Kubernetes (OpenShift/EKS) để tận dụng khả năng Auto-healing và Zero-downtime deployment (Rolling update)."
+
+### Scenario 2: Xử lý gián đoạn dịch vụ
+**Situation:** Nửa đêm, hệ thống hạ tầng lõi Enterprise không thể kết nối đến Database. Bạn là on-call engineer.
+**How to approach:** Quy trình Incident Response.
+**Model Answer:**
+1. Acknowledge the alert (từ SolarWinds/Grafana).
+2. Triage: Xác định phạm vi ảnh hưởng (Network, App, DB, OS). Dùng ping, telnet, kiểm tra DB process.
+3. Mitigation: Nếu là do chết node vật lý, kích hoạt failover sang node standby (HA). 
+4. Root Cause Analysis: Sau khi hệ thống up, phân tích log để tìm nguyên nhân gốc.
+5. Post-mortem: Đưa ra action item (VD: thêm alert cho memory utilization) để tránh lặp lại.
+
+## 10. Troubleshooting Exercises
+*(Phần này tập trung vào tư duy troubleshooting chung)*
+
+### Problem 1: Troubleshooting Methodology
+**Symptoms:** Ứng dụng web truy cập rất chậm.
+**Root Cause:** Tư duy phân lớp OSI.
+**Solution:**
+- Lớp 1-3: Ping/Traceroute kiểm tra mạng có drop packet không.
+- Lớp 4: Telnet kiểm tra port có mở / có firewall block hoặc connection tracking bị full không.
+- OS/System: Dùng `htop`, `iostat` kiểm tra CPU/RAM/Disk IO.
+- App/DB: Xem log ứng dụng, xem slow query log của DB.
+**Prevention:** Thiết lập Prometheus/Grafana dashboard với RED metrics (Rate, Errors, Duration) và USE metrics (Utilization, Saturation, Errors).
+
+## 11. Key Takeaways
+- Hãy tự tin vào bộ kỹ năng Cloud Native của mình, đó là lợi thế cạnh tranh.
+- Luôn "map" kiến thức Cloud xuống On-premise để chứng minh bạn hiểu bản chất vấn đề.
+- Áp dụng triệt để STAR method khi kể về các dự án đã làm (nhất là dự án E-Commerce 23 microservices).
+- Luôn thể hiện tinh thần Automation (tự động hóa) trong mọi câu trả lời về System Administration.
+
+## 12. Quick Reference
+| Vấn đề | On-premise / System | Cloud / DevOps Tương đương |
 |---|---|---|
-| AWS EC2 / Auto Scaling | VMware ESXi / vCenter DRS | Tư duy quản lý vCPU/vRAM, sizing tài nguyên ảo hóa |
-| AWS VPC / Subnets / Security Group | VLAN 802.1Q / Router / Firewall | Hiểu bản chất L2/L3 Routing, Port Filtering |
-| AWS EBS / EFS / S3 | SAN Storage (FC/iSCSI) / NAS / MinIO | Hiểu block storage, nfs mount và backup redundancy |
-| AWS IAM / KMS | Active Directory / LDAP / Vault | Quản lý định danh RBAC, mã hóa dữ liệu |
-| AWS ALB / NLB | Nginx / HAProxy / F5 BIG-IP | Layer 4 & Layer 7 Load Balancing, SSL Offloading |
-
----
-# 4. 🏗️ CHIẾN LƯỢC TRẢ LỜI STAR METHOD
-
-```text
-[S] SITUATION   ──> Mô tả ngắn gọn bối cảnh dự án / sự cố thực tế (15 giây)
-       │
-       v
-[T] TASK        ──> Thách thức hoặc mục tiêu cụ thể bạn phải giải quyết (15 giây)
-       │
-       v
-[A] ACTION      ──> Các bước kỹ thuật CỤ THỂ BẠN ĐÃ LÀM (60 giây - Trọng tâm)
-       │
-       v
-[R] RESULT      ──> Kết quả đo lường được bằng số liệu cụ thể (30 giây)
-```
-
----
-# 5. 📂 XỬ LÝ SKILL GAPS (KHOẢNG TRỐNG KINH NGHIỆM)
-
-Khi bị hỏi về công nghệ bạn chưa làm thực tế trên Production (ví dụ: VMware vSphere, Active Directory, Storage SAN):
-
-### Công thức 4 bước trả lời chuyên nghiệp:
-1. **Thừa nhận trung thực:** "Thực tế em chưa trực tiếp vận hành sản phẩm X ở môi trường Production lớn."
-2. **Nêu nguyên lý tương đương:** "Tuy nhiên em nắm rất vững nguyên lý cốt lõi của X, tương tự như công nghệ Y mà em đã làm master trên AWS/Cloud."
-3. **Dẫn chứng khả năng tự học:** "Trong dự án trước, em từng tự nghiên cứu và triển khai Kafka/MSK từ con số 0 trong vòng 1 tuần."
-4. **Cam kết Fast Onboarding:** "Em tự tin sẽ làm chủ quy trình vận hành X của công ty trong 2-4 tuần đầu tiên."
-
----
-# 6. 🚨 CÁC KỊCH BẢN PHỎNG VẤN THỰC CHẾN (SCENARIOS)
-
-### INCIDENT 01 — Xử lý khi bị hỏi ép về kinh nghiệm Windows Server / Active Directory
-- **Hỏi:** "CV của em toàn làm Linux và AWS EKS, bên anh dùng 50% Windows Server và Active Directory, em làm được không?"
-- **Trả lời:** "Dạ hoàn toàn làm được ạ. Em có nền tảng lập trình .NET và hiểu rõ cơ chế hoạt động của IIS Web Server, Windows Services và Event Viewer. Đối với Active Directory, em nắm vững nguyên lý Kerberos/LDAP authentication và Group Policy. Thay vì quản trị thủ công qua giao diện RDP, em sẽ ứng dụng PowerShell scripting và Ansible WinRM để tự động hóa công tác quản trị, giúp giảm thiểu lỗi con người."
-
----
-# 7. ⚖️ ĐÀM PHÁN LƯƠNG (SALARY NEGOTIATION)
-
-- **Mức lương thị trường:** 15.000.000 VNĐ — 35.000.000 VNĐ tùy theo năng lực thực tế.
-- **Nguyên tắc đàm phán:** Khẳng định giá trị giải quyết bài toán của doanh nghiệp (Uptime hệ thống, giảm sự cố, chuyển đổi số) trước khi đưa ra con số kỳ vọng.
-
----
-# 8. 🧠 MUST REMEMBER
-
-🔴 **PHẢI HIỂU:** Tỷ lệ 60/40 JD, Kỹ thuật Cloud-to-Onprem Mapping, Mô hình STAR.
-🟠 **PHẢI NẮM:** 4 bước trả lời xử lý Skill Gaps, kỹ thuật đàm phán lương dựa trên giá trị.
-🟡 **NÊN BIẾT:** Tìm hiểu kỹ văn hóa và bài toán kinh doanh của doanh nghiệp trước khi phỏng vấn.
-
----
-# 9. ✅ KNOWLEDGE CHECK
-
-1. Q: Sự khác biệt lớn nhất giữa tư duy vận hành On-premise Enterprise và Cloud-Native là gì?
-2. Q: Mô hình STAR gồm 4 yếu tố nào?
-
----
-# 10. 🎤 INTERVIEW QUESTIONS & MODEL ANSWERS
-
-**Q1: Hãy giới thiệu bản thân trong 2 phút làm nổi bật sự phù hợp với vị trí này?**
-- **Model Answer:** "Chào anh/chị, em là một kỹ sư hạ tầng có kinh nghiệm chuyên sâu về Linux, Kubernetes, CI/CD và AWS. Điểm mạnh của em là kết hợp tư duy tự động hóa hiện đại của DevOps với sự cẩn trọng bền bỉ của System Operations. Em thấy vị trí này yêu cầu 60% vận hành hệ thống Enterprise và 40% chuẩn hóa DevOps — đây chính là thế mạnh của em. Em có thể bảo đảm tính ổn định 24/7 cho hạ tầng hiện tại, đồng thời hỗ trợ nhóm hiện đại hóa ứng dụng qua Kubernetes và GitOps."
-
----
-# 11. 📋 FINAL CHECKLIST
-
-- [ ] Tôi biết cách định vị bản thân theo tỷ lệ 60% System + 40% DevOps.
-- [ ] Tôi thành thạo bảng quy đổi Cloud-to-Onprem Mapping.
-- [ ] Tôi tự tin ứng biến với các câu hỏi về Skill Gaps.
-- [ ] Tôi sẵn sàng trả lời phỏng vấn theo mô hình STAR.
-
----
-# 12. 🔧 TROUBLESHOOTING
-
-Flow chuẩn: xác nhận triệu chứng và impact → khoanh vùng → kiểm tra alert/metric → đọc log → kiểm tra network/dependency → xem recent change → mitigation an toàn → verify → RCA/prevention.
-# 13. 🚨 PRODUCTION INCIDENT
-
-Các scenario bắt buộc: service unavailable, latency/error tăng, dependency timeout, resource/capacity cạn và recent change gây regression. Mỗi case phải ghi evidence đầu tiên, nhánh điều tra, mitigation, verification và prevention.
-# 14. ⚖️ SO SÁNH & TRADE-OFF
-
-So sánh theo: mục đích, operational complexity, failure mode, consistency/availability, chi phí, khả năng rollback và mức phù hợp với Production; không chọn công nghệ chỉ vì phổ biến.
-# 15. ❌ COMMON MISTAKES
-
-Sai lầm thường gặp: restart trước khi thu evidence; chỉ nhìn CPU mà bỏ qua I/O/dependency; sửa trực tiếp không có rollback; coi replication là backup; và nói “HA” nhưng không nêu failure domain.
-# 16. ✅ INTERVIEW KNOWLEDGE CHECK
-
-1. Component nào sở hữu state?
-2. Metric nào xác nhận symptom?
-3. Log nào cần đọc trước?
-4. Recent change nào cần kiểm tra?
-5. Mitigation nào ít rủi ro nhất?
-6. Verify recovery bằng gì?
-# 17. 🎤 CÂU HỎI PHỎNG VẤN
-
-Câu hỏi nên đi từ concept → architecture → command/metric → production failure → trade-off. Ví dụ: “INTERVIEW STRATEGY hoạt động thế nào?”, “Nếu latency tăng em kiểm tra gì trước?”, “Khi nào chọn phương án A thay vì B?”.
-# 18. 🗣️ ĐÁP ÁN PHỎNG VẤN
-
-Trả lời theo cấu trúc: kết luận ngắn → cơ chế → evidence/tool → mitigation → trade-off → prevention. Nếu chưa có kinh nghiệm trực tiếp, phải nói rõ đó là kiến thức/lab hoặc lý thuyết.
-# 19. 🧑‍💻 CÁCH TRẢ LỜI NHƯ ENGINEER
-
-Nói như Engineer: nêu impact và giả thuyết, kiểm tra bằng evidence, thay đổi nhỏ có rollback, xác nhận bằng metric/log, rồi ghi RCA và action item phòng tái diễn.
-# 20. 🌳 FOLLOW-UP QUESTION TREE
-
-Interviewer thường đào sâu theo nhánh: component → dependency → metric → log → failure mode → mitigation → recovery → prevention. Hãy luyện trả lời từng nhánh bằng một ví dụ cụ thể.
-# 21. 📋 CHECKLIST SAU KHI HỌC
-
-- [ ] Hiểu concept và architecture
-- [ ] Biết component/dependency
-- [ ] Biết command, log, metric
-- [ ] Xử lý được production incident
-- [ ] Nêu được trade-off, security, rollback và prevention
-# 22. 🃏 FLASHCARDS
-
-- **Q:** Làm sao xác nhận INTERVIEW STRATEGY đang khỏe? **A:** Dùng health signal, metric và log; không chỉ dựa vào process đang chạy.
-- **Q:** Bước đầu khi có incident? **A:** Xác định impact, giữ evidence và kiểm tra recent change trước mitigation.
-# 23. 🧠 PHÂN BIỆT “PHẢI NHỚ” VÀ “PHẢI HIỂU”
-
-🔴 **Phải hiểu:** bản chất, dependency và failure mode của INTERVIEW STRATEGY.
-
-🟠 **Phải nắm:** workflow vận hành, command/tool và cách đọc evidence.
-
-🟡 **Nên biết:** trade-off, capacity và security.
-
-🟢 **Đọc thêm:** tài liệu chính thức của sản phẩm và runbook nội bộ.
-# 24. 🎯 LIÊN HỆ VỚI JD
-
-**JD mapping:** Topic này liên quan đến các trách nhiệm vận hành, monitoring, troubleshooting, change management và incident response. Khi trả lời, cần nối concept với một tác vụ cụ thể: phát hiện vấn đề, thu thập evidence, giảm impact và ngăn tái diễn.
-# 25. 📌 LIÊN HỆ VỚI CV
-
-**CV Evidence:** Chỉ sử dụng công nghệ/dự án được CV chứng minh.
-
-**Kiến thức cần bổ sung:** ghi riêng các phần chưa có evidence Production.
-
-**Cách trả lời:** nói rõ “em đã làm”, “em đã học/lab” hoặc “em hiểu ở mức lý thuyết”, không trộn ba mức này.
-# 26. 🏢 ENTERPRISE / DATA CENTER SCENARIO
-
-Một mô hình Enterprise cho **INTERVIEW STRATEGY** cần xác định rõ traffic/data flow, failure domain, HA, backup/restore, monitoring, access control và ownership. Với mỗi failure, cần biết hệ thống degrade hay outage, RTO/RPO/SLO nào bị ảnh hưởng và runbook nào được gọi.
-# 27. 🧪 HANDS-ON LAB
-
-### LAB 01 — Baseline và kiểm tra trạng thái
-
-- **Objective:** dựng môi trường nhỏ cho INTERVIEW STRATEGY và ghi baseline.
-- **Task:** tạo một lỗi có kiểm soát, thu thập metric/log, khôi phục và ghi lại RCA.
-- **Expected result:** xác định được symptom, root cause và verification.
-
-<details><summary>Solution</summary>
-
-Lặp lại theo runbook của topic; không sửa trực tiếp Production khi chưa có evidence và rollback plan.
-</details>
-# 28. 🔍 TROUBLESHOOTING DECISION TREE
-
-```text
-Symptom / Alert
-    |
-    +--> Scope rộng hay hẹp?
-    |       +--> Rộng: kiểm tra dependency, network, capacity và recent change
-    |       +--> Hẹp: kiểm tra instance/component, process, config và log
-    |
-    +--> Có mitigation an toàn không?
-            +--> Có: giảm impact, ghi thời điểm, rồi điều tra tiếp
-            +--> Không: escalate theo ownership và bảo toàn evidence
-```
-# 29. 🧾 PRODUCTION READINESS REVIEW
-
-Trước Production cần kiểm tra: health check và alert; capacity/baseline; log và correlation ID; quyền truy cập tối thiểu; backup/restore hoặc rollback; HA/failure domain; runbook/on-call; canary/change window; và cách verify sau khi thay đổi.
-# 30. 🧭 FINAL SELF-ASSESSMENT
-
-| Năng lực | Beginner | Intermediate | Advanced |
-|---|---|---|---|
-| Concept | ☐ | ☐ | ☐ |
-| Command/Tool | ☐ | ☐ | ☐ |
-| Troubleshooting | ☐ | ☐ | ☐ |
-| Production | ☐ | ☐ | ☐ |
-| Interview | ☐ | ☐ | ☐ |
-# 31. 🔥 INTERVIEW PRIORITY
-
-🔥 **Top 10 cần ưu tiên:** concept cốt lõi, architecture, component, command, log, metric, failure mode, mitigation, RCA và prevention của INTERVIEW STRATEGY.
-
-🚨 **Top scenario:** service down, latency tăng, dependency lỗi, capacity cạn và recent change gây regression.
-# 32. 📋 FINAL CHECKLIST
-
-- [ ] Tôi giải thích được concept và architecture của INTERVIEW STRATEGY.
-- [ ] Tôi biết component, dependency, command/tool, log và metric quan trọng.
-- [ ] Tôi xử lý được ít nhất 5 production scenario theo evidence.
-- [ ] Tôi phân biệt được mitigation, fix, recovery, RCA và prevention.
-- [ ] Tôi trả lời được câu hỏi 30 giây, 2 phút và follow-up mà không phóng đại kinh nghiệm.
-
----
-END OF FILE
+| Networking | VLAN, Switch, Router Cisco | VPC, Subnets, Route Tables, Transit Gateway |
+| Compute | VMware vSphere, KVM, Bare-metal | EC2, Auto Scaling Groups, EKS |
+| Storage | SAN, NAS, RAID, Dell/EMC | EBS, EFS, S3 |
+| Cấu hình | Cài tay, Group Policy, Shell script | Terraform, Ansible, GitOps (ArgoCD) |
+| Giám sát | SolarWinds, Zabbix, PRTG | Prometheus, Grafana, CloudWatch |
+| Load Balancing | F5, HAProxy, Nginx | ALB, NLB |
+| Identity | Active Directory, LDAP | AWS IAM, OIDC |

@@ -1,107 +1,159 @@
-# Windows Server — Cẩm nang phỏng vấn
+# Cẩm nang Phỏng vấn & Thực chiến: Windows Server
 
-# 1. Mục tiêu học
-services, event logs, IIS, PowerShell, storage, patching và failover; liên hệ concept với vận hành, failure mode và quyết định production.
+## 1. Mục tiêu học 🔴
+- Nắm vững kiến trúc, quản trị và vận hành hệ điều hành Windows Server trong môi trường Enterprise.
+- Hiểu cách tối ưu hóa, giám sát và xử lý sự cố (troubleshooting) trên hệ thống Windows Server tại các doanh nghiệp quy mô lớn.
+- Biết cách sử dụng PowerShell để tự động hóa các tác vụ quản trị.
 
-# 2. Kiến thức nền cần có
-Linux, networking, storage, identity, scripting, observability và change management.
+## 2. Kiến thức nền cần biết 🟠
+- Kiến thức cơ bản về hệ điều hành, quản lý bộ nhớ, CPU, disk I/O.
+- Cơ bản về mạng (TCP/IP, DNS, DHCP, SMB).
+- Phân quyền file system (NTFS, ReFS).
 
-# 3. Tổng quan kiến trúc
-Mô tả control plane, data plane, state, dependency, traffic flow và failure domain của Windows Server.
+## 3. Tổng quan (Enterprise & Tan Cang Sai Gon Enterprise Context) 🔴
+Trong môi trường doanh nghiệp lớn quy mô lớn như Enterprise System, hệ thống Windows Server thường đóng vai trò xương sống cho:
+- **Active Directory / Identity Management**: Quản lý hàng ngàn user và thiết bị.
+- **Core Enterprise System**: Một số ứng dụng lõi quản lý container và bãi có thể chạy hoặc tích hợp qua Windows.
+- **File & Print Services**: Phục vụ các phòng ban nội bộ, hải quan.
+- **IIS & .NET Applications**: Host các hệ thống web portal nội bộ.
+Đòi hỏi tính sẵn sàng cao (High Availability - HA), bảo mật nghiêm ngặt và khả năng scale.
 
-# 4. Cách hoạt động
-Mô tả lifecycle từ request/config đến execution, persistence, response, audit và metric.
+## 4. Kiến trúc / Cách hoạt động (ASCII Diagrams) 🟠
+```
++-----------------------------------------------------------+
+|                      User Mode                            |
+|  +-------------+  +-------------+  +-------------------+  |
+|  | System Apps |  | Service Apps|  | User Applications |  |
+|  +-------------+  +-------------+  +-------------------+  |
+|         |                |                   |            |
+|       +-----------------------------------------+         |
+|       |       Environment Subsystems            |         |
+|       |       (Win32, POSIX, etc.)              |         |
+|       +-----------------------------------------+         |
++--------------------------|--------------------------------+
+                           | System Calls
++--------------------------|--------------------------------+
+|                     Kernel Mode                           |
+|       +-----------------------------------------+         |
+|       |           Executive Services            |         |
+|       | (I/O Mgr, Object Mgr, Security, etc.)   |         |
+|       +-----------------------------------------+         |
+|                           |                               |
+|       +-----------------------------------------+         |
+|       |                 Kernel                  |         |
+|       +-----------------------------------------+         |
+|                           |                               |
+|       +-----------------------------------------+         |
+|       |      Hardware Abstraction Layer (HAL)   |         |
+|       +-----------------------------------------+         |
++-----------------------------------------------------------+
+```
 
-# 5. Thành phần và failure mode
-Windows Server có thể gặp resource exhaustion, network partition, stale state, permission error, disk failure hoặc bad change; xác định impact của từng lỗi.
+## 5. Các thành phần quan trọng (Components, failure modes) 🔴
+- **Registry**: Lưu cấu hình hệ thống. *Failure mode*: Corrupted registry làm sập boot hoặc ứng dụng lỗi.
+- **Services (services.msc)**: Chạy ngầm. *Failure mode*: Service treo làm ứng dụng downtime.
+- **Event Log**: Ghi log lỗi. *Failure mode*: Đầy log hoặc bị overwrite làm mất dấu vết troubleshoot.
+- **NTFS/ReFS**: Hệ thống file. *Failure mode*: Bad sectors, file locked, permission borked.
 
-# 6. Concepts quan trọng
-Availability, durability, consistency, latency, throughput, capacity, timeout, retry, idempotency và least privilege.
+## 6. Các concept quan trọng 🔴
+- **Cơ bản**: Roles & Features, Server Manager, RDP.
+- **Trung cấp**: Group Policy (GPO), PowerShell Remoting, Windows Server Failover Cluster (WSFC).
+- **Nâng cao**: Storage Spaces Direct (S2D), Hyper-V networking, Nano Server, Core Server.
 
-# 7. Ví dụ thực tế
-Triển khai theo môi trường, version-control config, baseline metric, health check, backup và rollback.
+## 7. Ví dụ thực tế (Dev, Prod, Enterprise/Multi-DC) 🟠
+- **Dev**: Cài Windows Server Desktop Experience để dev test ứng dụng .NET.
+- **Prod**: Chạy Windows Server Core để giảm attack surface và tiết kiệm tài nguyên.
+- **Enterprise/Multi-DC**: Triển khai Failover Cluster cho SQL Server AlwaysOn giữa 2 Data Center (Ví dụ Primary DC và Hiệp Phước).
 
-# 8. Command / Tool cần biết
-Get-Service, Get-WinEvent, perfmon, Test-NetConnection
+## 8. Command / Tool cần biết 🔴
+- `Get-Process`, `Get-Service`, `Restart-Service` (PowerShell)
+- `tasklist`, `taskkill`
+- `ipconfig`, `netstat`, `Test-NetConnection`
+- `nslookup`, `ping`, `tracert`
+- `chkdsk`, `sfc /scannow`, `dism`
+- **Sysinternals Suite**: `Process Explorer`, `Process Monitor` (ProcMon), `TCPView`.
 
-# 9. Log và cách đọc
-Correlate timestamp, host/component, request ID, version và user. Giữ evidence trước khi restart hoặc xóa state.
+## 9. Log (Locations, interpretation, correlation) 🔴
+- **Event Viewer**: Application, Security, Setup, System.
+- **Log location mặc định**: `%SystemRoot%\System32\Winevt\Logs\`
+- Phân tích: Tìm Event ID (vd: 41 Kernel-Power, 4624 Successful Logon). Correlation giữa System log (lỗi service) và Application log (app crash).
 
-# 10. Metrics
-CPU, memory, disk/inode, network, latency, error rate, queue/connection, replication/lag và SLO.
+## 10. Metric (CPU, RAM, Disk I/O, vv.) 🟠
+- **Task Manager / Resource Monitor** để xem nhanh.
+- **Performance Monitor (Perfmon)**:
+  - `\Processor(_Total)\% Processor Time`
+  - `\Memory\Available MBytes`
+  - `\LogicalDisk(C:)\Avg. Disk Queue Length`
+  - `\Network Interface(*)\Bytes Total/sec`
 
-# 11. Configuration mẫu
-Config phải review, có timeout/limit, secret ngoài source, permission tối thiểu, health check và rollback.
+## 11. Configuration 🟠
+Mẫu script cấu hình Network qua PowerShell:
+```powershell
+# Đặt IP tĩnh
+New-NetIPAddress -InterfaceAlias "Ethernet" -IPAddress 192.168.1.10 -PrefixLength 24 -DefaultGateway 192.168.1.1
+# Đặt DNS
+Set-DnsClientServerAddress -InterfaceAlias "Ethernet" -ServerAddresses ("8.8.8.8","8.8.4.4")
+# Đổi tên máy và restart
+Rename-Computer -NewName "Enterprise-APP-01" -Restart
+```
 
-# 12. Troubleshooting methodology
-Xác định scope; kiểm tra first bad timestamp và recent change; thu logs/metrics; lập hypothesis; mitigation reversible; verify; RCA.
+## 12. Troubleshooting Methodology 🔴
+1. Xác định lỗi (User report, Alert).
+2. Kiểm tra Event Viewer tại thời điểm xảy ra sự cố.
+3. Check tài nguyên (CPU, RAM, Disk) qua Task Manager / Perfmon.
+4. Check Network (ping, telnet/Test-NetConnection).
+5. Sử dụng ProcMon nếu là lỗi mức ứng dụng không rõ nguyên nhân.
+6. Check cấu hình / Windows Updates gần đây.
 
-# 13. Năm production incidents
-1. Service unavailable: kiểm tra process/listener/health check/dependency.
-2. Latency tăng: kiểm tra saturation, queue, storage và network.
-3. Disk đầy: tìm consumer, cleanup theo policy và mở rộng an toàn.
-4. Permission/TLS lỗi: kiểm tra identity, expiry, chain và recent rotation.
-5. Replication/cluster lỗi: xác định quorum, lag, fencing và failover plan.
+## 13. Production Incident 🔴
+**Scenario 1: 100% CPU do Windows Update**
+- **Symptoms**: Máy chủ phản hồi chậm, ứng dụng timeout.
+- **Impact**: Downtime cho người dùng cuối.
+- **Command**: `tasklist` -> thấy `TiWorker.exe` hoặc `svchost.exe` ngốn CPU.
+- **Fix tạm thời**: Stop service `wuauserv`.
+- **RCA/Prevention**: Cấu hình WSUS hoặc chỉnh policy không tự động update trong giờ hành chính.
 
-# 14. So sánh
-Managed giảm vận hành control plane nhưng giảm tùy biến; active-active tăng availability nhưng khó consistency; cache tăng latency tốt nhưng cần invalidation; snapshot nhanh nhưng không thay thế backup.
+## 14. So sánh 🟠
+- **Windows Server Core vs Desktop Experience**: Core nhẹ hơn, ít lỗi bảo mật hơn, quản lý qua PowerShell/Windows Admin Center. Desktop có GUI, dễ dùng cho ng mới, nặng hơn.
+- **NTFS vs ReFS**: NTFS phổ biến, hỗ trợ nén/mã hóa. ReFS tốt cho dữ liệu lớn, Hyper-V, chống lỗi data corruption tự động.
 
-# 15. Common mistakes
-Không có baseline; alert quá rộng; retry vô hạn; quyền admin; backup chưa restore test; sửa nhiều biến cùng lúc; bỏ qua change record.
+## 15. Common Mistakes 🟠
+- Chạy mọi thứ dưới quyền Administrator.
+- Mở port RDP (3389) ra public Internet.
+- Không cấu hình Pagefile phù hợp.
+- Cài quá nhiều ứng dụng bên thứ 3 lên máy chủ production.
 
-# 16. Knowledge check
-Giải thích flow, failure domain, metric quan trọng, cách khoanh vùng và tiêu chí rollback của Windows Server.
+## 16. Interview Knowledge Check 🔴
+- 10 cơ bản: Cách xem IP? Cách mở port Firewall?
+- 10 hiểu bản chất: Service ngầm chạy bằng tài khoản nào? (Local System, Network Service).
+- 10 troubleshooting: Làm gì khi máy chủ bị BSOD (Blue Screen of Death)? (Đọc file minidump).
 
-# 17. Câu hỏi phỏng vấn
-Thiết kế HA; debug outage; bảo mật access; capacity planning; backup/restore; patch/upgrade; monitoring và RCA.
+## 17. Câu hỏi phỏng vấn 🔴
+- **Cơ bản**: Kể tên 3 tool bạn dùng để troubleshoot mạng trên Windows?
+- **Nâng cao**: Giải thích kiến trúc của Windows Server Failover Cluster (Quorum là gì?)
+- **Troubleshooting**: Ứng dụng .NET báo lỗi cấp phát bộ nhớ, dù RAM trống còn nhiều, bạn kiểm tra gì? (Check Pagefile, check 32-bit vs 64-bit app process limit).
 
-# 18. Đáp án phỏng vấn mẫu
-Nêu assumption, scope, evidence, hypothesis, mitigation, verification và trade-off; tách rõ kinh nghiệm production và lab.
+## 18. Đáp án phỏng vấn 🟠
+- **Trả lời ngắn 20-30s**: Tập trung vào tool và action (VD: "Em sẽ check Event Viewer và Perfmon").
+- **Trả lời sâu 1-2m**: Nêu quy trình 6 bước troubleshooting, lấy ví dụ thực tế đã gặp.
+- **Bẫy cần tránh**: Không vội vàng "Restart server" mà chưa thu thập log/dump.
 
-# 19. Follow-up question tree
-Lỗi đơn lẻ hay toàn hệ thống? Có recent change? Component nào chung? Resource/permission/dependency nào bất thường? Action nào an toàn để giảm impact?
+## 19. Cách trả lời như Engineer 🔴
+"Khi nhận cảnh báo máy chủ CPU 100%, em không vội kill process. Em vào Task Manager/Resource Monitor xác định process, sau đó dùng ProcDump để lấy dump file phân tích offline, và check Event Viewer tìm các system/app errors liên quan. Sau đó mới tính đến việc restart service để giảm tải."
 
-# 20. Checklist sau khi học
-- [ ] Vẽ architecture và dependency.
-- [ ] Chạy được command cơ bản.
-- [ ] Viết runbook incident và rollback.
-- [ ] Có backup/restore hoặc recovery test.
+## 20. Follow-up Question Tree 🟠
+- Q: Bạn làm gì khi RDP vào server không được? -> Trả lời: Check ping, check port 3389 qua telnet/Test-NetConnection -> Q tiếp: Nếu ping được, port open mà vẫn lỗi "CredSSP encryption oracle remediation" thì sao? -> Trả lời: Update client hoặc chỉnh GPO.
 
-# 21. Flashcards
-SLI là phép đo; SLO là mục tiêu; RTO là thời gian phục hồi; RPO là dữ liệu mất; p99 là tail latency; quorum tránh split-brain; health check quyết định failover; least privilege giảm blast radius; idempotency an toàn khi retry; RCA cần prevention.
+## 21. Checklist sau khi học 🟠
+- [ ] Tự build 1 VM Windows Server Core.
+- [ ] Viết script PowerShell tự động cài IIS.
+- [ ] Đọc hiểu Event log của 1 lỗi dịch vụ cơ bản.
 
-# 22. Phải hiểu và phải nhớ
-Hiểu causal chain và trade-off; nhớ lifecycle, trạng thái, command, log, metric và escalation.
+## 22. Flashcards 🟠
+- **Q**: Process Monitor (ProcMon) dùng để làm gì?
+- **A**: Theo dõi File system, Registry, Network, và Process activity trong thời gian thực.
+- **Q**: Lệnh xem file đang bị process nào lock?
+- **A**: Dùng Handle.exe (Sysinternals) hoặc Resource Monitor.
 
-# 23. Phân biệt “phải nhớ” và “phải hiểu”
-Nhớ cú pháp không đủ; phải hiểu tác động của workload, baseline, failure domain và dependency.
-
-# 24. Liên hệ với JD
-Map vào system administration, platform operations, cloud, monitoring, security, incident và change management.
-
-# 25. Liên hệ với CV
-Nêu rõ quy mô, vai trò, metric trước/sau, công cụ và bài học; không biến lab thành production claim.
-
-# 26. Enterprise / data center scenario
-Thiết kế HA theo failure domain, access/audit tập trung, backup immutable, DR site, break-glass và vendor escalation.
-
-# 27. Hands-on lab
-Tạo workload lab, ghi baseline, gây lỗi có kiểm soát, thu evidence, khắc phục, kiểm tra recovery và viết RCA.
-
-# 28. Troubleshooting decision tree
-Alert → scope → process/config → network/dependency → resource/storage → state/replication → mitigation → verify → prevention.
-
-# 29. Production readiness review
-SLO, dashboard, alert, capacity, security, ownership, runbook, backup/restore, rollback, patch plan và game day.
-
-# 30. Self-assessment
-Beginner: giải thích concept. Intermediate: vận hành và debug. Advanced: thiết kế HA/DR, cost, security và migration.
-
-# 31. Interview priority
-Architecture → lifecycle → command/evidence → failure mode → mitigation → trade-off → security/DR.
-
-# 32. Final checklist
-- [ ] Trình bày được cơ chế đúng chủ đề Windows Server.
-- [ ] Debug được incident theo evidence.
-- [ ] Nêu được HA, backup, security, rollback và prevention.
-
+## 23. Đánh dấu 🔴 Phải hiểu, 🟠 Phải nắm.
+*(Đã được tích hợp vào các tiêu đề)*

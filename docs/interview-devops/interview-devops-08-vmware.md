@@ -1,107 +1,134 @@
-# VMware — Cẩm nang phỏng vấn
+# Cẩm nang Phỏng vấn & Thực chiến: VMware vSphere / ESXi
 
-# 1. Mục tiêu học
-ESXi, vCenter, VMkernel, vMotion, HA/DRS, datastore và snapshots; liên hệ concept với vận hành, failure mode và quyết định production.
+## 1. Mục tiêu học 🔴
+- Nắm vững kiến trúc ảo hóa nền tảng (Hypervisor Type 1) của VMware.
+- Hiểu cách quản lý tài nguyên (CPU, RAM, Storage, Network) và các tính năng High Availability (HA), vMotion.
+- Biết cách quản trị thông qua vCenter và troubleshoot hiệu năng các máy ảo (VM) trong Data Center lớn.
 
-# 2. Kiến thức nền cần có
-Linux, networking, storage, identity, scripting, observability và change management.
+## 2. Kiến thức nền cần biết 🟠
+- Kiến trúc máy tính (CPU instruction sets, bộ nhớ ảo).
+- Networking (VLAN, Trunking, LACP).
+- SAN/NAS Storage (iSCSI, Fiber Channel, NFS).
 
-# 3. Tổng quan kiến trúc
-Mô tả control plane, data plane, state, dependency, traffic flow và failure domain của VMware.
+## 3. Tổng quan (Enterprise & Tan Cang Sai Gon Enterprise Context) 🔴
+VMware vSphere là chuẩn công nghiệp tại các Enterprise truyền thống lớn. Ở Enterprise, hầu hết mọi hệ thống Core (TOS, ERP, Databases, AD) đều được ảo hóa trên nền tảng VMware. Hệ thống này bao gồm nhiều cụm Cluster đặt tại các Data Center khác nhau để đảm bảo dự phòng thảm họa (Disaster Recovery).
 
-# 4. Cách hoạt động
-Mô tả lifecycle từ request/config đến execution, persistence, response, audit và metric.
+## 4. Kiến trúc / Cách hoạt động (ASCII Diagrams) 🟠
+```
++-----------------------------------------------------------+
+|                      vCenter Server                       |
+| (Quản lý tập trung, HA, vMotion, DRS, Templates, Clones)  |
++------------------------------+----------------------------+
+                               | (Quản lý)
+      +------------------------+------------------------+
+      |                        |                        |
++-----v---------+      +-------v-------+      +---------v-----+
+|   ESXi Host 1 |      |   ESXi Host 2 |      |   ESXi Host 3 |
+| +----+ +----+ |      | +----+ +----+ |      | +----+ +----+ |
+| | VM1| | VM2| |      | | VM3| | VM4| |      | | VM5| | VM6| |
+| +----+ +----+ |      | +----+ +----+ |      | +----+ +----+ |
+|  Hypervisor   |      |  Hypervisor   |      |  Hypervisor   |
++---------------+      +---------------+      +---------------+
+      |                        |                        |
++-----v------------------------v------------------------v-----+
+|                   Shared Storage (SAN / NAS)                |
+|                    (Datastore: VMFS / NFS)                  |
++-------------------------------------------------------------+
+```
 
-# 5. Thành phần và failure mode
-VMware có thể gặp resource exhaustion, network partition, stale state, permission error, disk failure hoặc bad change; xác định impact của từng lỗi.
+## 5. Các thành phần quan trọng (Failure modes, impact) 🔴
+- **ESXi Hypervisor (VMkernel)**: OS chạy trực tiếp trên bare-metal. *Failure*: PSOD (Purple Screen of Death) do lỗi RAM/driver làm toàn bộ VM trên Host chết.
+- **vCenter Server (vCSA)**: Quản lý toàn bộ cluster. *Failure*: Không thể vMotion, DRS, hay clone VM, nhưng các VM đang chạy vẫn hoạt động bình thường.
+- **vSphere HA**: Tính năng tự động restart VM sang Host khác khi 1 Host sập. *Failure*: Lỗi mạng heartbeat dẫn đến Split-brain hoặc không thể restart.
+- **Datastore (VMFS)**: Nơi chứa file `vmdk` của VM. *Failure*: Mất kết nối (APD/PDL) làm mọi VM bị treo I/O cứng.
 
-# 6. Concepts quan trọng
-Availability, durability, consistency, latency, throughput, capacity, timeout, retry, idempotency và least privilege.
+## 6. Concepts 🔴
+- **Cơ bản**: VMDK, Snapshot, vSwitch, Port Group.
+- **Trung cấp**: vMotion (Live migration VM giữa các host), Storage vMotion, Distributed Switch (vDS), DRS (Distributed Resource Scheduler).
+- **Nâng cao**: CPU Scheduling (NUMA nodes), Transparent Page Sharing (TPS), vSAN, NSX (SDN).
 
-# 7. Ví dụ thực tế
-Triển khai theo môi trường, version-control config, baseline metric, health check, backup và rollback.
+## 7. Ví dụ thực tế (Dev, Prod, Enterprise/Multi-DC) 🟠
+- **Dev**: Dùng VMware Workstation (Type 2).
+- **Prod**: 1 Cluster 3 Hosts ESXi kết nối chung vào 1 con SAN. Kích hoạt HA, nếu Host 1 cháy nguồn, VM tự bật lại ở Host 2.
+- **Enterprise**: Cluster lớn với vSAN hoặc Fiber Channel SAN cao cấp. vCenter Linked Mode giữa 2 site để quản lý chung qua 1 màn hình.
 
-# 8. Command / Tool cần biết
-esxcli, esxtop, vim-cmd, PowerCLI
+## 8. Command / Tool cần biết 🔴
+- **esxcli**: Công cụ chính (`esxcli network`, `esxcli storage`).
+- **esxtop**: Giám sát performance thời gian thực (giống `top` trên Linux nhưng cho ESXi).
+- **vmkfstools**: Quản lý file VMFS.
+- **PowerCLI**: Module PowerShell tự động hóa VMware.
 
-# 9. Log và cách đọc
-Correlate timestamp, host/component, request ID, version và user. Giữ evidence trước khi restart hoặc xóa state.
+## 9. Log 🔴
+- **hostd.log**: Log chính của service quản lý ESXi (vị trí `/var/log/hostd.log`).
+- **vpxa.log**: Log agent giao tiếp với vCenter.
+- **vmkernel.log**: Log của core OS (driver lỗi, I/O errors, iSCSI drops).
+- **vmware.log**: Nằm trong thư mục của mỗi VM, lưu lịch sử boot/snapshot của VM đó.
 
-# 10. Metrics
-CPU, memory, disk/inode, network, latency, error rate, queue/connection, replication/lag và SLO.
+## 10. Metric 🟠
+Dùng **esxtop**:
+- **CPU**: `%RDY` (CPU Ready - Thời gian VM phải đợi CPU thực), nếu > 10% là bị CPU Contention (nghẽn).
+- **RAM**: Ký hiệu `SWP` (Swap), `MEM`.
+- **Storage**: `DAVG` (Device Average Latency), `KAVG` (Kernel Average Latency). Nếu DAVG > 20ms là Storage đang quá tải.
 
-# 11. Configuration mẫu
-Config phải review, có timeout/limit, secret ngoài source, permission tối thiểu, health check và rollback.
+## 11. Configuration 🟠
+Xóa 1 snapshot bị kẹt qua command:
+```bash
+vim-cmd vmsvc/getallvms # Lấy Vmid
+vim-cmd vmsvc/snapshot.get [Vmid]
+vim-cmd vmsvc/snapshot.removeall [Vmid]
+```
 
-# 12. Troubleshooting methodology
-Xác định scope; kiểm tra first bad timestamp và recent change; thu logs/metrics; lập hypothesis; mitigation reversible; verify; RCA.
+## 12. Troubleshooting Methodology 🔴
+1. **VM chạy chậm**: Xác định do CPU, RAM hay Disk I/O bằng cách soi esxtop hoặc Performance chart trên vCenter.
+2. **ESXi Host bị Disconnect**: Xem có ping được host không. Nếu ping được mà vCenter báo đỏ, restart management agents (`services.sh restart`).
+3. **VM bị treo**: Xem log của VM (`vmware.log`), kiểm tra xem có đang consolidate snapshot không, kiểm tra Datastore có bị đầy không.
 
-# 13. Năm production incidents
-1. Service unavailable: kiểm tra process/listener/health check/dependency.
-2. Latency tăng: kiểm tra saturation, queue, storage và network.
-3. Disk đầy: tìm consumer, cleanup theo policy và mở rộng an toàn.
-4. Permission/TLS lỗi: kiểm tra identity, expiry, chain và recent rotation.
-5. Replication/cluster lỗi: xác định quorum, lag, fencing và failover plan.
+## 13. Production Incident 🔴
+**Scenario: Snapshot Consolidation Issue làm treo máy chủ Database**
+- **Symptoms**: VM chứa DB Oracle thỉnh thoảng bị treo đơ (freeze) vài giây. Datastore cảnh báo sắp hết dung lượng.
+- **Impact**: Ứng dụng timeout, user phàn nàn.
+- **Root Cause**: Phần mềm Backup chạy qua đêm tạo Snapshot, nhưng khi xóa (consolidate) thì file Delta đã quá lớn. ESXi phải stun (tạm dừng) VM một lúc để merge data từ snapshot vào disk gốc.
+- **Fix**: Cho chạy consolidation ngoài giờ hành chính. 
+- **Prevention**: Xóa snapshot trong vòng 72h, không để lưu snapshot quá lâu.
 
-# 14. So sánh
-Managed giảm vận hành control plane nhưng giảm tùy biến; active-active tăng availability nhưng khó consistency; cache tăng latency tốt nhưng cần invalidation; snapshot nhanh nhưng không thay thế backup.
+## 14. So sánh 🟠
+- **Thick Provision Lazy Zeroed vs Eager Zeroed vs Thin Provision**: 
+  - *Thin*: Dùng bao nhiêu cấp bấy nhiêu (tiết kiệm, nhưng rủi ro over-provision).
+  - *Thick Lazy*: Chiếm sẵn dung lượng nhưng chưa zero out data cũ, tốc độ tạo nhanh.
+  - *Thick Eager*: Chiếm sẵn và zero out toàn bộ (tốn thời gian tạo, tốc độ I/O nhanh nhất, thường dùng cho DB/Cluster).
+- **Standard vSwitch vs Distributed vSwitch**: Standard cấu hình trên từng host. Distributed cấu hình 1 lần trên vCenter, đẩy xuống mọi host, hỗ trợ LACP, NetFlow.
 
-# 15. Common mistakes
-Không có baseline; alert quá rộng; retry vô hạn; quyền admin; backup chưa restore test; sửa nhiều biến cùng lúc; bỏ qua change record.
+## 15. Common Mistakes 🟠
+- Over-allocate CPU (cấp quá nhiều vCPU cho 1 VM) làm tăng chỉ số %RDY, khiến VM chạy chậm hơn so với khi ít vCPU.
+- Quên gỡ đĩa CD/ISO sau khi cài xong OS.
+- Tạo máy ảo xong không cài VMware Tools.
 
-# 16. Knowledge check
-Giải thích flow, failure domain, metric quan trọng, cách khoanh vùng và tiêu chí rollback của VMware.
+## 16. Knowledge Check 🔴
+- vMotion khác Storage vMotion chỗ nào? (vMotion chuyển RAM/CPU giữa 2 host, Storage vMotion chuyển dữ liệu `vmdk` giữa 2 Datastore).
+- DRS dùng làm gì? (Cân bằng tải tài nguyên VM tự động giữa các host trong cluster).
 
-# 17. Câu hỏi phỏng vấn
-Thiết kế HA; debug outage; bảo mật access; capacity planning; backup/restore; patch/upgrade; monitoring và RCA.
+## 17. Câu hỏi phỏng vấn 🔴
+- **Cơ bản**: Ping đến VM bị rớt, làm sao check từ ESXi? (Check vmnic status, check Port Group có đúng VLAN ID không).
+- **Nâng cao**: Hiện tượng CPU Ready Time cao là gì? Cách khắc phục?
+- **Troubleshooting**: Máy chủ ESXi bị PSOD (màn hình tím). Em sẽ xử lý thế nào? (Chụp ảnh màn hình lấy mã lỗi, reboot host để VM khởi động lại trên host khác nhờ HA, sau đó mở log file phân tích, update driver/firmware hoặc gọi vendor).
 
-# 18. Đáp án phỏng vấn mẫu
-Nêu assumption, scope, evidence, hypothesis, mitigation, verification và trade-off; tách rõ kinh nghiệm production và lab.
+## 18. Đáp án phỏng vấn 🟠
+- **Trả lời "cấp vCPU"**: "Không phải cứ cấp nhiều vCPU là nhanh. ESXi dùng co-scheduling, nếu cấp 8 vCPU thì ESXi phải tìm đủ 8 core vật lý rảnh rỗi mới cho VM chạy, gây ra %RDY cao. Nên bắt đầu từ 2 vCPU và scale-up dần nếu thực sự cần."
 
-# 19. Follow-up question tree
-Lỗi đơn lẻ hay toàn hệ thống? Có recent change? Component nào chung? Resource/permission/dependency nào bất thường? Action nào an toàn để giảm impact?
+## 19. Cách trả lời như Engineer 🔴
+"Đối với hệ thống quan trọng, em không bao giờ bỏ qua cảnh báo Snapshot. Hầu hết các lỗi sập Datastore và treo ứng dụng mà em gặp đều do Snapshot để quên hoặc phình to. Em luôn có script PowerCLI chạy hàng ngày để report các snapshot tồn tại quá 3 ngày và alert qua email."
 
-# 20. Checklist sau khi học
-- [ ] Vẽ architecture và dependency.
-- [ ] Chạy được command cơ bản.
-- [ ] Viết runbook incident và rollback.
-- [ ] Có backup/restore hoặc recovery test.
+## 20. Follow-up Question Tree 🟠
+- Q: Tính năng HA làm sao biết 1 host bị chết? -> A: Dùng Heartbeat qua Management Network và Datastore (Datastore heartbeating).
 
-# 21. Flashcards
-SLI là phép đo; SLO là mục tiêu; RTO là thời gian phục hồi; RPO là dữ liệu mất; p99 là tail latency; quorum tránh split-brain; health check quyết định failover; least privilege giảm blast radius; idempotency an toàn khi retry; RCA cần prevention.
+## 21. Checklist sau khi học 🟠
+- [ ] Dựng ESXi lồng (Nested ESXi) trong VMware Workstation.
+- [ ] Cài đặt vCenter (vCSA).
+- [ ] Thực hiện vMotion thử.
 
-# 22. Phải hiểu và phải nhớ
-Hiểu causal chain và trade-off; nhớ lifecycle, trạng thái, command, log, metric và escalation.
+## 22. Flashcards 🟠
+- **Q**: Lệnh restart Management agents trên ESXi?
+- **A**: `services.sh restart` (qua SSH hoặc DCUI).
 
-# 23. Phân biệt “phải nhớ” và “phải hiểu”
-Nhớ cú pháp không đủ; phải hiểu tác động của workload, baseline, failure domain và dependency.
-
-# 24. Liên hệ với JD
-Map vào system administration, platform operations, cloud, monitoring, security, incident và change management.
-
-# 25. Liên hệ với CV
-Nêu rõ quy mô, vai trò, metric trước/sau, công cụ và bài học; không biến lab thành production claim.
-
-# 26. Enterprise / data center scenario
-Thiết kế HA theo failure domain, access/audit tập trung, backup immutable, DR site, break-glass và vendor escalation.
-
-# 27. Hands-on lab
-Tạo workload lab, ghi baseline, gây lỗi có kiểm soát, thu evidence, khắc phục, kiểm tra recovery và viết RCA.
-
-# 28. Troubleshooting decision tree
-Alert → scope → process/config → network/dependency → resource/storage → state/replication → mitigation → verify → prevention.
-
-# 29. Production readiness review
-SLO, dashboard, alert, capacity, security, ownership, runbook, backup/restore, rollback, patch plan và game day.
-
-# 30. Self-assessment
-Beginner: giải thích concept. Intermediate: vận hành và debug. Advanced: thiết kế HA/DR, cost, security và migration.
-
-# 31. Interview priority
-Architecture → lifecycle → command/evidence → failure mode → mitigation → trade-off → security/DR.
-
-# 32. Final checklist
-- [ ] Trình bày được cơ chế đúng chủ đề VMware.
-- [ ] Debug được incident theo evidence.
-- [ ] Nêu được HA, backup, security, rollback và prevention.
-
+## 23. Đánh dấu 🔴 Phải hiểu, 🟠 Phải nắm.
+*(Đã tích hợp)*

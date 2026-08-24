@@ -1,107 +1,90 @@
-# Backup and Restore — Cẩm nang phỏng vấn
+# 12. Backup & Restore
 
-# 1. Mục tiêu học
-full/incremental, retention, encryption, immutability, restore test và PITR; liên hệ concept với vận hành, failure mode và quyết định production.
+## 1. Why This Matters
+Trong môi trường doanh nghiệp quy mô lớn như Doanh nghiệp Enterprise, dữ liệu (thông tin container, lịch tàu chạy, chứng từ tài chính) là tài sản sống còn. Dù hệ thống có chạy HA (High Availability) đến đâu, HA cũng không bảo vệ bạn khỏi các thảm họa như: Admin vô tình DROP TABLE, Virus Ransomware mã hóa dữ liệu, hoặc cháy nổ Data Center. Backup là phòng tuyến cuối cùng.
 
-# 2. Kiến thức nền cần có
-Linux, networking, storage, identity, scripting, observability và change management.
+## 2. Interview Priority
+> 🔴 MUST KNOW
 
-# 3. Tổng quan kiến trúc
-Mô tả control plane, data plane, state, dependency, traffic flow và failure domain của Backup and Restore.
+## 3. CV Connection
+- **What candidate already knows:** AWS Backup, tự động tạo EBS Snapshots, RDS Automated Backup, S3 Versioning, đẩy dữ liệu lên S3 Glacier (Cold Storage).
+- **What interviewer will likely ask:** Quy trình 3-2-1 backup on-premise là gì? Dùng các công cụ (Veeam, Commvault) để backup VMware VMDK, hoặc dùng rsync/tar cho file level, pg_dump cho PostgreSQL. Bạn có từng Test Restore chưa?
+- **Skill gap to address:** Backup vật lý on-premise không chỉ là "Click bật tự động" như Cloud. Nó liên quan đến mua thêm NAS/SAN cho vùng backup, quản lý băng thông mạng để backup không làm chậm server (LAN-free backup), và lập lịch Full/Incremental.
 
-# 4. Cách hoạt động
-Mô tả lifecycle từ request/config đến execution, persistence, response, audit và metric.
+## 4. Prerequisites
+- Hiểu Storage (NAS, SAN, S3).
+- Hiểu kiến trúc Database (PostgreSQL).
 
-# 5. Thành phần và failure mode
-Backup and Restore có thể gặp resource exhaustion, network partition, stale state, permission error, disk failure hoặc bad change; xác định impact của từng lỗi.
+## 5. Core Concepts
 
-# 6. Concepts quan trọng
-Availability, durability, consistency, latency, throughput, capacity, timeout, retry, idempotency và least privilege.
+### 5.1 RPO & RTO
+- **RPO (Recovery Point Objective):** Chấp nhận mất bao nhiêu dữ liệu (tính bằng thời gian). VD: RPO = 1 giờ nghĩa là phải backup ít nhất mỗi giờ 1 lần.
+- **RTO (Recovery Time Objective):** Mất bao lâu để hệ thống chạy lại được. VD: RTO = 4 giờ nghĩa là từ lúc hỏng đến lúc restore xong, chạy app lại phải dưới 4 tiếng.
 
-# 7. Ví dụ thực tế
-Triển khai theo môi trường, version-control config, baseline metric, health check, backup và rollback.
+### 5.2 Backup Types
+- **Full Backup:** Sao lưu toàn bộ dữ liệu. File lớn nhất, mất nhiều thời gian nhất, nhưng Restore nhanh nhất.
+- **Incremental Backup:** Chỉ sao lưu những dữ liệu thay đổi kể từ lần backup gần nhất (Full hoặc Incremental). Backup nhanh, tốn ít dung lượng. Nhưng Restore chậm vì phải ghép Full + Incremental 1 + Incremental 2...
+- **Differential Backup:** Sao lưu những dữ liệu thay đổi kể từ lần Full Backup gần nhất. Cân bằng giữa tốc độ Backup và Restore.
 
-# 8. Command / Tool cần biết
-backup console, snapshots, checksums, restore verification
+### 5.3 The 3-2-1 Rule
+Chiến lược tiêu chuẩn cho ngành CNTT:
+- Có ít nhất **3** bản sao của dữ liệu (1 bản chính đang chạy + 2 bản backup).
+- Lưu trên **2** định dạng lưu trữ (media) khác nhau (VD: Disk NAS và Tape, hoặc Disk và Cloud Object Storage).
+- Để **1** bản ở vị trí vật lý khác (Offsite - ở DC khác hoặc lên AWS S3) để phòng cháy nổ toàn bộ tòa nhà.
 
-# 9. Log và cách đọc
-Correlate timestamp, host/component, request ID, version và user. Giữ evidence trước khi restart hoặc xóa state.
+### 5.4 Application-Consistent vs Crash-Consistent
+- **Crash-Consistent:** Backup giống như bạn rút điện server ngay lập tức. Dữ liệu đang trên RAM chưa ghi xuống đĩa sẽ bị mất. DB có thể bị lỗi corruption khi bật lại (VMware Snapshot bình thường là dạng này).
+- **Application-Consistent:** Công cụ backup sẽ gọi OS (qua VMware Tools / VSS trên Windows) yêu cầu Database "Tạm dừng ghi mới, xả hết RAM xuống đĩa đi (Quiesce)", sau đó mới chụp Snapshot. Khi restore, DB bật lên chạy ngay, không bị lỗi.
 
-# 10. Metrics
-CPU, memory, disk/inode, network, latency, error rate, queue/connection, replication/lag và SLO.
+## 6. Architecture (Veeam Backup for VMware & K8s)
+```
+[ Production VMware Cluster ]           [ Kubernetes (Tanzu/EKS) ]
+         | (VM Snapshots)                    | (Velero CSI Snapshots)
+         V                                   V
+[ Backup Server (Veeam Backup & Replication / Velero) ]
+         |
+         +--> [ Local NAS Storage (Bản sao thứ 1 - Restore siêu tốc) ]
+         |
+         +--> [ AWS S3 Object Lock (Bản sao Offsite - Chống Ransomware) ]
+```
 
-# 11. Configuration mẫu
-Config phải review, có timeout/limit, secret ngoài source, permission tối thiểu, health check và rollback.
+## 7. Hands-on / Configuration Concepts
+- **Veeam:** Phần mềm cực kỳ phổ biến để backup VMware. Nó nói chuyện trực tiếp với vCenter API, lấy VMDK và nén lại.
+- **Velero:** Backup chuyên dụng cho Kubernetes (Yaml manifests + Persistent Volumes). Lệnh: `velero backup create my-app-backup --include-namespaces prod`.
+- **Database (PostgreSQL):** 
+  - Logical Backup: `pg_dump` ra file SQL. Tốt để migrate đổi phiên bản.
+  - Physical Backup: `pg_basebackup` copy binary files, kết hợp WAL archiving (Point-in-Time Recovery - PITR). Rất quan trọng cho enterprise.
 
-# 12. Troubleshooting methodology
-Xác định scope; kiểm tra first bad timestamp và recent change; thu logs/metrics; lập hypothesis; mitigation reversible; verify; RCA.
+## 8. Common Interview Questions
 
-# 13. Năm production incidents
-1. Service unavailable: kiểm tra process/listener/health check/dependency.
-2. Latency tăng: kiểm tra saturation, queue, storage và network.
-3. Disk đầy: tìm consumer, cleanup theo policy và mở rộng an toàn.
-4. Permission/TLS lỗi: kiểm tra identity, expiry, chain và recent rotation.
-5. Replication/cluster lỗi: xác định quorum, lag, fencing và failover plan.
+### Q1: Chiến lược 3-2-1 là gì? Bạn áp dụng thế nào cho hạ tầng VMware?
+**Model Answer:** 3-2-1 là 3 bản copy, 2 loại media, 1 bản offsite. Với VMware, em sẽ dùng phần mềm Veeam.
+1. Bản chính đang chạy trên SAN Storage của VMware (Bản 1).
+2. Veeam backup các VM hàng đêm và lưu xuống một ổ NAS cứng cục bộ (Bản 2 - khác loại Media, dùng Disk rẽ tiền).
+3. Hàng tuần, Veeam tự đồng bộ (Backup Copy Job) file backup đó lên AWS S3 hoặc chuyển ra băng từ (Tape) mang sang tòa nhà khác (Bản 3 - Offsite, chống cháy và ransomware).
 
-# 14. So sánh
-Managed giảm vận hành control plane nhưng giảm tùy biến; active-active tăng availability nhưng khó consistency; cache tăng latency tốt nhưng cần invalidation; snapshot nhanh nhưng không thay thế backup.
+### Q2: Sự khác biệt giữa Snapshot (trên Storage/VMware) và Backup?
+**Model Answer:** "Snapshot không phải là Backup".
+- Snapshot: Lưu lại trạng thái của ổ đĩa tại 1 thời điểm, nhưng nó vẫn nằm trên cùng ổ đĩa cứng vật lý (SAN) đó. Nếu SAN hỏng (cháy), mất cả bản chính lẫn Snapshot. Snapshot chỉ dùng để Rollback nhanh trước khi cập nhật phần mềm (RTO cực nhanh). 
+- Backup: Sao chép hẳn dữ liệu sang một thiết bị lưu trữ vật lý độc lập khác, thậm chí khác vị trí địa lý. An toàn hơn Snapshot nhưng Restore tốn thời gian chuyển mạng (copy data ngược lại).
 
-# 15. Common mistakes
-Không có baseline; alert quá rộng; retry vô hạn; quyền admin; backup chưa restore test; sửa nhiều biến cùng lúc; bỏ qua change record.
+### Q3: Nếu hệ thống bị dính mã độc tống tiền (Ransomware), bản Backup trên NAS mạng của bạn cũng bị nó mã hóa thì sao?
+**Model Answer:** Đây là vấn đề thực tế. Để chống Ransomware mã hóa lây lan sang cả ổ chứa Backup, em thiết kế "Immutable Backup" (Backup không thể xóa/sửa). Có thể dùng tính năng S3 Object Lock trên AWS S3, hoặc dùng công nghệ WORM (Write Once Read Many) trên thiết bị Storage chuyên dụng. Kẻ tấn công dù chiếm quyền Admin cũng không thể ra lệnh xóa hay sửa file backup trong thời gian Retention (vd: 30 ngày).
 
-# 16. Knowledge check
-Giải thích flow, failure domain, metric quan trọng, cách khoanh vùng và tiêu chí rollback của Backup and Restore.
+### Q4: Point-in-Time Recovery (PITR) cho DB là gì?
+**Model Answer:** Trong PostgreSQL hoặc MySQL, nếu lỡ tay DROP TABLE lúc 10h15 sáng, bản Full backup đêm qua (1h sáng) không cứu được dữ liệu từ 1h đến 10h. PITR kết hợp Full Backup cơ sở và các Transaction Logs (WAL) liên tục sinh ra. Khi restore, em lấy bản Full 1h sáng, sau đó "replay" (phát lại) toàn bộ các logs tới đúng thời điểm 10h14'59s, cứu được 100% dữ liệu trước khi tai nạn xảy ra.
 
-# 17. Câu hỏi phỏng vấn
-Thiết kế HA; debug outage; bảo mật access; capacity planning; backup/restore; patch/upgrade; monitoring và RCA.
+## 9. Scenario-Based Questions
 
-# 18. Đáp án phỏng vấn mẫu
-Nêu assumption, scope, evidence, hypothesis, mitigation, verification và trade-off; tách rõ kinh nghiệm production và lab.
+### Scenario 1: Tối ưu hóa quá trình Backup
+**Situation:** Job Backup hệ thống DB dung lượng 5TB chạy tốn hơn 12 tiếng, lấn sang giờ làm việc ban ngày gây chậm ứng dụng (I/O overload).
+**Model Answer:** Em sẽ:
+1. Đổi chiến lược từ Full Backup hàng ngày sang Incremental. Chỉ làm Full vào cuối tuần.
+2. Ứng dụng công nghệ CBT (Changed Block Tracking) của VMware. Công cụ chỉ đọc các block thay đổi thay vì quét toàn ổ cứng.
+3. Thiết lập LAN-free backup (Direct SAN Access): Chuyển traffic backup đi trực tiếp qua cáp quang SAN FC thay vì đi qua mạng LAN nội bộ, tránh nghẽn cổ chai.
 
-# 19. Follow-up question tree
-Lỗi đơn lẻ hay toàn hệ thống? Có recent change? Component nào chung? Resource/permission/dependency nào bất thường? Action nào an toàn để giảm impact?
-
-# 20. Checklist sau khi học
-- [ ] Vẽ architecture và dependency.
-- [ ] Chạy được command cơ bản.
-- [ ] Viết runbook incident và rollback.
-- [ ] Có backup/restore hoặc recovery test.
-
-# 21. Flashcards
-SLI là phép đo; SLO là mục tiêu; RTO là thời gian phục hồi; RPO là dữ liệu mất; p99 là tail latency; quorum tránh split-brain; health check quyết định failover; least privilege giảm blast radius; idempotency an toàn khi retry; RCA cần prevention.
-
-# 22. Phải hiểu và phải nhớ
-Hiểu causal chain và trade-off; nhớ lifecycle, trạng thái, command, log, metric và escalation.
-
-# 23. Phân biệt “phải nhớ” và “phải hiểu”
-Nhớ cú pháp không đủ; phải hiểu tác động của workload, baseline, failure domain và dependency.
-
-# 24. Liên hệ với JD
-Map vào system administration, platform operations, cloud, monitoring, security, incident và change management.
-
-# 25. Liên hệ với CV
-Nêu rõ quy mô, vai trò, metric trước/sau, công cụ và bài học; không biến lab thành production claim.
-
-# 26. Enterprise / data center scenario
-Thiết kế HA theo failure domain, access/audit tập trung, backup immutable, DR site, break-glass và vendor escalation.
-
-# 27. Hands-on lab
-Tạo workload lab, ghi baseline, gây lỗi có kiểm soát, thu evidence, khắc phục, kiểm tra recovery và viết RCA.
-
-# 28. Troubleshooting decision tree
-Alert → scope → process/config → network/dependency → resource/storage → state/replication → mitigation → verify → prevention.
-
-# 29. Production readiness review
-SLO, dashboard, alert, capacity, security, ownership, runbook, backup/restore, rollback, patch plan và game day.
-
-# 30. Self-assessment
-Beginner: giải thích concept. Intermediate: vận hành và debug. Advanced: thiết kế HA/DR, cost, security và migration.
-
-# 31. Interview priority
-Architecture → lifecycle → command/evidence → failure mode → mitigation → trade-off → security/DR.
-
-# 32. Final checklist
-- [ ] Trình bày được cơ chế đúng chủ đề Backup and Restore.
-- [ ] Debug được incident theo evidence.
-- [ ] Nêu được HA, backup, security, rollback và prevention.
-
+## 10. Key Takeaways
+- Snapshot ≠ Backup.
+- Luôn luôn phải Test Restore. "Schrödinger's Backup: The condition of any backup is unknown until you try to restore from it".
+- Crash-consistent tốt cho File, Application-consistent bắt buộc cho Database.
+- RTO (thời gian chết), RPO (mức độ mất data). Hạ thấp RPO/RTO thì tốn nhiều tiền.

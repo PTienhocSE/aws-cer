@@ -1,180 +1,141 @@
-# [37] TERRAFORM & INFRASTRUCTURE AS CODE
+# Terraform Infrastructure as Code - Exhaustive Interview Preparation Guide
 
-> **Phase:** 4 — Cloud & Data
-> **Priority:** 🟠 HIGH
-> **JD Weight:** DevOps Engineer — 40%
-> **Interview Priority:** 🔴 Very High
-> **Prerequisite:** Terraform HCL, AWS/IAM, Git, networking, state management
+## 1. Mục tiêu học
+- Hiểu sâu về nguyên lý hoạt động của Terraform (State, Provider, Plan/Apply lifecycle).
+- Nắm vững best practices quản lý IaC cho Enterprise/Multi-Environment.
+- Giải quyết được các tình huống sự cố thực tế trên Production.
 
-# 1. 🎯 MỤC TIÊU HỌC
+## 2. Kiến thức nền cần biết
+- Kiến trúc Cloud (AWS/Azure/GCP).
+- Khái niệm về Infrastructure as Code (IaC), Declarative vs Imperative.
+- Version Control Systems (Git), CI/CD (GitOps).
 
-Hiểu provider/state/backend/module/variable/output, plan/apply/destroy, dependency, drift, locking, import, secret handling, policy, workspace/environment và safe change/rollback.
+## 3. Tổng quan (Enterprise & Tan Cang Sai Gon Enterprise Context)
+- **Enterprise Context:** Quản lý hạ tầng quy mô lớn, tái sử dụng code qua Module, kiểm soát rủi ro bằng Terraform State và State Locking.
+- **Enterprise Context:** Chuyển đổi từ cấu hình hạ tầng thủ công sang tự động hoá hoàn toàn (Provision EKS, Kafka, RDS). Terraform là cốt lõi để chuẩn hoá và versioning hạ tầng cho TOS. 
+- **Candidate CV Alignment:** Sử dụng Terraform để build AWS EKS, RDS, MSK. 
 
-# 2. 🧠 KIẾN THỨC NỀN
-
-Ôn cloud resource lifecycle, Git review, IAM, networking, JSON/YAML, remote state, CI/OIDC và blast radius của infrastructure change.
-
-# 3. 📚 TỔNG QUAN
-
-Terraform mô tả desired infrastructure và tạo execution plan để provider thực hiện. State là mapping giữa resource code và object thật; mất/hỏng/đọc lộ state có thể gây outage hoặc lộ secret.
-
-# 4. 🏗️ KIẾN TRÚC / CÁCH HOẠT ĐỘNG
-
+## 4. Kiến trúc / Cách hoạt động (ASCII Diagrams)
 ```text
-HCL modules/variables -> init/provider -> refresh state
-                       -> plan (diff) -> approval
-                       -> apply -> cloud resources/state lock
+[ Terraform CLI ] ---> (Reads .tf files & tfvars)
+       |
+       v
+[ Core Engine ] -----> (Compares Code vs Current State in terraform.tfstate)
+       |
+       v
+[ AWS Provider ] ----> (Makes API calls to AWS)
+       |
+       v
+[ AWS Cloud (VPC, EC2, EKS) ]
 ```
 
-# 5. 🧩 CÁC THÀNH PHẦN QUAN TRỌNG
+## 5. Các thành phần quan trọng (Components, failure modes)
+- **State File (.tfstate):** *Failure mode:* Corrupted state, mâu thuẫn state (State out of sync).
+- **Backend (S3 + DynamoDB):** *Failure mode:* Quên lock state dẫn đến Race condition khi nhiều người cùng chạy `apply`.
+- **Providers:** *Failure mode:* Lỗi version hoặc API limits (Rate throttling).
+- **Modules:** *Failure mode:* Breaking changes khi update version module con.
 
-Root module, child module, provider, resource/data source, variable/local/output, backend, state lock, plan file, registry, policy/check và CI runner.
+## 6. Các concept quan trọng
+- **Cơ bản:** resource, data source, variables, outputs.
+- **Trung cấp:** remote backend, state locking, modules, workspaces.
+- **Nâng cao:** count vs for_each, dynamic blocks, import state, taints, lifecycle (create_before_destroy).
 
-# 6. 📖 CÁC CONCEPT QUAN TRỌNG
+## 7. Ví dụ thực tế
+- **Dev:** Dùng local state hoặc một workspace riêng, apply trực tiếp từ máy cá nhân.
+- **Prod:** Bắt buộc dùng CI/CD (như Atlantis, GitHub Actions) để chạy `plan` -> Approve -> `apply`.
+- **Enterprise/Multi-DC:** Tổ chức thư mục theo môi trường và region (e.g., `prod/us-east-1/eks/`), dùng Terragrunt để DRY (Don't Repeat Yourself).
 
-**Cơ bản:** resource/data, variable/output, dependency và lifecycle.  
-**Trung cấp:** remote backend, locking, module version, `for_each`/`count`, import, moved block và drift.  
-**Nâng cao:** state partition, policy-as-code, plan signing, OIDC, zero-downtime replacement, `create_before_destroy` và migration.
+## 8. Command / Tool cần biết
+- `terraform init, plan, apply, destroy`
+- `terraform state list`, `terraform state rm`, `terraform import`
+- `terraform fmt`, `terraform validate`
+- **Tools:** `tflint`, `tfsec` (Security scan), `infracost` (Tính chi phí), `terragrunt`.
 
-# 7. 🌍 VÍ DỤ THỰC TẾ
+## 9. Log (locations, interpretation, correlation)
+- Terraform log không lưu ra file mặc định. 
+- Cấu hình biến môi trường `TF_LOG=DEBUG` (hoặc TRACE, INFO, WARN, ERROR) và `TF_LOG_PATH=terraform.log` để debug khi có lỗi API hoặc Provider không mong muốn.
 
-Một account/region có network module, EKS module, RDS/S3/IAM module; mỗi environment có backend/key riêng; PR chạy fmt/validate/plan/policy, apply chỉ từ protected pipeline.
+## 10. Metric
+- Thời gian chạy pipeline (Plan/Apply duration).
+- Số lượng tài nguyên thay đổi (Add/Change/Destroy). (Cảnh báo nếu Destroy > 0 trên Prod).
 
-# 8. 🛠️ COMMAND / TOOL CẦN BIẾT
+## 11. Configuration (Sample configs)
+```hcl
+# Cấu hình Remote Backend an toàn
+terraform {
+  backend "s3" {
+    bucket         = "snp-terraform-state-prod"
+    key            = "eks/terraform.tfstate"
+    region         = "ap-southeast-1"
+    dynamodb_table = "snp-terraform-lock" # Chống Race condition
+    encrypt        = true
+  }
+}
+```
 
-Các lệnh: `terraform fmt -check`, `terraform init`, `terraform validate`, `terraform plan -out=tfplan`, `terraform show`, `terraform apply tfplan`, `terraform state list/show`, `terraform import`, `terraform refresh` và `terraform providers`.
+## 12. Troubleshooting Methodology
+1. Đọc kĩ output của `terraform plan` hoặc lỗi của `apply`.
+2. Kiểm tra lại thông tin credentials và IAM permissions.
+3. Nếu lỗi là do tài nguyên đã bị xóa tay trên Cloud: Dùng `terraform refresh` (hoặc plan).
+4. Nếu State bị lệch do đổi tên resource: Dùng `terraform state mv` thay vì xóa/tạo lại.
+5. Kiểm tra version của Provider và Terraform.
 
-# 9. 📝 LOG
+## 13. Production Incident (5 Detailed Scenarios)
+- **Scenario 1: Race Condition mất State**
+  - *Symptom:* Hai kỹ sư cùng apply, file state bị ghi đè gây hỏng hạ tầng.
+  - *Fix/Prevention:* Luôn dùng Remote Backend có cơ chế Locking (như S3 + DynamoDB).
+- **Scenario 2: Manual Changes (Drift Configuration)**
+  - *Symptom:* Một ai đó đổi Security Group thủ công trên AWS console. `terraform plan` báo cần revert.
+  - *Fix:* Cập nhật code Terraform cho khớp với thực tế hoặc apply để đưa hạ tầng về chuẩn.
+- **Scenario 3: API Rate Limiting**
+  - *Symptom:* `apply` lỗi với mã 429 Too Many Requests (đặc biệt khi tạo hàng loạt IAM rules).
+  - *Fix:* Cấu hình `max_retries` trong provider hoặc giảm concurrency (chạy ít resource đồng thời).
+- **Scenario 4: Lỗi phá hủy DB (Accidental Deletion)**
+  - *Symptom:* Đổi tên resource RDS, Terraform tính toán là Destroy & Recreate.
+  - *Fix:* Dùng `lifecycle { prevent_destroy = true }`. Dùng `terraform state mv` để đổi tên trong state.
+- **Scenario 5: Circular Dependency**
+  - *Symptom:* Lỗi "Cycle: ...". Hai resource A và B phụ thuộc nhau.
+  - *Fix:* Tách các attribute ra hoặc thiết kế lại cấu trúc module.
 
-Lưu plan summary, commit, Terraform/provider version, backend key, actor, approval, resource address và cloud audit ID. Không upload state/plan chứa secret vào artifact công khai.
+## 14. So sánh
+| Feature | Terraform | AWS CloudFormation | Ansible |
+| --- | --- | --- | --- |
+| Paradigm | Declarative (Stateful) | Declarative (AWS Native) | Procedural (thường dùng cho Config Mgmt) |
+| Multi-Cloud | Tốt (AWS, Azure, GCP, on-prem) | Chỉ AWS | Tốt |
 
-# 10. 📊 METRIC
+## 15. Common Mistakes
+- Hardcode secret (AWS Keys, Passwords) vào code Terraform.
+- Dùng `count` khi thay đổi danh sách ở giữa (gây ra shift index và destroy/recreate hàng loạt). Nên dùng `for_each`.
+- Không khóa version của Provider, dẫn đến lỗi bất ngờ khi có bản cập nhật mới.
 
-Plan/apply duration, changed resource count, failure/rollback rate, drift count, state lock wait, module reuse, infrastructure lead time, cost delta và policy violation.
+## 16. Interview Knowledge Check
+- **Basic:** `terraform init` làm gì? So sánh `count` và `for_each`.
+- **Deep:** Cấu trúc file `.tfstate`? Giải thích state locking.
+- **Troubleshooting:** Làm gì khi tài nguyên bị đổi tên bằng tay trên Console?
 
-# 11. ⚙️ CONFIGURATION
+## 17. Câu hỏi phỏng vấn
+- **Basic:** Terraform là gì và tại sao lại sử dụng nó thay vì script bash?
+- **Intermediate:** Làm sao để chia sẻ data giữa các module hoặc workspace khác nhau? (Dùng `terraform_remote_state` hoặc Data sources).
+- **Advanced:** Làm sao để tái cấu trúc (Refactor) code Terraform đang có sẵn trên Prod mà không làm downtime tài nguyên?
+- **Production:** Làm sao để quản lý bí mật (Secrets) trong Terraform an toàn?
 
-Backend remote phải encryption, versioning, access log và lock. Provider/module pin version; secret lấy từ secret manager; CI dùng OIDC; resource tags bắt buộc owner/environment/cost center.
+## 18. Đáp án phỏng vấn
+- **Short:** Để tránh recreation khi refactor, em dùng `moved` block (từ TF 1.1) hoặc lệnh `terraform state mv` để di chuyển resource trong state mà không đụng tới hạ tầng thật.
+- **Engineer Style:** Trên production, em không bao giờ chạy apply thủ công. Em tích hợp với GitHub Actions + Atlantis. Atlantis sẽ chạy `plan` tự động khi có Pull Request, review xong có approve mới được `apply`. Khi thiết kế module, em ưu tiên dùng `for_each` thay vì `count` vì `count` phụ thuộc vào index của mảng, rất rủi ro khi thay đổi vị trí phần tử.
 
-# 12. 🔧 TROUBLESHOOTING
+## 19. Follow-up Question Tree
+- *Q: Làm sao import hạ tầng có sẵn vào Terraform?* -> *A: Dùng `terraform import <resource> <id>`.*
+  - *Q: Việc import bằng tay tốn thời gian, có cách nào nhanh hơn?* -> *A: Dùng `import` block (Terraform 1.5+) hoặc các tool như Terraformer.*
 
-Init fail → backend/provider/network/credential; plan fail → syntax/data/provider/permission; apply fail → quota/dependency/immutable/API; lock fail → active job/stale lock; drift → manual change/import/moved/resource lifecycle.
+## 20. Checklist sau khi học
+- [ ] Tự tạo module VPC, EC2 hoàn chỉnh bằng Terraform.
+- [ ] Thiết lập được backend S3 + DynamoDB.
+- [ ] Refactor thành công code cũ dùng `moved` block.
 
-# 13. 🚨 PRODUCTION INCIDENT
+## 21. Flashcards (25+ Q&A pairs)
+- **Q:** Tại sao dùng DynamoDB cho backend? -> **A:** Để cung cấp tính năng State Locking (ngăn đồng thời sửa file state).
+- **Q:** `terraform taint` dùng làm gì? -> **A:** Đánh dấu 1 resource là bị lỗi/cần tạo lại ở lần apply tiếp theo (Từ TF 1.1+, khuyên dùng `-replace` cờ thay cho taint).
 
-1. **State lock bị treo:** xác định job đang chạy trước khi unlock, không xóa lock mù.  
-2. **Plan muốn destroy sai:** stop apply, review address/for_each/key/provider/account và restore code/state mapping.  
-3. **State backend lộ:** revoke access, rotate secret, kiểm tra version/audit và migrate protected backend.  
-4. **Apply giữa chừng:** đọc error, kiểm tra resource/cloud state, chạy plan mới trước retry; không chạy apply song song.  
-5. **Drift do console:** import/reconcile hoặc revert manual change, bổ sung permission/policy chặn sửa ngoài IaC.
-
-# 14. ⚖️ SO SÁNH & TRADE-OFF
-
-| Cách làm | Mạnh | Trade-off |
-|---|---|---|
-| Shared remote state | lock/audit tập trung | backend dependency |
-| State per env | blast radius nhỏ | quản lý nhiều backend |
-| Module | reuse/standard | abstraction/debug complexity |
-| `count` | đơn giản | index shift |
-| `for_each` | key ổn định | key migration cần cẩn thận |
-| Workspace | cùng code | dễ nhầm env/state |
-
-# 15. ❌ COMMON MISTAKES
-
-Commit state/secret; apply local không review; dùng `-auto-approve` Production; unlock state mù; module/provider không pin; share state toàn công ty; destroy không có backup/approval.
-
-# 16. ✅ INTERVIEW KNOWLEDGE CHECK
-
-State có vai trò gì? Backend lock vì sao? Plan khác apply? Drift xử lý ra sao? Module/version pin? `for_each` khác `count`? Import dùng khi nào? Terraform có rollback tự động không?
-
-# 17. 🎤 CÂU HỎI PHỎNG VẤN
-
-Thiết kế Terraform repo/multi-env; state security; module; zero-downtime; drift; import; apply failure; OIDC CI; policy/cost control.
-
-# 18. 🗣️ ĐÁP ÁN PHỎNG VẤN
-
-Em tách state theo blast radius/environment, dùng remote encrypted backend và locking, pin provider/module, review plan trong PR, apply protected pipeline bằng OIDC. Khi plan destroy bất thường em dừng, kiểm tra address/state/provider/account; Terraform không thay thế backup hay rollback data.
-
-# 19. 🧑‍💻 CÁCH TRẢ LỜI NHƯ ENGINEER
-
-Nêu code → plan → approval → apply → cloud audit → verification. Luôn nói rủi ro state, lock, secret, dependency và recovery.
-
-# 20. 🌳 FOLLOW-UP QUESTION TREE
-
-Plan destroy?
-→ address/key/provider/state?
-→ drift/import/moved?
-→ backup/approval/rollback?
-Apply fail?
-→ cloud state/quota/dependency/lock?
-
-# 21. 📋 CHECKLIST SAU KHI HỌC
-
-- [ ] Hiểu state/backend/lock.
-- [ ] Viết module/variable/output có version.
-- [ ] Review plan và drift.
-- [ ] Quản lý secret/OIDC.
-- [ ] Xử lý lock/apply/import/recovery.
-
-# 22. 🃏 FLASHCARDS
-
-**Q:** State là gì? **A:** Mapping code resource với object thực.  
-**Q:** Plan dùng làm gì? **A:** Xem diff trước apply.  
-**Q:** Lock? **A:** Ngăn apply concurrent làm hỏng state.  
-**Q:** Drift? **A:** Cloud state khác code/state mong muốn.  
-**Q:** Terraform rollback? **A:** Revert code/plan có kiểm soát, không tự phục hồi data.
-
-# 23. 🧠 PHÂN BIỆT “PHẢI NHỚ” VÀ “PHẢI HIỂU”
-
-🔴 Hiểu state/plan/apply/dependency/drift.  
-🟠 Nắm backend/lock/module/import/policy.  
-🟡 Biết state migration, plan security và cost governance.
-
-# 24. 🎯 LIÊN HỆ VỚI JD
-
-Terraform phục vụ IaC, repeatable provisioning, change review, cloud operations, DR và cost/permission governance.
-
-# 25. 📌 LIÊN HỆ VỚI CV
-
-Nêu module, backend, resource, pipeline, policy và incident thực tế; không nhận đã quản lý state Production nếu chỉ viết resource local.
-
-# 26. 🏢 ENTERPRISE / DATA CENTER SCENARIO
-
-Tách state network/security/data/compute, backend có lock/versioning, account/region guardrail, tag/cost policy, PR plan và break-glass audit.
-
-# 27. 🧪 HANDS-ON LAB
-
-Tạo VPC module; remote backend/lock; đổi resource; tạo drift console; import object; mô phỏng lock/apply fail; kiểm tra plan và recovery.
-
-# 28. 🔍 TROUBLESHOOTING DECISION TREE
-
-Init → backend/provider/auth; plan → code/data/permission/drift; apply → dependency/quota/API; lock → active/stale job; recovery → state backup/plan/import.
-
-# 29. 🧾 PRODUCTION READINESS REVIEW
-
-Review backend encryption/versioning/lock, state access, provider/module pin, plan approval, OIDC, policy, tags/cost, backup, destroy protection và recovery.
-
-# 30. 🧭 FINAL SELF-ASSESSMENT
-
-| Skill | Beginner | Intermediate | Advanced |
-|---|---:|---:|---:|
-| HCL/module | ☐ | ☐ | ☐ |
-| State/backend | ☐ | ☐ | ☐ |
-| Plan/apply/drift | ☐ | ☐ | ☐ |
-| Security/policy | ☐ | ☐ | ☐ |
-| Incident | ☐ | ☐ | ☐ |
-
-# 31. 🔥 INTERVIEW PRIORITY
-
-Ưu tiên: state/lock, module, plan/apply, drift/import, secret/OIDC, dependency, zero-downtime, policy và recovery.
-
-# 32. 📋 FINAL CHECKLIST
-
-- [ ] State được bảo vệ và lock đúng.
-- [ ] Module/provider pin version.
-- [ ] Mọi apply đi qua plan/approval.
-- [ ] Có drift, failure và recovery runbook.
-- [ ] Kiểm soát IAM, cost, tags và secret.
-
----
-END OF FILE
+## 22. Phân biệt "Phải hiểu" (🔴) và "Phải nắm" (🟠)
+- 🔴 **Phải hiểu:** State management, Remote backend, Plan/Apply lifecycle, Lifecycle meta-arguments.
+- 🟠 **Phải nắm:** Các syntax phức tạp (dynamic blocks, for expressions), công cụ CI/CD.

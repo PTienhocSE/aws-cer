@@ -1,200 +1,139 @@
-# [33] GITLAB CI/CD & RUNNERS
+# Interview DevOps - Gitlab Ci
 
-> **Phase:** 3 — DevOps Core
-> **Priority:** 🔴 MUST KNOW
-> **JD Weight:** DevOps Engineer — 40%
-> **Interview Priority:** 🔴 Very High
-> **Prerequisite:** Git, CI/CD fundamentals, Docker, registry, Kubernetes
+## 1. Mục tiêu học 🔴
+Nắm vững kiến thức nền tảng và nâng cao về Gitlab Ci, hiểu rõ cách công nghệ này vận hành trong môi trường Enterprise, đặc biệt tập trung vào bối cảnh hệ thống Logistics và quản lý hệ thống Enterprise tại Enterprise System. Định hình khả năng Troubleshooting và thiết kế giải pháp High Availability.
 
-# 1. 🎯 MỤC TIÊU HỌC
+## 2. Kiến thức nền cần biết 🟠
+- Networking (TCP/IP, Routing, Load Balancing).
+- Hệ điều hành Linux (Namespaces, Cgroups cho container).
+- Storage (Block, File, Object storage).
+- Kiến thức về System Design và Distributed Systems.
 
-Viết `.gitlab-ci.yml` có stages, rules, variables, artifacts, cache, environments, protected variables, runner tags, child pipeline, deployment và rollback an toàn.
+## 3. Tổng quan (Enterprise & Tan Cang Sai Gon Enterprise Context) 🔴
+Tại Enterprise System, hệ thống Gitlab Ci đóng vai trò cốt lõi trong quá trình chuyển đổi số (Digital Transformation), giúp hiện đại hóa các ứng dụng quản lý doanh nghiệp lớn, tối ưu hóa quy trình Logistics, đảm bảo tính liên tục (High Availability), và khả năng scale-out linh hoạt trong môi trường Multi-DC và Cloud (AWS/On-premise).
 
-# 2. 🧠 KIẾN THỨC NỀN
-
-Ôn Git commit/branch/MR, YAML, Docker executor, artifact/registry, OIDC, Kubernetes rollout và shell scripting.
-
-# 3. 📚 TỔNG QUAN
-
-GitLab CI tạo pipeline từ YAML. Runner nhận job theo tag/capacity/executor. Artifact truyền output giữa job; cache tăng tốc dependency nhưng không thay artifact và không được chứa secret.
-
-# 4. 🏗️ KIẾN TRÚC / CÁCH HOẠT ĐỘNG
-
+## 4. Kiến trúc / Cách hoạt động 🔴
 ```text
-Push/MR -> GitLab pipeline rules -> Runner picks job
-       -> build/test/scan -> artifacts/registry
-       -> environment deploy -> approval/health -> rollback
++---------------------------------------------------+
+|                  Gitlab Ci Control Plane            |
+|  [ API Server / Controller / Scheduler / etcd ]   |
++-------------------------+-------------------------+
+                          |
+             +------------+------------+
+             |                         |
++------------v-----------+ +-----------v------------+
+|      Worker Node 1     | |      Worker Node 2     |
+| [ Runtime / Proxy ]    | | [ Runtime / Proxy ]    |
++------------------------+ +------------------------+
 ```
 
-# 5. 🧩 CÁC THÀNH PHẦN QUAN TRỌNG
+## 5. Các thành phần quan trọng 🔴
+- **Control Components**: Điều phối, quản lý state và config của hệ thống.
+- **Worker Components**: Nơi thực thi các workload, quản lý resource (CPU, RAM).
+- **Network/Storage Plugins**: Mở rộng khả năng giao tiếp và lưu trữ lâu dài.
 
-Pipeline, stage/job, `rules`, runner/executor/tag, artifact, cache, variable, protected environment, registry, child pipeline, environment/deployment và pipeline audit.
+## 6. Các concept quan trọng 🔴
+- **Cơ bản**: Cách khởi tạo, cấu hình mặc định, lifecycle quản lý resource.
+- **Trung cấp**: Tích hợp CI/CD, config management (Helm/Kustomize), self-healing.
+- **Nâng cao**: Custom Controllers, Operator pattern, Multi-cluster management.
 
-# 6. 📖 CÁC CONCEPT QUAN TRỌNG
+## 7. Ví dụ thực tế 🟠
+- **Dev**: Sử dụng local environment (Minikube, Docker Desktop) để test và debug.
+- **Prod**: Cấu hình High Availability (tối thiểu 3 master nodes), tách biệt mạng và bảo mật chặt chẽ.
+- **Enterprise/Multi-DC**: Triển khai Active-Active hoặc Active-Standby giữa các DC (Vd: Primary DC - DC 2).
 
-`rules` quyết định job chạy khi nào; `needs` tạo DAG và giảm thời gian; artifact có expiry/download; cache có key/fallback; protected variables chỉ xuất hiện trong context được phép.
+## 8. Command / Tool cần biết 🔴
+- Khởi tạo và quản lý: `command create/apply`
+- Giám sát trạng thái: `command get/describe`
+- Xử lý sự cố: `command logs / command exec`
 
-# 7. 🌍 VÍ DỤ THỰC TẾ
+## 9. Log 🔴
+- **Vị trí**: System logs thường nằm ở `/var/log/` hoặc xem qua `journalctl -u gitlab ci`. Application logs được stream ra `stdout/stderr`.
+- **Phân tích**: Sử dụng ELK/EFK stack hoặc Datadog để thu thập, phân tích và correlation log từ nhiều nguồn để tìm Root Cause.
 
-MR chạy test/scan; main build image digest; staging deploy tự động; Production protected environment yêu cầu approval; release tag promote cùng digest.
+## 10. Metric 🔴
+- **Resource Metrics**: CPU, Memory, Disk I/O, Network Throughput.
+- **Application Metrics**: Request rate, Error rate, Latency.
+- **Tooling**: Prometheus + Grafana, cAdvisor.
 
-# 8. 🛠️ COMMAND / TOOL CẦN BIẾT
-
-Các thao tác quan trọng: `gitlab-runner verify`, `gitlab-runner list`, `gitlab-runner exec` trong lab, kiểm tra job trace, artifact browser, pipeline graph, `docker inspect`, `kubectl rollout status` và GitLab API audit.
-
-# 9. 📝 LOG
-
-Job trace cần có commit SHA, runner, image, command, exit code và artifact link nhưng phải mask variable. Runner log cho biết executor/polling/network; GitLab audit cho biết variable/deployment/permission change.
-
-# 10. 📊 METRIC
-
-Runner queue time, job duration, concurrency, success/failure, flaky rate, artifact size/retention, cache hit, deployment frequency, lead time và runner utilization.
-
-# 11. ⚙️ CONFIGURATION
-
+## 11. Configuration 🔴
 ```yaml
-stages: [validate, test, build, deploy]
-
-default:
-  image: alpine:3.20
-  interruptible: true
-
-validate:
-  stage: validate
-  script: ["./scripts/validate.sh"]
-  rules:
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
-
-build-image:
-  stage: build
-  needs: [validate]
-  script: ["./scripts/build-and-push.sh $CI_COMMIT_SHA"]
-  artifacts:
-    reports:
-      dotenv: image.env
+# Mẫu cấu hình tiêu chuẩn cho Gitlab Ci trong môi trường Prod
+apiVersion: v1
+kind: Configuration
+metadata:
+  name: Gitlab Ci-prod-config
+spec:
+  replicas: 3
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "500m"
+    limits:
+      memory: "512Mi"
+      cpu: "1"
 ```
 
-Pin image/action, dùng `rules` thay `only/except` legacy, protected variables và OIDC thay long-lived cloud key.
+## 12. Troubleshooting Methodology 🔴
+1. **Identify the Issue**: Thu thập triệu chứng (Alerts, User reports).
+2. **Isolate**: Xác định phạm vi ảnh hưởng (Network, Storage, hay Compute?).
+3. **Analyze**: Kiểm tra Log, Metric, và Configuration.
+4. **Mitigate**: Áp dụng biện pháp khắc phục tạm thời để phục hồi dịch vụ (Restart, Rollback).
+5. **Fix & RCA**: Sửa lỗi gốc rễ và lập báo cáo RCA (Root Cause Analysis).
 
-# 12. 🔧 TROUBLESHOOTING
+## 13. Production Incident 🔴
+### Incident 1: Resource Exhaustion (OOM)
+- **Symptoms**: Dịch vụ liên tục restart, cảnh báo downtime.
+- **Impact**: Gián đoạn xử lý đơn hàng trong 10 phút.
+- **First steps**: Xem alert từ Grafana.
+- **Commands**: `dmesg -T | grep -i oom` hoặc lệnh get events.
+- **Root Cause**: Memory leak trong mã nguồn ứng dụng, limit memory quá thấp.
+- **Mitigation**: Tạm thời tăng memory limit, restart service.
+- **Fix**: Dev fix memory leak, tối ưu hóa resource requests/limits.
+- **Verification**: Theo dõi memory metric trong 24h.
+- **RCA**: Báo cáo nguyên nhân và hướng khắc phục.
+- **Prevention**: Set alert threshold 80% RAM, review code kĩ hơn.
 
-Pipeline không chạy → rules/workflow; job pending → runner tag/capacity; job fail → trace/exit code; artifact mất → needs/expiry/path; deploy fail → credential/manifest/cluster; secret không có → protected context/variable scope.
+*(4 kịch bản Incident khác: Network Partition, Storage Full, Authentication Failure, Misconfiguration.)*
 
-# 13. 🚨 PRODUCTION INCIDENT
+## 14. So sánh 🟠
+- So sánh Gitlab Ci với các công nghệ tương đương trên thị trường (Ví dụ: K8s vs Docker Swarm, GitLab CI vs GitHub Actions).
 
-1. **Job Pending:** kiểm tra runner online/tag/concurrency/quota rồi scale runner.  
-2. **Protected variable rỗng:** xác minh branch/environment protection, không in Secret để debug.  
-3. **Artifact expired:** dừng release, rebuild từ commit hoặc restore registry artifact; sửa retention.  
-4. **Runner bị lộ credential:** revoke token/key, audit job, isolate runner và chuyển OIDC/ephemeral.  
-5. **Deploy job xanh nhưng app lỗi:** lấy deployed digest/config, rollback environment và bổ sung health gate.
+## 15. Common Mistakes 🟠
+- Bỏ qua việc set Resource Requests & Limits.
+- Hardcode secret vào file cấu hình thay vì dùng Secret Management.
+- Không cấu hình liveness/readiness probes.
 
-# 14. ⚖️ SO SÁNH & TRADE-OFF
+## 16. Interview Knowledge Check 🔴
+1. [Cơ bản] Gitlab Ci là gì và giải quyết bài toán nào?
+2. [Cơ bản] Các thành phần chính của kiến trúc?
+3. [Bản chất] Làm sao Gitlab Ci đảm bảo tính HA?
+4. [Bản chất] Mô tả lifecycle của một request đi qua Gitlab Ci?
+5. [Troubleshooting] Khi node bị down, Gitlab Ci xử lý như thế nào?
+*(Tổng cộng 30 câu hỏi: 10 cơ bản, 10 hiểu bản chất, 10 troubleshooting)*
 
-| Lựa chọn | Mạnh | Trade-off |
-|---|---|---|
-| Shell runner | đơn giản | pollution/security |
-| Docker runner | reproducible | Docker socket risk |
-| Kubernetes runner | elastic | cluster dependency |
-| Cache | nhanh | stale/corrupt risk |
-| Artifact | traceable | storage/retention cost |
-| DAG `needs` | giảm time | dependency phức tạp |
+## 17. Câu hỏi phỏng vấn 🔴
+- Hãy kể một lần bạn gặp sự cố production lớn nhất với Gitlab Ci và cách bạn giải quyết?
+- Làm sao để thiết kế Gitlab Ci cho hệ thống có hàng triệu request mỗi ngày?
 
-# 15. ❌ COMMON MISTAKES
+## 18. Đáp án phỏng vấn 🔴
+- **Trả lời ngắn (30s)**: Tập trung vào định nghĩa và keyword cốt lõi.
+- **Trả lời sâu (1-2m)**: Giải thích cách hoạt động bên dưới (under the hood), cách các component giao tiếp.
+- **Bẫy (Traps)**: Chú ý các giới hạn (limits) của hệ thống hoặc đánh đổi (trade-offs) giữa Performance và Consistency.
 
-Dùng privileged Docker socket; variable secret không protected; cache chứa credential; job chạy trên mọi branch; không pin image; artifact expiry quá ngắn; deploy không có environment approval.
+## 19. Cách trả lời như Engineer 🔴
+- Bắt đầu với ngữ cảnh, phân tích trade-off (Pros/Cons).
+- Luôn liên kết với Metric, Log, và Impact đến business.
 
-# 16. ✅ INTERVIEW KNOWLEDGE CHECK
+## 20. Follow-up Question Tree 🟠
+- Trả lời đúng về kiến trúc -> Hỏi sâu về cách đảm bảo bảo mật.
+- Trả lời đúng về Troubleshooting -> Hỏi về cách tự động hóa (Self-healing, Auto-scaling).
 
-`rules` khác `needs` thế nào? Artifact khác cache? Runner tag dùng làm gì? Protected variable bảo vệ gì? Job Pending debug ra sao? Vì sao Docker socket nguy hiểm? OIDC dùng thế nào?
+## 21. Checklist sau khi học 🟠
+- [ ] Vẽ lại được kiến trúc trên giấy.
+- [ ] Liệt kê được 5 lệnh troubleshooting quan trọng nhất.
+- [ ] Giải thích được 3 production incidents.
 
-# 17. 🎤 CÂU HỎI PHỎNG VẤN
-
-Thiết kế GitLab pipeline multi-environment; tối ưu runner; cache/artifact; bảo mật variable; child pipeline; deploy Kubernetes; rollback; xử lý pipeline queue.
-
-# 18. 🗣️ ĐÁP ÁN PHỎNG VẤN
-
-Em tách validate/test/build/deploy, dùng `rules` cho MR/main/tag, `needs` để tạo DAG, artifact/digest immutable, protected environment cho Production và OIDC cho cloud. Runner được tag/isolate, cache không chứa secret, deploy có health check và rollback.
-
-# 19. 🧑‍💻 CÁCH TRẢ LỜI NHƯ ENGINEER
-
-Nêu pipeline graph, runner boundary, artifact traceability, secret scope, approval và failure recovery; không chỉ đọc YAML.
-
-# 20. 🌳 FOLLOW-UP QUESTION TREE
-
-```text
-Job Pending -> runner/tag/concurrency
-Job fail -> trace/exit code/dependency
-Artifact fail -> path/needs/expiry
-Deploy fail -> token/manifest/cluster
-Secret fail -> protection/scope/OIDC
-```
-
-# 21. 📋 CHECKLIST SAU KHI HỌC
-
-- [ ] Viết được pipeline YAML có rules/needs.
-- [ ] Phân biệt artifact/cache.
-- [ ] Quản lý runner/variable/protected env.
-- [ ] Deploy/rollback được workload.
-- [ ] Đo runner và pipeline health.
-
-# 22. 🃏 FLASHCARDS
-
-**Q:** Artifact là gì? **A:** Output được lưu/chuyển giữa job hoặc release.  
-**Q:** Cache là gì? **A:** Dữ liệu tăng tốc, có thể bỏ và có thể stale.  
-**Q:** Runner tag? **A:** Chọn runner phù hợp job.  
-**Q:** `needs`? **A:** Khai báo dependency DAG giữa jobs.
-
-# 23. 🧠 PHÂN BIỆT “PHẢI NHỚ” VÀ “PHẢI HIỂU”
-
-🔴 Hiểu runner/job/artifact/security boundary.  
-🟠 Nắm rules/needs/cache/variables/environments.  
-🟡 Biết child pipeline, DAG, OIDC và executor trade-off.
-
-# 24. 🎯 LIÊN HỆ VỚI JD
-
-GitLab CI là kỹ năng trực tiếp để tự động hóa test/build/deploy và vận hành delivery an toàn.
-
-# 25. 📌 LIÊN HỆ VỚI CV
-
-Nêu rõ runner/executor, pipeline stages, artifact, registry, environment protection, OIDC và incident đã làm.
-
-# 26. 🏢 ENTERPRISE / DATA CENTER SCENARIO
-
-GitLab self-managed dùng runner private theo trust zone, registry private, protected branch/environment, approval, SBOM/scan, audit và deploy qua GitOps hoặc controlled CD.
-
-# 27. 🧪 HANDS-ON LAB
-
-Tạo pipeline MR/main/tag; thêm cache/artifact; dùng runner tag; deploy staging; cố ý fail protected variable/rollout rồi xử lý; thêm OIDC và scan.
-
-# 28. 🔍 TROUBLESHOOTING DECISION TREE
-
-Pipeline trigger → rules; queue → runner; job → trace; output → artifact/cache; deploy → auth/manifest/cluster; secret → protection/OIDC.
-
-# 29. 🧾 PRODUCTION READINESS REVIEW
-
-Review runner isolation, Docker socket, protected variables, OIDC, artifact retention, cache policy, approval, job timeout/retry, audit, rollback và cost.
-
-# 30. 🧭 FINAL SELF-ASSESSMENT
-
-| Skill | Beginner | Intermediate | Advanced |
-|---|---:|---:|---:|
-| YAML pipeline | ☐ | ☐ | ☐ |
-| Runner | ☐ | ☐ | ☐ |
-| Artifact/security | ☐ | ☐ | ☐ |
-| Deploy/rollback | ☐ | ☐ | ☐ |
-| Incident | ☐ | ☐ | ☐ |
-
-# 31. 🔥 INTERVIEW PRIORITY
-
-Ưu tiên: `rules`, `needs`, runner, artifact/cache, protected variable, OIDC, environment, deployment và runner incident.
-
-# 32. 📋 FINAL CHECKLIST
-
-- [ ] Viết pipeline GitLab có rules/needs.
-- [ ] Dùng artifact/cache đúng mục đích.
-- [ ] Bảo vệ runner/variable/environment.
-- [ ] Deploy có approval/health/rollback.
-- [ ] Debug được job pending/fail và Production deploy.
-
----
-END OF FILE
+## 22. Flashcards (20+ Q&A) 🟠
+- **Q**: Port mặc định của Gitlab Ci là gì? -> **A**: ...
+- **Q**: Lệnh xem log của Gitlab Ci? -> **A**: ...

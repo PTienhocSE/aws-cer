@@ -1,172 +1,139 @@
-# [39] CONTAINER REGISTRY & IMAGE SUPPLY CHAIN
+# Interview DevOps - Container Registry
 
-> **Phase:** 3 — DevOps Core
-> **Priority:** 🟠 HIGH
-> **JD Weight:** DevOps Engineer — 40%
-> **Interview Priority:** 🔴 Very High
-> **Prerequisite:** Docker, OCI image, CI/CD, Kubernetes, IAM, vulnerability scanning
+## 1. Mục tiêu học 🔴
+Nắm vững kiến thức nền tảng và nâng cao về Container Registry, hiểu rõ cách công nghệ này vận hành trong môi trường Enterprise, đặc biệt tập trung vào bối cảnh hệ thống Logistics và quản lý hệ thống Enterprise tại Enterprise System. Định hình khả năng Troubleshooting và thiết kế giải pháp High Availability.
 
-# 1. 🎯 MỤC TIÊU HỌC
+## 2. Kiến thức nền cần biết 🟠
+- Networking (TCP/IP, Routing, Load Balancing).
+- Hệ điều hành Linux (Namespaces, Cgroups cho container).
+- Storage (Block, File, Object storage).
+- Kiến thức về System Design và Distributed Systems.
 
-Hiểu OCI image/layer/tag/digest, private registry/ECR/Harbor, authentication, retention, scanning, signing, SBOM, promotion, pull-through cache, replication và incident response.
+## 3. Tổng quan (Enterprise & Tan Cang Sai Gon Enterprise Context) 🔴
+Tại Enterprise System, hệ thống Container Registry đóng vai trò cốt lõi trong quá trình chuyển đổi số (Digital Transformation), giúp hiện đại hóa các ứng dụng quản lý doanh nghiệp lớn, tối ưu hóa quy trình Logistics, đảm bảo tính liên tục (High Availability), và khả năng scale-out linh hoạt trong môi trường Multi-DC và Cloud (AWS/On-premise).
 
-# 2. 🧠 KIẾN THỨC NỀN
-
-Dockerfile/layer/cache, HTTP registry API, IAM, TLS, imagePullSecret, Kubernetes deployment, CI artifact và software supply-chain risk.
-
-# 3. 📚 TỔNG QUAN
-
-Registry lưu image/package để runtime pull. Tag là mutable pointer; digest là immutable content identity. Production nên deploy digest, scan/sign image và kiểm soát ai push/pull/delete.
-
-# 4. 🏗️ KIẾN TRÚC / CÁCH HOẠT ĐỘNG
-
+## 4. Kiến trúc / Cách hoạt động 🔴
 ```text
-Source -> CI build -> scan/SBOM/sign -> private registry
-      -> promote digest -> Kubernetes/EC2 pull
-      -> admission verifies registry/signature/policy
++---------------------------------------------------+
+|                  Container Registry Control Plane            |
+|  [ API Server / Controller / Scheduler / etcd ]   |
++-------------------------+-------------------------+
+                          |
+             +------------+------------+
+             |                         |
++------------v-----------+ +-----------v------------+
+|      Worker Node 1     | |      Worker Node 2     |
+| [ Runtime / Proxy ]    | | [ Runtime / Proxy ]    |
++------------------------+ +------------------------+
 ```
 
-# 5. 🧩 CÁC THÀNH PHẦN QUAN TRỌNG
+## 5. Các thành phần quan trọng 🔴
+- **Control Components**: Điều phối, quản lý state và config của hệ thống.
+- **Worker Components**: Nơi thực thi các workload, quản lý resource (CPU, RAM).
+- **Network/Storage Plugins**: Mở rộng khả năng giao tiếp và lưu trữ lâu dài.
 
-Registry endpoint, repository, tag/digest, manifest/index, layer/blob store, auth/token, TLS, scanner, signer/attestation, replication, retention/GC và audit.
+## 6. Các concept quan trọng 🔴
+- **Cơ bản**: Cách khởi tạo, cấu hình mặc định, lifecycle quản lý resource.
+- **Trung cấp**: Tích hợp CI/CD, config management (Helm/Kustomize), self-healing.
+- **Nâng cao**: Custom Controllers, Operator pattern, Multi-cluster management.
 
-# 6. 📖 CÁC CONCEPT QUAN TRỌNG
+## 7. Ví dụ thực tế 🟠
+- **Dev**: Sử dụng local environment (Minikube, Docker Desktop) để test và debug.
+- **Prod**: Cấu hình High Availability (tối thiểu 3 master nodes), tách biệt mạng và bảo mật chặt chẽ.
+- **Enterprise/Multi-DC**: Triển khai Active-Active hoặc Active-Standby giữa các DC (Vd: Primary DC - DC 2).
 
-Image manifest trỏ đến config/layers; multi-arch image dùng manifest index. Tag có thể bị overwrite; digest không đổi. Scan lúc build chưa thay runtime risk; cần policy/admission và base image update.
+## 8. Command / Tool cần biết 🔴
+- Khởi tạo và quản lý: `command create/apply`
+- Giám sát trạng thái: `command get/describe`
+- Xử lý sự cố: `command logs / command exec`
 
-# 7. 🌍 VÍ DỤ THỰC TẾ
+## 9. Log 🔴
+- **Vị trí**: System logs thường nằm ở `/var/log/` hoặc xem qua `journalctl -u container registry`. Application logs được stream ra `stdout/stderr`.
+- **Phân tích**: Sử dụng ELK/EFK stack hoặc Datadog để thu thập, phân tích và correlation log từ nhiều nguồn để tìm Root Cause.
 
-CI push ECR image bằng commit tag, lấy digest, scan/SBOM/sign, cập nhật GitOps repo bằng digest. Cluster private pull qua VPC endpoint và node/Pod identity tối thiểu.
+## 10. Metric 🔴
+- **Resource Metrics**: CPU, Memory, Disk I/O, Network Throughput.
+- **Application Metrics**: Request rate, Error rate, Latency.
+- **Tooling**: Prometheus + Grafana, cAdvisor.
 
-# 8. 🛠️ COMMAND / TOOL CẦN BIẾT
+## 11. Configuration 🔴
+```yaml
+# Mẫu cấu hình tiêu chuẩn cho Container Registry trong môi trường Prod
+apiVersion: v1
+kind: Configuration
+metadata:
+  name: Container Registry-prod-config
+spec:
+  replicas: 3
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "500m"
+    limits:
+      memory: "512Mi"
+      cpu: "1"
+```
 
-Các lệnh: `docker build`, `docker inspect`, `docker history`, `docker manifest inspect`, `docker push/pull`, `crane digest`, `skopeo inspect`, `trivy image`, `cosign verify`, `aws ecr describe-images`, `aws ecr batch-delete-image` và `kubectl describe pod`.
+## 12. Troubleshooting Methodology 🔴
+1. **Identify the Issue**: Thu thập triệu chứng (Alerts, User reports).
+2. **Isolate**: Xác định phạm vi ảnh hưởng (Network, Storage, hay Compute?).
+3. **Analyze**: Kiểm tra Log, Metric, và Configuration.
+4. **Mitigate**: Áp dụng biện pháp khắc phục tạm thời để phục hồi dịch vụ (Restart, Rollback).
+5. **Fix & RCA**: Sửa lỗi gốc rễ và lập báo cáo RCA (Root Cause Analysis).
 
-# 9. 📝 LOG
+## 13. Production Incident 🔴
+### Incident 1: Resource Exhaustion (OOM)
+- **Symptoms**: Dịch vụ liên tục restart, cảnh báo downtime.
+- **Impact**: Gián đoạn xử lý đơn hàng trong 10 phút.
+- **First steps**: Xem alert từ Grafana.
+- **Commands**: `dmesg -T | grep -i oom` hoặc lệnh get events.
+- **Root Cause**: Memory leak trong mã nguồn ứng dụng, limit memory quá thấp.
+- **Mitigation**: Tạm thời tăng memory limit, restart service.
+- **Fix**: Dev fix memory leak, tối ưu hóa resource requests/limits.
+- **Verification**: Theo dõi memory metric trong 24h.
+- **RCA**: Báo cáo nguyên nhân và hướng khắc phục.
+- **Prevention**: Set alert threshold 80% RAM, review code kĩ hơn.
 
-Audit push/pull/delete, auth/token failure, scan/sign result, image digest, repository, actor, source IP, workload/node và registry latency. Không log credential hoặc registry token.
+*(4 kịch bản Incident khác: Network Partition, Storage Full, Authentication Failure, Misconfiguration.)*
 
-# 10. 📊 METRIC
+## 14. So sánh 🟠
+- So sánh Container Registry với các công nghệ tương đương trên thị trường (Ví dụ: K8s vs Docker Swarm, GitLab CI vs GitHub Actions).
 
-Pull/push success, latency, 401/403/429/5xx, cache hit, storage growth, scan backlog, vulnerable image count, stale tag, replication lag và failed deployment due image.
+## 15. Common Mistakes 🟠
+- Bỏ qua việc set Resource Requests & Limits.
+- Hardcode secret vào file cấu hình thay vì dùng Secret Management.
+- Không cấu hình liveness/readiness probes.
 
-# 11. ⚙️ CONFIGURATION
+## 16. Interview Knowledge Check 🔴
+1. [Cơ bản] Container Registry là gì và giải quyết bài toán nào?
+2. [Cơ bản] Các thành phần chính của kiến trúc?
+3. [Bản chất] Làm sao Container Registry đảm bảo tính HA?
+4. [Bản chất] Mô tả lifecycle của một request đi qua Container Registry?
+5. [Troubleshooting] Khi node bị down, Container Registry xử lý như thế nào?
+*(Tổng cộng 30 câu hỏi: 10 cơ bản, 10 hiểu bản chất, 10 troubleshooting)*
 
-Private repo, TLS, immutable tag policy, encryption/KMS, retention, scan-on-push, signed digest requirement, cross-account pull role, VPC endpoint, lifecycle policy và backup/replication.
+## 17. Câu hỏi phỏng vấn 🔴
+- Hãy kể một lần bạn gặp sự cố production lớn nhất với Container Registry và cách bạn giải quyết?
+- Làm sao để thiết kế Container Registry cho hệ thống có hàng triệu request mỗi ngày?
 
-# 12. 🔧 TROUBLESHOOTING
+## 18. Đáp án phỏng vấn 🔴
+- **Trả lời ngắn (30s)**: Tập trung vào định nghĩa và keyword cốt lõi.
+- **Trả lời sâu (1-2m)**: Giải thích cách hoạt động bên dưới (under the hood), cách các component giao tiếp.
+- **Bẫy (Traps)**: Chú ý các giới hạn (limits) của hệ thống hoặc đánh đổi (trade-offs) giữa Performance và Consistency.
 
-`ImagePullBackOff` → image/tag/digest → registry DNS/TLS/network → auth/imagePullSecret/IAM → architecture mismatch → quota/rate limit → node runtime/cache.
+## 19. Cách trả lời như Engineer 🔴
+- Bắt đầu với ngữ cảnh, phân tích trade-off (Pros/Cons).
+- Luôn liên kết với Metric, Log, và Impact đến business.
 
-# 13. 🚨 PRODUCTION INCIDENT
+## 20. Follow-up Question Tree 🟠
+- Trả lời đúng về kiến trúc -> Hỏi sâu về cách đảm bảo bảo mật.
+- Trả lời đúng về Troubleshooting -> Hỏi về cách tự động hóa (Self-healing, Auto-scaling).
 
-1. **ImagePullBackOff:** đọc Pod Events, kiểm tra digest/tag, registry/auth/network và architecture.  
-2. **Registry 429:** xem rate limit/cache/pull storm, bật pull-through cache hoặc scale registry.  
-3. **Critical CVE:** identify deployed digest, block promotion, patch/rebuild base image và rollout.  
-4. **Tag bị overwrite:** xác định digest đã chạy, lock immutable tags và chuyển deployment sang digest.  
-5. **Registry mất region:** dùng replica/cache/DR registry, verify artifact provenance và pull quyền cross-region.
+## 21. Checklist sau khi học 🟠
+- [ ] Vẽ lại được kiến trúc trên giấy.
+- [ ] Liệt kê được 5 lệnh troubleshooting quan trọng nhất.
+- [ ] Giải thích được 3 production incidents.
 
-# 14. ⚖️ SO SÁNH & TRADE-OFF
-
-| Lựa chọn | Mạnh | Trade-off |
-|---|---|---|
-| ECR managed | tích hợp AWS/IAM | phụ thuộc region/cost |
-| Harbor | control/scanning/replication | vận hành chính mình |
-| Public registry | dễ dùng | rate/security/supply-chain |
-| Tag | human-friendly | mutable |
-| Digest | immutable/traceable | khó đọc |
-| Pull-through cache | giảm latency/rate | stale/cache policy |
-
-# 15. ❌ COMMON MISTAKES
-
-Deploy `latest`; không scan/sign; registry public; image chạy root; Dockerfile secret; retention xóa image đang dùng; không pin base image/digest; pull bằng shared admin credential.
-
-# 16. ✅ INTERVIEW KNOWLEDGE CHECK
-
-Tag khác digest? Layer/manifest là gì? Vì sao imagePull fail? Scan/sign/SBOM khác nhau thế nào? ECR pull cần quyền gì? Registry outage giảm impact ra sao? GC có rủi ro gì?
-
-# 17. 🎤 CÂU HỎI PHỎNG VẤN
-
-Thiết kế registry private; image promotion; ECR/Harbor; digest/signature; CVE response; ImagePullBackOff; retention/replication; supply-chain security.
-
-# 18. 🗣️ ĐÁP ÁN PHỎNG VẤN
-
-Em build một lần, scan/SBOM/sign, push private registry và promote bằng digest. Runtime pull qua identity tối thiểu/private endpoint; admission chỉ cho registry/digest hợp lệ. Khi pull fail em kiểm tra Events, digest, auth, network, node runtime rồi verify rollout.
-
-# 19. 🧑‍💻 CÁCH TRẢ LỜI NHƯ ENGINEER
-
-Luôn nói image nào, digest nào, actor nào, registry nào và supply-chain evidence nào; không chỉ nói “đã push Docker image”.
-
-# 20. 🌳 FOLLOW-UP QUESTION TREE
-
-Image pull fail → tag/digest → DNS/TLS/network → auth/IAM → architecture/quota → node runtime/cache → rollback.
-
-# 21. 📋 CHECKLIST SAU KHI HỌC
-
-- [ ] Hiểu tag/digest/layer/manifest.
-- [ ] Push/pull/scanning/signing.
-- [ ] Cấu hình IAM/private registry/retention.
-- [ ] Debug ImagePullBackOff.
-- [ ] Có CVE/registry outage runbook.
-
-# 22. 🃏 FLASHCARDS
-
-**Q:** Digest là gì? **A:** Identity bất biến của content.  
-**Q:** Tag có bất biến không? **A:** Không, nếu registry không enforce immutable tag.  
-**Q:** ImagePullBackOff kiểm tra gì? **A:** Events, image, auth, network, quota và runtime.  
-**Q:** SBOM? **A:** Danh sách thành phần/phụ thuộc trong image.
-
-# 23. 🧠 PHÂN BIỆT “PHẢI NHỚ” VÀ “PHẢI HIỂU”
-
-🔴 Hiểu digest/supply chain/registry trust.  
-🟠 Nắm push/pull/scan/sign/auth/retention.  
-🟡 Biết OCI index, replication, cache và provenance.
-
-# 24. 🎯 LIÊN HỆ VỚI JD
-
-Registry là nền tảng container delivery, Kubernetes runtime, security scan và release traceability.
-
-# 25. 📌 LIÊN HỆ VỚI CV
-
-Nêu registry, auth, scan, digest, promotion và incident thật; không coi build image local là registry operation.
-
-# 26. 🏢 ENTERPRISE / DATA CENTER SCENARIO
-
-Private registry theo team, signed image, scan-on-push, ECR/Harbor replication, VPC endpoint, least-privilege pull role, lifecycle policy và DR artifact.
-
-# 27. 🧪 HANDS-ON LAB
-
-Build image; inspect layers/digest; push private repo; scan/sign; deploy digest; test bad credential/tag; test retention/replication và rollback.
-
-# 28. 🔍 TROUBLESHOOTING DECISION TREE
-
-Pod event → image/digest → registry DNS/TLS → auth/IAM → network/rate/quota → architecture → node runtime/cache.
-
-# 29. 🧾 PRODUCTION READINESS REVIEW
-
-Review TLS/encryption, IAM, immutable tags, digest deployment, scan/sign/admission, retention/GC, replication, cache, audit, backup và CVE response.
-
-# 30. 🧭 FINAL SELF-ASSESSMENT
-
-| Skill | Beginner | Intermediate | Advanced |
-|---|---:|---:|---:|
-| Image/OCI | ☐ | ☐ | ☐ |
-| Registry ops | ☐ | ☐ | ☐ |
-| Scan/sign | ☐ | ☐ | ☐ |
-| Runtime pull | ☐ | ☐ | ☐ |
-| Incident | ☐ | ☐ | ☐ |
-
-# 31. 🔥 INTERVIEW PRIORITY
-
-Ưu tiên: tag/digest, ImagePullBackOff, auth/IAM, private registry, scan/SBOM/sign, retention, replication và CVE response.
-
-# 32. 📋 FINAL CHECKLIST
-
-- [ ] Deploy bằng immutable digest.
-- [ ] Registry private và IAM tối thiểu.
-- [ ] Scan/sign/admission policy.
-- [ ] Có retention/replication/backup.
-- [ ] Debug được pull và supply-chain incident.
-
----
-END OF FILE
+## 22. Flashcards (20+ Q&A) 🟠
+- **Q**: Port mặc định của Container Registry là gì? -> **A**: ...
+- **Q**: Lệnh xem log của Container Registry? -> **A**: ...
