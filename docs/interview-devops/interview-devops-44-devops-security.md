@@ -1,112 +1,107 @@
-# DevOps Security & DevSecOps - Exhaustive Interview Preparation Guide
+# DevSecOps và Security — Cẩm nang phỏng vấn
 
-## 1. Mục tiêu học
-- Hiểu rõ về DevOps Security & DevSecOps trong môi trường Enterprise.
-- Nắm vững các khái niệm cốt lõi, kiến trúc và vận hành.
+# 1. Mục tiêu học
+DevSecOps đưa threat modeling, kiểm tra dependency/source/IaC/image, secret control, signing, runtime policy và incident response vào từng stage. Nắm được cách thiết kế, vận hành, quan sát và xử lý sự cố.
 
-## 2. Kiến thức nền cần biết
-- Kiến thức cơ bản về Linux, Network, và Cloud.
-- Hiểu biết về containerization, orchestration (nếu áp dụng).
+# 2. Kiến thức nền cần có
+Linux, networking, TLS, storage, distributed systems, SQL và CI/CD; học theo least privilege và evidence.
 
-## 3. Tổng quan (Enterprise & Tan Cang Sai Gon Enterprise Context)
-- **Enterprise Context:** DevOps Security & DevSecOps được áp dụng rộng rãi để mở rộng hệ thống.
-- **Enterprise Context (Doanh nghiệp Enterprise):** Áp dụng DevOps Security & DevSecOps để đáp ứng JD 60% System + 40% DevOps, tối ưu chi phí và tăng tính ổn định (nhất là hệ thống TOS).
-- **Candidate CV Alignment:** Mapping kinh nghiệm AWS, EKS, Docker, K8s, Terraform, ArgoCD vào bối cảnh DevOps Security & DevSecOps.
+# 3. Tổng quan kiến trúc
+Xác định client, control plane, data plane, state store, identity, observability và failure domain. Mỗi thành phần có owner, SLO và runbook.
 
-## 4. Kiến trúc / Cách hoạt động (ASCII Diagrams)
-```text
-[ Client ] --> [ Load Balancer ] --> [ DevOps Security & DevSecOps Component A ]
-                                     |
-                                     +--> [ DevOps Security & DevSecOps Component B ]
-```
+# 4. Cách hoạt động
+Request đi qua authentication, authorization, validation, execution và persistence; response chỉ thành công khi dependency và durability đạt điều kiện.
 
-## 5. Các thành phần quan trọng (Components, failure modes)
-- **Thành phần A:** Chức năng chính. *Failure mode:* OOM, Network partition.
-- **Thành phần B:** Quản lý state. *Failure mode:* Split-brain.
+# 5. Thành phần và failure mode
+Data node có thể đầy disk; network timeout; credential hết hạn; controller lag; retry sai tạo storm hoặc duplicate. Luôn phân tích blast radius.
 
-## 6. Các concept quan trọng
-- **Cơ bản:** Các khái niệm nhập môn.
-- **Trung cấp:** Khái niệm vận hành, lifecycle.
-- **Nâng cao:** Tối ưu hiệu năng, deep dive internals.
+# 6. Concepts quan trọng
+Phân biệt availability, durability, consistency, throughput, latency, backpressure, idempotency, retry budget và blast radius.
 
-## 7. Ví dụ thực tế
-- **Dev:** Môi trường thử nghiệm, config tối giản.
-- **Prod:** HA setup, bảo mật, giám sát đầy đủ.
-- **Enterprise/Multi-DC:** Active-Active, Active-Passive, Disaster Recovery (DR).
+# 7. Ví dụ thực tế
+Production nên tách workload theo tenant, giới hạn tài nguyên, encryption in transit/at rest, backup đã test restore và dashboard theo SLO.
 
-## 8. Command / Tool cần biết
-- `ps, top, free, df, iostat, vmstat, ss, journalctl, systemctl, lsof, strace`
-- Các tool đặc thù của DevOps Security & DevSecOps.
+# 8. Command / Tool cần biết
+git diff, trivy, grype, syft, semgrep, gitleaks, tfsec/checkov, cosign, kubectl auth can-i và IAM audit logs.
 
-## 9. Log (locations, interpretation, correlation)
-- **/var/log/messages**, **/var/log/syslog**
-- Cách đọc log và correlate (truy vết) theo Request ID.
+# 9. Log và cách đọc
+Correlate timestamp, request ID, principal, resource và deployment version. Giữ log client/server, audit event, retry và dependency response trước khi restart.
 
-## 10. Metric (CPU, RAM, Disk I/O, Load Average, Inodes, Swap)
-- **CPU / RAM:** Cảnh báo khi > 80%.
-- **Disk I/O:** Theo dõi iowait.
-- **Load Average:** Đánh giá độ bận rộn của hệ thống.
+# 10. Metrics
+Đo request rate, p50/p95/p99 latency, error rate, saturation, queue/lag, connection count, disk/WAL growth, retry rate và SLO burn rate.
 
-## 11. Configuration (Sample configs)
-```yaml
-# Sample config for DevOps Security & DevSecOps
-server:
-  port: 8080 
-  max_connections: 1000 
-```
+# 11. Configuration mẫu
+Cấu hình phải version-control, review, immutable ở production; secret lấy từ secret manager, không commit plaintext. Đặt timeout, limit, retention và alert theo mục tiêu vận hành.
 
-## 12. Troubleshooting Methodology
-1. **Identify the problem:** Rõ ràng triệu chứng (Symptom).
-2. **Gather data:** Logs, metrics, alerts.
-3. **Analyze:** Dùng các tool (top, strace) để khoanh vùng.
-4. **Implement fix:** Khắc phục (Mitigation/Resolution).
-5. **Verify:** Đảm bảo dịch vụ hoạt động bình thường.
-6. **RCA (Root Cause Analysis):** Phân tích nguyên nhân gốc.
+# 12. Troubleshooting methodology
+Xác định scope và first bad timestamp; kiểm tra recent change; phân biệt client, network, service, storage và data; mitigation reversible; verify bằng metric và test; viết RCA.
 
-## 13. Production Incident (5 Detailed Scenarios)
-1. **Scenario 1:** Out of Memory (OOM) - Symptoms, Impact, RCA, Fix.
-2. **Scenario 2:** Network Timeout - Phân tích packet drop.
-3. **Scenario 3:** High CPU / Load Average.
-4. **Scenario 4:** Disk Full / Inode Exhaustion.
-5. **Scenario 5:** Configuration drift dẫn đến service crash.
+# 13. Năm production incidents
+1. Latency tăng: kiểm tra saturation, queue, dependency và recent deploy.
+2. Error tăng: group theo code, endpoint, principal và version, rồi rollback/circuit break.
+3. Disk đầy: tìm top consumer, retention/WAL/log và mở rộng có kiểm soát.
+4. Credential/TLS hết hạn: kiểm tra chain, clock, secret version và rotation.
+5. Data lag hoặc duplicate: kiểm tra offset/transaction/retry/idempotency và replay plan.
 
-## 14. So sánh
-| Feature | DevOps Security & DevSecOps | Alternative |
-| --- | --- | --- |
-| Performance | High | Medium |
-| Complexity | High | Low |
+# 14. So sánh
+Managed giảm toil control plane nhưng không xóa trách nhiệm data contract, access, observability và cost. Strong consistency, eventual consistency và cache đều có trade-off.
 
-## 15. Common Mistakes
-- Không set resource requests/limits.
-- Bỏ qua việc monitor các key metrics.
-- Cấu hình security quá lỏng lẻo.
+# 15. Common mistakes
+Alert theo ngưỡng tùy ý; retry vô hạn; tăng timeout để che latency; cấp quyền admin; backup chưa restore test; sửa production không có rollback; log secret hoặc payload nhạy cảm.
 
-## 16. Interview Knowledge Check
-- **10 Basic:** Các câu hỏi kiểm tra khái niệm.
-- **10 Deep:** Internals, cơ chế bộ nhớ.
-- **10 Troubleshooting:** Cách tiếp cận lỗi cụ thể.
+# 16. Knowledge check
+Giải thích failure domain, backpressure, idempotency, least privilege và cách phân biệt symptom với root cause bằng metric.
 
-## 17. Câu hỏi phỏng vấn
-- **Basic:** DevOps Security & DevSecOps là gì?
-- **Intermediate:** Nêu cách backup/restore?
-- **Advanced:** Làm sao để scale DevOps Security & DevSecOps cho 1 triệu RPS?
-- **Production/Architecture:** Thiết kế DevOps Security & DevSecOps đa vùng (Multi-AZ).
+# 17. Câu hỏi phỏng vấn
+Thiết kế HA; xử lý lag/lock/queue; chọn retry; bảo vệ secret; rollout an toàn; đáp ứng audit; tính capacity và DR.
 
-## 18. Đáp án phỏng vấn
-- **Short 20-30s:** Trả lời trực diện.
-- **Good 1-2m:** Mở rộng ngữ cảnh, lợi ích/bất lợi.
-- **Engineer Style:** Đưa ra ví dụ thực tế, nói về trade-offs.
+# 18. Đáp án phỏng vấn mẫu
+Nêu assumption, SLO/RPO/RTO, flow dữ liệu, failure mode, metric, mitigation và trade-off; phân biệt kinh nghiệm có evidence với lab.
 
-## 19. Follow-up Question Tree
-- *Nếu trả lời được câu A -> Hỏi sâu về cơ chế B.*
+# 19. Follow-up question tree
+Lỗi có toàn hệ thống không? Có cùng first bad timestamp không? Dependency nào thay đổi? Queue/connection/disk có đầy không? Mitigation nào reversible và verification nào chứng minh phục hồi?
 
-## 20. Checklist sau khi học
-- [ ] Nắm được kiến trúc tổng thể.
-- [ ] Chạy thử 1 demo thực tế.
+# 20. Checklist sau khi học
+- [ ] Vẽ data flow và failure domain.
+- [ ] Viết runbook cho một incident.
+- [ ] Có dashboard, alert, backup/restore hoặc rollback test.
+- [ ] Kiểm tra quyền và secret exposure.
 
-## 21. Flashcards (25+ Q&A pairs)
-- **Q:** DevOps Security & DevSecOps dùng để làm gì? -> **A:** Giải pháp cho ...
+# 21. Flashcards
+SLO là mục tiêu dịch vụ; RPO là dữ liệu mất tối đa; RTO là thời gian phục hồi; p99 phản ánh tail latency; backpressure bảo vệ hệ thống; idempotency an toàn khi retry; log là evidence; least privilege giảm blast radius; canary giảm rủi ro; RCA cần prevention.
 
-## 22. Phân biệt "Phải hiểu" (🔴) và "Phải nắm" (🟠)
-- 🔴 **Phải hiểu:** Cơ chế hoạt động core.
-- 🟠 **Phải nắm:** Các thông số config chi tiết.
+# 22. Phải hiểu và phải nhớ
+Hiểu causal chain và trade-off; nhớ command, metric, trạng thái, escalation và tiêu chí rollback.
+
+# 23. Phân biệt “phải nhớ” và “phải hiểu”
+Không học thuộc threshold tách rời context; baseline, workload và failure mode quyết định ngưỡng.
+
+# 24. Liên hệ với JD
+Map vào reliability, platform operations, release engineering, security, compliance, monitoring và incident response.
+
+# 25. Liên hệ với CV
+Tách rõ hệ thống đã vận hành, quy mô, vai trò, metric trước/sau và phần kiến thức tự học.
+
+# 26. Enterprise / data center scenario
+Thiết kế multi-AZ, private connectivity, identity federation, centralized audit, encryption keys, backup vault, DR region và quyền break-glass có audit.
+
+# 27. Hands-on lab
+Tạo workload, đặt baseline, gây một lỗi có kiểm soát, thu logs/metrics/audit, mitigation, test recovery và ghi timeline/RCA.
+
+# 28. Troubleshooting decision tree
+Error/latency? → scope → recent change → saturation/queue → dependency/network → data/lock/credential → rollback hoặc failover → verify SLO.
+
+# 29. Production readiness review
+Có threat model, ownership, SLO, capacity, alert, runbook, access review, encryption, backup restore, rollback, audit trail và game day.
+
+# 30. Self-assessment
+Beginner: giải thích flow và lệnh. Intermediate: debug incident và viết config an toàn. Advanced: thiết kế HA/DR, cost, security và migration.
+
+# 31. Interview priority
+Architecture → failure modes → evidence → mitigation → trade-off → security → DR → communication.
+
+# 32. Final checklist
+- [ ] Trình bày được cơ chế đúng chủ đề DevSecOps và Security.
+- [ ] Debug được một incident từ symptom đến verification.
+- [ ] Đưa ra được security, capacity, rollback và prevention.
+

@@ -1,139 +1,180 @@
-# Interview DevOps - Github Actions
+# [34] GITHUB ACTIONS & WORKFLOWS
 
-## 1. Mục tiêu học 🔴
-Nắm vững kiến thức nền tảng và nâng cao về Github Actions, hiểu rõ cách công nghệ này vận hành trong môi trường Enterprise, đặc biệt tập trung vào bối cảnh hệ thống Logistics và quản lý hệ thống Enterprise tại Enterprise System. Định hình khả năng Troubleshooting và thiết kế giải pháp High Availability.
+> **Phase:** 3 — DevOps Core
+> **Priority:** 🟠 HIGH
+> **JD Weight:** DevOps Engineer — 40%
+> **Interview Priority:** 🔴 Very High
+> **Prerequisite:** GitHub, Git, CI/CD, Docker, OIDC, Kubernetes basics
 
-## 2. Kiến thức nền cần biết 🟠
-- Networking (TCP/IP, Routing, Load Balancing).
-- Hệ điều hành Linux (Namespaces, Cgroups cho container).
-- Storage (Block, File, Object storage).
-- Kiến thức về System Design và Distributed Systems.
+# 1. 🎯 MỤC TIÊU HỌC
 
-## 3. Tổng quan (Enterprise & Tan Cang Sai Gon Enterprise Context) 🔴
-Tại Enterprise System, hệ thống Github Actions đóng vai trò cốt lõi trong quá trình chuyển đổi số (Digital Transformation), giúp hiện đại hóa các ứng dụng quản lý doanh nghiệp lớn, tối ưu hóa quy trình Logistics, đảm bảo tính liên tục (High Availability), và khả năng scale-out linh hoạt trong môi trường Multi-DC và Cloud (AWS/On-premise).
+Thiết kế workflow GitHub Actions an toàn với event, job, matrix, reusable workflow, artifact, cache, environment approval, self-hosted runner, OIDC và deployment rollback.
 
-## 4. Kiến trúc / Cách hoạt động 🔴
+# 2. 🧠 KIẾN THỨC NỀN
+
+Git ref/commit/tag, YAML, Docker/registry, GitHub permissions, branch protection, cloud IAM/OIDC, Kubernetes rollout và supply-chain security.
+
+# 3. 📚 TỔNG QUAN
+
+Workflow được kích hoạt bởi event như pull request, push, tag hoặc schedule. Job chạy trên runner; `needs` tạo dependency; artifact/cache truyền dữ liệu; environment bảo vệ Production.
+
+# 4. 🏗️ KIẾN TRÚC / CÁCH HOẠT ĐỘNG
+
 ```text
-+---------------------------------------------------+
-|                  Github Actions Control Plane            |
-|  [ API Server / Controller / Scheduler / etcd ]   |
-+-------------------------+-------------------------+
-                          |
-             +------------+------------+
-             |                         |
-+------------v-----------+ +-----------v------------+
-|      Worker Node 1     | |      Worker Node 2     |
-| [ Runtime / Proxy ]    | | [ Runtime / Proxy ]    |
-+------------------------+ +------------------------+
+Event -> workflow permissions -> runner -> jobs/steps
+      -> test/build/scan -> artifact/registry
+      -> protected environment -> deploy -> verify/rollback
 ```
 
-## 5. Các thành phần quan trọng 🔴
-- **Control Components**: Điều phối, quản lý state và config của hệ thống.
-- **Worker Components**: Nơi thực thi các workload, quản lý resource (CPU, RAM).
-- **Network/Storage Plugins**: Mở rộng khả năng giao tiếp và lưu trữ lâu dài.
+# 5. 🧩 CÁC THÀNH PHẦN QUAN TRỌNG
 
-## 6. Các concept quan trọng 🔴
-- **Cơ bản**: Cách khởi tạo, cấu hình mặc định, lifecycle quản lý resource.
-- **Trung cấp**: Tích hợp CI/CD, config management (Helm/Kustomize), self-healing.
-- **Nâng cao**: Custom Controllers, Operator pattern, Multi-cluster management.
+Workflow, event, job, step, action, matrix, `needs`, artifact, cache, environment, secrets/variables, GitHub-hosted/self-hosted runner, reusable workflow và deployment status.
 
-## 7. Ví dụ thực tế 🟠
-- **Dev**: Sử dụng local environment (Minikube, Docker Desktop) để test và debug.
-- **Prod**: Cấu hình High Availability (tối thiểu 3 master nodes), tách biệt mạng và bảo mật chặt chẽ.
-- **Enterprise/Multi-DC**: Triển khai Active-Active hoặc Active-Standby giữa các DC (Vd: Primary DC - DC 2).
+# 6. 📖 CÁC CONCEPT QUAN TRỌNG
 
-## 8. Command / Tool cần biết 🔴
-- Khởi tạo và quản lý: `command create/apply`
-- Giám sát trạng thái: `command get/describe`
-- Xử lý sự cố: `command logs / command exec`
+**Cơ bản:** event/job/step, `uses` action, `run` command, `needs` dependency.  
+**Trung cấp:** matrix, concurrency, reusable workflow, artifact, protected environment.  
+**Nâng cao:** OIDC, pin action SHA, provenance/SBOM, self-hosted runner isolation và least-privilege `permissions`.
 
-## 9. Log 🔴
-- **Vị trí**: System logs thường nằm ở `/var/log/` hoặc xem qua `journalctl -u github actions`. Application logs được stream ra `stdout/stderr`.
-- **Phân tích**: Sử dụng ELK/EFK stack hoặc Datadog để thu thập, phân tích và correlation log từ nhiều nguồn để tìm Root Cause.
+# 7. 🌍 VÍ DỤ THỰC TẾ
 
-## 10. Metric 🔴
-- **Resource Metrics**: CPU, Memory, Disk I/O, Network Throughput.
-- **Application Metrics**: Request rate, Error rate, Latency.
-- **Tooling**: Prometheus + Grafana, cAdvisor.
+Pull request chạy test/scan; merge main build image theo commit SHA; staging deploy tự động; Production environment cần reviewer; tag release promote image digest và tạo release note.
 
-## 11. Configuration 🔴
-```yaml
-# Mẫu cấu hình tiêu chuẩn cho Github Actions trong môi trường Prod
-apiVersion: v1
-kind: Configuration
-metadata:
-  name: Github Actions-prod-config
-spec:
-  replicas: 3
-  resources:
-    requests:
-      memory: "256Mi"
-      cpu: "500m"
-    limits:
-      memory: "512Mi"
-      cpu: "1"
+# 8. 🛠️ COMMAND / TOOL CẦN BIẾT
+
+Kiểm tra workflow bằng actionlint; `gh run list`, `gh run view --log-failed`, `gh api repos/<org>/<repo>/actions/runs`; kiểm tra artifact, job summary, deployment status, Docker digest và `kubectl rollout status`.
+
+# 9. 📝 LOG
+
+Job log phải có run ID, commit SHA, runner, action version, artifact/digest, actor, environment và exit code. Không echo `${{ secrets.* }}`; audit GitHub ghi workflow/permission/environment changes.
+
+# 10. 📊 METRIC
+
+Run success/failure, queue/job duration, runner utilization, cache hit, flaky tests, artifact size, deployment frequency, lead time, change failure rate và rollback.
+
+# 11. ⚙️ CONFIGURATION
+
+Workflow phải đặt `permissions` tối thiểu, pin third-party action theo SHA, dùng environment protection, concurrency cancel stale deploy, timeout, OIDC và không lưu long-lived cloud key trong repository secret.
+
+# 12. 🔧 TROUBLESHOOTING
+
+Workflow không trigger → event/branch/path/rules; job không chạy → `if`/`needs`; queue → runner label/capacity; action fail → version/input/permission; artifact fail → path/retention; deploy fail → OIDC/manifest/cluster; app fail → rollout/health.
+
+# 13. 🚨 PRODUCTION INCIDENT
+
+1. **Workflow không chạy trên tag:** kiểm tra event/ref filter và branch protection.  
+2. **OIDC AccessDenied:** kiểm tra `permissions.id-token`, IAM trust condition repo/ref/environment và CloudTrail.  
+3. **Self-hosted runner bị compromise:** disable runner, revoke token, isolate host, audit jobs và rebuild clean runner.  
+4. **Deploy sai environment:** kiểm tra environment mapping/approval/ref, stop rollout và rollback digest đúng.  
+5. **Action bên thứ ba bị supply-chain issue:** disable/pin SHA, kiểm tra workflow/artifact và thay bằng action đã review.
+
+# 14. ⚖️ SO SÁNH & TRADE-OFF
+
+| Lựa chọn | Mạnh | Trade-off |
+|---|---|---|
+| GitHub-hosted runner | ephemeral/ít ops | giới hạn network/custom tool |
+| Self-hosted runner | private network/custom | isolation/patching trách nhiệm mình |
+| Composite action | reuse step | khó version boundary |
+| Reusable workflow | chuẩn hóa job/policy | input/permission phức tạp |
+| OIDC | short-lived | trust condition cần chính xác |
+
+# 15. ❌ COMMON MISTAKES
+
+Dùng `write-all` permissions; action tag mutable; self-hosted runner dùng chung trust zone; Secret trong log; không protected environment; thiếu concurrency/deploy lock; dùng `pull_request_target` không an toàn.
+
+# 16. ✅ INTERVIEW KNOWLEDGE CHECK
+
+Event/job/step khác nhau? `needs` dùng gì? Artifact khác cache? OIDC trust điều kiện nào? Self-hosted runner rủi ro gì? Environment approval bảo vệ gì? Pin action SHA vì sao?
+
+# 17. 🎤 CÂU HỎI PHỎNG VẤN
+
+Thiết kế workflow multi-env; bảo mật OIDC; self-hosted runner; matrix/reusable workflow; artifact promotion; deploy Kubernetes; xử lý action compromise và rollback.
+
+# 18. 🗣️ ĐÁP ÁN PHỎNG VẤN
+
+Em giới hạn event/permissions, pin action, dùng ephemeral hoặc runner trust zone phù hợp, OIDC với trust condition theo repository/ref/environment, build artifact một lần, protected Production environment và deployment health/rollback. Mọi run có audit và trace tới commit/digest.
+
+# 19. 🧑‍💻 CÁCH TRẢ LỜI NHƯ ENGINEER
+
+Nêu cả GitHub control plane, runner boundary, cloud trust và cluster deployment; không coi workflow YAML là toàn bộ security model.
+
+# 20. 🌳 FOLLOW-UP QUESTION TREE
+
+```text
+Job fail?
+ -> event/if/needs?
+ -> runner/action/input?
+ -> permissions/secret/OIDC?
+ -> artifact/deploy?
+ -> health/rollback/audit?
 ```
 
-## 12. Troubleshooting Methodology 🔴
-1. **Identify the Issue**: Thu thập triệu chứng (Alerts, User reports).
-2. **Isolate**: Xác định phạm vi ảnh hưởng (Network, Storage, hay Compute?).
-3. **Analyze**: Kiểm tra Log, Metric, và Configuration.
-4. **Mitigate**: Áp dụng biện pháp khắc phục tạm thời để phục hồi dịch vụ (Restart, Rollback).
-5. **Fix & RCA**: Sửa lỗi gốc rễ và lập báo cáo RCA (Root Cause Analysis).
+# 21. 📋 CHECKLIST SAU KHI HỌC
 
-## 13. Production Incident 🔴
-### Incident 1: Resource Exhaustion (OOM)
-- **Symptoms**: Dịch vụ liên tục restart, cảnh báo downtime.
-- **Impact**: Gián đoạn xử lý đơn hàng trong 10 phút.
-- **First steps**: Xem alert từ Grafana.
-- **Commands**: `dmesg -T | grep -i oom` hoặc lệnh get events.
-- **Root Cause**: Memory leak trong mã nguồn ứng dụng, limit memory quá thấp.
-- **Mitigation**: Tạm thời tăng memory limit, restart service.
-- **Fix**: Dev fix memory leak, tối ưu hóa resource requests/limits.
-- **Verification**: Theo dõi memory metric trong 24h.
-- **RCA**: Báo cáo nguyên nhân và hướng khắc phục.
-- **Prevention**: Set alert threshold 80% RAM, review code kĩ hơn.
+- [ ] Viết workflow event/job/needs/matrix.
+- [ ] Dùng permissions tối thiểu và pin action.
+- [ ] Dùng OIDC/environment approval.
+- [ ] Quản lý runner/artifact/cache.
+- [ ] Deploy có verify/rollback.
 
-*(4 kịch bản Incident khác: Network Partition, Storage Full, Authentication Failure, Misconfiguration.)*
+# 22. 🃏 FLASHCARDS
 
-## 14. So sánh 🟠
-- So sánh Github Actions với các công nghệ tương đương trên thị trường (Ví dụ: K8s vs Docker Swarm, GitLab CI vs GitHub Actions).
+**Q:** `needs` là gì? **A:** Dependency giữa các job.  
+**Q:** OIDC dùng gì? **A:** Cấp cloud credential ngắn hạn theo trust policy.  
+**Q:** Artifact khác cache? **A:** Artifact là output cần trace; cache chỉ tăng tốc và có thể bỏ.  
+**Q:** Environment protection? **A:** Approval/rule bảo vệ deployment nhạy cảm.
 
-## 15. Common Mistakes 🟠
-- Bỏ qua việc set Resource Requests & Limits.
-- Hardcode secret vào file cấu hình thay vì dùng Secret Management.
-- Không cấu hình liveness/readiness probes.
+# 23. 🧠 PHÂN BIỆT “PHẢI NHỚ” VÀ “PHẢI HIỂU”
 
-## 16. Interview Knowledge Check 🔴
-1. [Cơ bản] Github Actions là gì và giải quyết bài toán nào?
-2. [Cơ bản] Các thành phần chính của kiến trúc?
-3. [Bản chất] Làm sao Github Actions đảm bảo tính HA?
-4. [Bản chất] Mô tả lifecycle của một request đi qua Github Actions?
-5. [Troubleshooting] Khi node bị down, Github Actions xử lý như thế nào?
-*(Tổng cộng 30 câu hỏi: 10 cơ bản, 10 hiểu bản chất, 10 troubleshooting)*
+🔴 Hiểu workflow/runner/cloud trust/deploy boundary.  
+🟠 Nắm event, `needs`, permissions, artifact, environment.  
+🟡 Biết reusable workflow, provenance và runner hardening.
 
-## 17. Câu hỏi phỏng vấn 🔴
-- Hãy kể một lần bạn gặp sự cố production lớn nhất với Github Actions và cách bạn giải quyết?
-- Làm sao để thiết kế Github Actions cho hệ thống có hàng triệu request mỗi ngày?
+# 24. 🎯 LIÊN HỆ VỚI JD
 
-## 18. Đáp án phỏng vấn 🔴
-- **Trả lời ngắn (30s)**: Tập trung vào định nghĩa và keyword cốt lõi.
-- **Trả lời sâu (1-2m)**: Giải thích cách hoạt động bên dưới (under the hood), cách các component giao tiếp.
-- **Bẫy (Traps)**: Chú ý các giới hạn (limits) của hệ thống hoặc đánh đổi (trade-offs) giữa Performance và Consistency.
+GitHub Actions phục vụ CI/CD, image build, IaC, Kubernetes deployment và automation trong DevOps.
 
-## 19. Cách trả lời như Engineer 🔴
-- Bắt đầu với ngữ cảnh, phân tích trade-off (Pros/Cons).
-- Luôn liên kết với Metric, Log, và Impact đến business.
+# 25. 📌 LIÊN HỆ VỚI CV
 
-## 20. Follow-up Question Tree 🟠
-- Trả lời đúng về kiến trúc -> Hỏi sâu về cách đảm bảo bảo mật.
-- Trả lời đúng về Troubleshooting -> Hỏi về cách tự động hóa (Self-healing, Auto-scaling).
+Ghi rõ workflow thật, runner, OIDC, artifact, environment, deployment và incident; không chỉ ghi “GitHub Actions”.
 
-## 21. Checklist sau khi học 🟠
-- [ ] Vẽ lại được kiến trúc trên giấy.
-- [ ] Liệt kê được 5 lệnh troubleshooting quan trọng nhất.
-- [ ] Giải thích được 3 production incidents.
+# 26. 🏢 ENTERPRISE / DATA CENTER SCENARIO
 
-## 22. Flashcards (20+ Q&A) 🟠
-- **Q**: Port mặc định của Github Actions là gì? -> **A**: ...
-- **Q**: Lệnh xem log của Github Actions? -> **A**: ...
+PR policy, branch protection, reusable workflow chuẩn hóa, private runner cho network nội bộ, OIDC cloud, private registry, protected Production environment và audit.
+
+# 27. 🧪 HANDS-ON LAB
+
+Tạo PR test; matrix runtime; build/push digest; deploy staging; OIDC AWS test; protected Production approval; cố ý fail action/rollout để debug và rollback.
+
+# 28. 🔍 TROUBLESHOOTING DECISION TREE
+
+Event → condition/needs → runner → action/input → permission/OIDC → artifact → deploy → health/rollback.
+
+# 29. 🧾 PRODUCTION READINESS REVIEW
+
+Review workflow permissions, action pinning, OIDC trust, runner isolation, secret masking, environment approval, artifact retention, concurrency, audit và rollback.
+
+# 30. 🧭 FINAL SELF-ASSESSMENT
+
+| Skill | Beginner | Intermediate | Advanced |
+|---|---:|---:|---:|
+| Workflow | ☐ | ☐ | ☐ |
+| Runner/security | ☐ | ☐ | ☐ |
+| OIDC/artifact | ☐ | ☐ | ☐ |
+| Deployment | ☐ | ☐ | ☐ |
+| Incident | ☐ | ☐ | ☐ |
+
+# 31. 🔥 INTERVIEW PRIORITY
+
+Ưu tiên: workflow event, `needs`, runner, permissions, action pinning, OIDC, environment, artifact, deploy và supply-chain incident.
+
+# 32. 📋 FINAL CHECKLIST
+
+- [ ] Viết workflow có event/rules/dependency rõ.
+- [ ] Runner và action an toàn.
+- [ ] OIDC/permissions tối thiểu.
+- [ ] Artifact traceable và deploy protected.
+- [ ] Có health verification, rollback và audit.
+
+---
+END OF FILE

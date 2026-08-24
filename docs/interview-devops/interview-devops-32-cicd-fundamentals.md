@@ -1,139 +1,169 @@
-# Interview DevOps - Cicd Fundamentals
+# [32] CI/CD PIPELINE FUNDAMENTALS
 
-## 1. Mục tiêu học 🔴
-Nắm vững kiến thức nền tảng và nâng cao về Cicd Fundamentals, hiểu rõ cách công nghệ này vận hành trong môi trường Enterprise, đặc biệt tập trung vào bối cảnh hệ thống Logistics và quản lý hệ thống Enterprise tại Enterprise System. Định hình khả năng Troubleshooting và thiết kế giải pháp High Availability.
+> **Phase:** 3 — DevOps Core
+> **Priority:** 🔴 MUST KNOW
+> **JD Weight:** DevOps Engineer — 40%
+> **Interview Priority:** 🔴 Very High
+> **Prerequisite:** Git, Linux, Docker, registry, Kubernetes/AWS basics
 
-## 2. Kiến thức nền cần biết 🟠
-- Networking (TCP/IP, Routing, Load Balancing).
-- Hệ điều hành Linux (Namespaces, Cgroups cho container).
-- Storage (Block, File, Object storage).
-- Kiến thức về System Design và Distributed Systems.
+# 1. 🎯 MỤC TIÊU HỌC
 
-## 3. Tổng quan (Enterprise & Tan Cang Sai Gon Enterprise Context) 🔴
-Tại Enterprise System, hệ thống Cicd Fundamentals đóng vai trò cốt lõi trong quá trình chuyển đổi số (Digital Transformation), giúp hiện đại hóa các ứng dụng quản lý doanh nghiệp lớn, tối ưu hóa quy trình Logistics, đảm bảo tính liên tục (High Availability), và khả năng scale-out linh hoạt trong môi trường Multi-DC và Cloud (AWS/On-premise).
+Thiết kế pipeline từ commit đến Production; phân biệt CI/CD/GitOps; quản lý artifact, runner, secret, test, approval, rollback, quality gate và DORA metrics.
 
-## 4. Kiến trúc / Cách hoạt động 🔴
-```text
-+---------------------------------------------------+
-|                  Cicd Fundamentals Control Plane            |
-|  [ API Server / Controller / Scheduler / etcd ]   |
-+-------------------------+-------------------------+
-                          |
-             +------------+------------+
-             |                         |
-+------------v-----------+ +-----------v------------+
-|      Worker Node 1     | |      Worker Node 2     |
-| [ Runtime / Proxy ]    | | [ Runtime / Proxy ]    |
-+------------------------+ +------------------------+
-```
+# 2. 🧠 KIẾN THỨC NỀN
 
-## 5. Các thành phần quan trọng 🔴
-- **Control Components**: Điều phối, quản lý state và config của hệ thống.
-- **Worker Components**: Nơi thực thi các workload, quản lý resource (CPU, RAM).
-- **Network/Storage Plugins**: Mở rộng khả năng giao tiếp và lưu trữ lâu dài.
+Git commit/tag, semantic version, image/package registry, test pyramid, environment separation, IAM/OIDC, Kubernetes rollout và change management.
 
-## 6. Các concept quan trọng 🔴
-- **Cơ bản**: Cách khởi tạo, cấu hình mặc định, lifecycle quản lý resource.
-- **Trung cấp**: Tích hợp CI/CD, config management (Helm/Kustomize), self-healing.
-- **Nâng cao**: Custom Controllers, Operator pattern, Multi-cluster management.
+# 3. 📚 TỔNG QUAN
 
-## 7. Ví dụ thực tế 🟠
-- **Dev**: Sử dụng local environment (Minikube, Docker Desktop) để test và debug.
-- **Prod**: Cấu hình High Availability (tối thiểu 3 master nodes), tách biệt mạng và bảo mật chặt chẽ.
-- **Enterprise/Multi-DC**: Triển khai Active-Active hoặc Active-Standby giữa các DC (Vd: Primary DC - DC 2).
+CI tự động build/test mỗi thay đổi. CD đưa artifact đã kiểm chứng tới environment. Nên build một lần rồi promote cùng image/package digest; không build lại khác nhau cho staging và Production.
 
-## 8. Command / Tool cần biết 🔴
-- Khởi tạo và quản lý: `command create/apply`
-- Giám sát trạng thái: `command get/describe`
-- Xử lý sự cố: `command logs / command exec`
+# 4. 🏗️ KIẾN TRÚC / CÁCH HOẠT ĐỘNG
 
-## 9. Log 🔴
-- **Vị trí**: System logs thường nằm ở `/var/log/` hoặc xem qua `journalctl -u cicd fundamentals`. Application logs được stream ra `stdout/stderr`.
-- **Phân tích**: Sử dụng ELK/EFK stack hoặc Datadog để thu thập, phân tích và correlation log từ nhiều nguồn để tìm Root Cause.
+`Commit/PR → lint/unit → build → scan → publish artifact → integration/e2e → approval → deploy/canary → health verification → promote/rollback`.
 
-## 10. Metric 🔴
-- **Resource Metrics**: CPU, Memory, Disk I/O, Network Throughput.
-- **Application Metrics**: Request rate, Error rate, Latency.
-- **Tooling**: Prometheus + Grafana, cAdvisor.
+# 5. 🧩 CÁC THÀNH PHẦN QUAN TRỌNG
 
-## 11. Configuration 🔴
-```yaml
-# Mẫu cấu hình tiêu chuẩn cho Cicd Fundamentals trong môi trường Prod
-apiVersion: v1
-kind: Configuration
-metadata:
-  name: Cicd Fundamentals-prod-config
-spec:
-  replicas: 3
-  resources:
-    requests:
-      memory: "256Mi"
-      cpu: "500m"
-    limits:
-      memory: "512Mi"
-      cpu: "1"
-```
+Trigger, runner, build environment, cache, test service, registry, scanner, OIDC/secret, deploy controller, approval, notification và audit.
 
-## 12. Troubleshooting Methodology 🔴
-1. **Identify the Issue**: Thu thập triệu chứng (Alerts, User reports).
-2. **Isolate**: Xác định phạm vi ảnh hưởng (Network, Storage, hay Compute?).
-3. **Analyze**: Kiểm tra Log, Metric, và Configuration.
-4. **Mitigate**: Áp dụng biện pháp khắc phục tạm thời để phục hồi dịch vụ (Restart, Rollback).
-5. **Fix & RCA**: Sửa lỗi gốc rễ và lập báo cáo RCA (Root Cause Analysis).
+# 6. 📖 CÁC CONCEPT QUAN TRỌNG
 
-## 13. Production Incident 🔴
-### Incident 1: Resource Exhaustion (OOM)
-- **Symptoms**: Dịch vụ liên tục restart, cảnh báo downtime.
-- **Impact**: Gián đoạn xử lý đơn hàng trong 10 phút.
-- **First steps**: Xem alert từ Grafana.
-- **Commands**: `dmesg -T | grep -i oom` hoặc lệnh get events.
-- **Root Cause**: Memory leak trong mã nguồn ứng dụng, limit memory quá thấp.
-- **Mitigation**: Tạm thời tăng memory limit, restart service.
-- **Fix**: Dev fix memory leak, tối ưu hóa resource requests/limits.
-- **Verification**: Theo dõi memory metric trong 24h.
-- **RCA**: Báo cáo nguyên nhân và hướng khắc phục.
-- **Prevention**: Set alert threshold 80% RAM, review code kĩ hơn.
+**Cơ bản:** stage/job/step, artifact khác log, variable khác secret, commit SHA truy được tới digest.  
+**Trung cấp:** parallel/matrix, cache không chứa secret, protected branch/environment, promotion và rollback.  
+**Nâng cao:** progressive delivery, SBOM, provenance, policy-as-code, ephemeral runner và separation of duties.
 
-*(4 kịch bản Incident khác: Network Partition, Storage Full, Authentication Failure, Misconfiguration.)*
+# 7. 🌍 VÍ DỤ THỰC TẾ
 
-## 14. So sánh 🟠
-- So sánh Cicd Fundamentals với các công nghệ tương đương trên thị trường (Ví dụ: K8s vs Docker Swarm, GitLab CI vs GitHub Actions).
+PR chạy lint/unit/security; merge main build image digest và publish ECR; staging tự deploy; smoke/e2e pass mới approval Production; canary rồi rollback nếu SLO/error budget xấu.
 
-## 15. Common Mistakes 🟠
-- Bỏ qua việc set Resource Requests & Limits.
-- Hardcode secret vào file cấu hình thay vì dùng Secret Management.
-- Không cấu hình liveness/readiness probes.
+# 8. 🛠️ COMMAND / TOOL CẦN BIẾT
 
-## 16. Interview Knowledge Check 🔴
-1. [Cơ bản] Cicd Fundamentals là gì và giải quyết bài toán nào?
-2. [Cơ bản] Các thành phần chính của kiến trúc?
-3. [Bản chất] Làm sao Cicd Fundamentals đảm bảo tính HA?
-4. [Bản chất] Mô tả lifecycle của một request đi qua Cicd Fundamentals?
-5. [Troubleshooting] Khi node bị down, Cicd Fundamentals xử lý như thế nào?
-*(Tổng cộng 30 câu hỏi: 10 cơ bản, 10 hiểu bản chất, 10 troubleshooting)*
+Các lệnh quan trọng: `git diff --check`, `git rev-parse HEAD`, `docker build`, `docker inspect`, `docker push @digest`, `trivy image`, `helm template`, `kubectl rollout status` và `kubectl rollout undo`. Mỗi lệnh phải gắn với một evidence cụ thể.
 
-## 17. Câu hỏi phỏng vấn 🔴
-- Hãy kể một lần bạn gặp sự cố production lớn nhất với Cicd Fundamentals và cách bạn giải quyết?
-- Làm sao để thiết kế Cicd Fundamentals cho hệ thống có hàng triệu request mỗi ngày?
+# 9. 📝 LOG
 
-## 18. Đáp án phỏng vấn 🔴
-- **Trả lời ngắn (30s)**: Tập trung vào định nghĩa và keyword cốt lõi.
-- **Trả lời sâu (1-2m)**: Giải thích cách hoạt động bên dưới (under the hood), cách các component giao tiếp.
-- **Bẫy (Traps)**: Chú ý các giới hạn (limits) của hệ thống hoặc đánh đổi (trade-offs) giữa Performance và Consistency.
+Giữ job log, commit SHA, runner ID, image/package digest, test/scan report, approval actor, deployment revision và rollback reason. Mask secret nhưng giữ audit evidence.
 
-## 19. Cách trả lời như Engineer 🔴
-- Bắt đầu với ngữ cảnh, phân tích trade-off (Pros/Cons).
-- Luôn liên kết với Metric, Log, và Impact đến business.
+# 10. 📊 METRIC
 
-## 20. Follow-up Question Tree 🟠
-- Trả lời đúng về kiến trúc -> Hỏi sâu về cách đảm bảo bảo mật.
-- Trả lời đúng về Troubleshooting -> Hỏi về cách tự động hóa (Self-healing, Auto-scaling).
+Deployment frequency, lead time, change failure rate, MTTR, queue/job duration, flaky test rate, cache hit, deployment latency và rollback count.
 
-## 21. Checklist sau khi học 🟠
-- [ ] Vẽ lại được kiến trúc trên giấy.
-- [ ] Liệt kê được 5 lệnh troubleshooting quan trọng nhất.
-- [ ] Giải thích được 3 production incidents.
+# 11. ⚙️ CONFIGURATION
 
-## 22. Flashcards (20+ Q&A) 🟠
-- **Q**: Port mặc định của Cicd Fundamentals là gì? -> **A**: ...
-- **Q**: Lệnh xem log của Cicd Fundamentals? -> **A**: ...
+Pipeline phải tách build/test/deploy permission, pin base image/action, có timeout/retry giới hạn, concurrency, protected environment, approval và artifact retention.
+
+# 12. 🔧 TROUBLESHOOTING
+
+Pipeline fail → stage/job/exit code → runner/dependency/cache → test/scan → registry/auth → manifest/RBAC/admission → rollout/probe/config → health/rollback.
+
+# 13. 🚨 PRODUCTION INCIDENT
+
+1. **Artifact sai digest:** đối chiếu commit/registry/deployed digest, dừng promotion và rollback artifact đúng.  
+2. **Runner bị compromise:** disable runner/token, rotate credential, kiểm tra audit/artifact và chuyển ephemeral runner.  
+3. **Pipeline xanh nhưng Production lỗi:** so sánh env/config/secret/dependency, rollback rồi bổ sung parity/smoke test.  
+4. **Queue quá lâu:** kiểm tra runner capacity/concurrency/quota/cache, không tăng timeout vô hạn.  
+5. **Rollback không cứu data:** tách code rollback khỏi schema/data migration, dùng backward-compatible migration hoặc PITR.
+
+# 14. ⚖️ SO SÁNH & TRADE-OFF
+
+| Lựa chọn | Mạnh | Trade-off |
+|---|---|---|
+| Trunk-based | feedback nhanh | cần test/feature flag |
+| GitFlow | release branch rõ | merge chậm |
+| Build một lần promote | traceability | cần config separation |
+| Long-lived runner | dễ setup | contamination/security |
+| Ephemeral runner | isolation | startup/cost |
+
+# 15. ❌ COMMON MISTAKES
+
+Dùng `latest`; build lại khi promote; Secret trong log/YAML; pipeline có cluster-admin; bỏ qua flaky test; không health verify/rollback; quên data migration.
+
+# 16. ✅ INTERVIEW KNOWLEDGE CHECK
+
+CI khác CD thế nào? Vì sao build một lần promote? Digest dùng làm gì? Runner cần cô lập ra sao? OIDC tốt hơn long-lived key ở đâu? Rollback code khác data thế nào? DORA metrics gồm gì?
+
+# 17. 🎤 CÂU HỎI PHỎNG VẤN
+
+Thiết kế pipeline microservice; deploy không downtime; xử lý flaky test/scan; bảo mật runner; canary fail; CI/CD khác GitOps; rollback migration.
+
+# 18. 🗣️ ĐÁP ÁN PHỎNG VẤN
+
+Em build artifact immutable từ commit, test/scan/quality gate, publish digest, deploy staging rồi promote cùng digest qua approval/canary. Credential dùng OIDC ngắn hạn, runner hạn quyền. Khi lỗi, rollback release và kiểm tra riêng schema/data migration, sau đó verify SLO.
+
+# 19. 🧑‍💻 CÁCH TRẢ LỜI NHƯ ENGINEER
+
+Nêu trigger, evidence, gate, ownership, security, health verification và rollback; pipeline xanh không đồng nghĩa runtime khỏe.
+
+# 20. 🌳 FOLLOW-UP QUESTION TREE
+
+Pipeline xanh nhưng deploy lỗi → artifact/digest → config/secret → RBAC/admission → Pod/probe/dependency → rollback/data migration.
+
+# 21. 📋 CHECKLIST SAU KHI HỌC
+
+- [ ] Thiết kế build-test-scan-publish-deploy.
+- [ ] Truy commit tới artifact/deployment.
+- [ ] Quản lý runner/secret/approval.
+- [ ] Có canary, verification và rollback.
+- [ ] Đo DORA/failure rate.
+
+# 22. 🃏 FLASHCARDS
+
+**Q:** Artifact immutable? **A:** Không đổi sau publish, nhận diện bằng digest.  
+**Q:** CI? **A:** Tích hợp code và kiểm tra tự động.  
+**Q:** CD? **A:** Đưa artifact đã kiểm chứng tới environment.  
+**Q:** OIDC? **A:** Credential ngắn hạn theo workflow.
+
+# 23. 🧠 PHÂN BIỆT “PHẢI NHỚ” VÀ “PHẢI HIỂU”
+
+🔴 Hiểu artifact flow, gate, promotion, rollback/runtime verification.  
+🟠 Nắm Git/registry/runner/scan/deploy.  
+🟡 Biết SLSA, SBOM, DORA và progressive delivery.
+
+# 24. 🎯 LIÊN HỆ VỚI JD
+
+CI/CD là năng lực DevOps cốt lõi: tự động delivery nhưng vẫn bảo đảm security, reliability, audit và rollback.
+
+# 25. 📌 LIÊN HỆ VỚI CV
+
+Nêu pipeline stages, runner, registry, deploy target, approval, rollback và metric thật; không chỉ ghi “biết CI/CD”.
+
+# 26. 🏢 ENTERPRISE / DATA CENTER SCENARIO
+
+Protected branch, isolated runner, private registry, OIDC, SBOM/scan, staging gate, canary Production, audit và change approval.
+
+# 27. 🧪 HANDS-ON LAB
+
+Tạo pipeline lint/test/build image; push digest; deploy staging; cố ý probe fail để rollback; thêm scan/SBOM/approval và promotion.
+
+# 28. 🔍 TROUBLESHOOTING DECISION TREE
+
+Trigger → runner → dependency/cache → test/scan → registry/auth → manifest/RBAC → rollout/probe → SLO/rollback.
+
+# 29. 🧾 PRODUCTION READINESS REVIEW
+
+Review permission separation, OIDC, runner isolation, immutable artifact, scan, approval, environment protection, retry, observability, rollback và migration.
+
+# 30. 🧭 FINAL SELF-ASSESSMENT
+
+| Skill | Beginner | Intermediate | Advanced |
+|---|---:|---:|---:|
+| Pipeline | ☐ | ☐ | ☐ |
+| Artifact/security | ☐ | ☐ | ☐ |
+| Deploy/rollback | ☐ | ☐ | ☐ |
+| Incident | ☐ | ☐ | ☐ |
+| Interview | ☐ | ☐ | ☐ |
+
+# 31. 🔥 INTERVIEW PRIORITY
+
+Immutable artifact, runner security, quality gate, promotion, OIDC, canary, rollback, DORA và data migration.
+
+# 32. 📋 FINAL CHECKLIST
+
+- [ ] Pipeline có gate và audit.
+- [ ] Build một lần, promote bằng digest.
+- [ ] Credential/runner cô lập.
+- [ ] Deploy có health verification/rollback.
+- [ ] Xử lý được pipeline và Production incident.
+
+---
+END OF FILE

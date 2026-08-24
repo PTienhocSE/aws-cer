@@ -1,101 +1,107 @@
-# 18. SolarWinds
+# SolarWinds — Cẩm nang phỏng vấn
 
-## 1. Why This Matters
-Doanh nghiệp Enterprise sở hữu một hệ thống hybrid khổng lồ với các thiết bị vật lý truyền thống (Server Dell, HPE, Switch Cisco, SAN Storage Hitachi) và các ứng dụng Enterprise cũ (Windows Server, IIS, Exchange, Active Directory). SolarWinds là giải pháp giám sát thương mại (Commercial) hàng đầu cho môi trường IT truyền thống này. Việc một System/DevOps Engineer thành thạo cả nền tảng Modern Cloud (Prometheus/Grafana) và Traditional (SolarWinds) sẽ chứng tỏ sự toàn diện, đáp ứng hoàn hảo yêu cầu JD kết nối cũ-mới (App Modernization).
+# 1. Mục tiêu học
+polling, SNMP/WMI, nodes/interfaces, alerting, NCM/NPM và access security; liên hệ concept với vận hành, failure mode và quyết định production.
 
-## 2. Interview Priority
-> 🟡 MEDIUM
+# 2. Kiến thức nền cần có
+Linux, networking, storage, identity, scripting, observability và change management.
 
-## 3. CV Connection
-- **Bạn đã biết (từ CV):** Mạnh về Prometheus/Grafana (Cloud-native).
-- **Phỏng vấn có thể hỏi:** Nếu cty đang dùng SolarWinds cho Network/Storage vật lý, em làm quen và tích hợp thế nào? So sánh giám sát bằng SNMP (SolarWinds) và Pull Metrics (Prometheus).
-- **Khoảng trống cần bù đắp:** Kiến thức về SolarWinds Orion Platform, các module chính và giao thức SNMP, WMI.
+# 3. Tổng quan kiến trúc
+Mô tả control plane, data plane, state, dependency, traffic flow và failure domain của SolarWinds.
 
-## 4. Prerequisites
-- Kiến thức cơ bản về Networking (Switch, Router, SNMP).
-- Quản trị Windows Server (WMI).
+# 4. Cách hoạt động
+Mô tả lifecycle từ request/config đến execution, persistence, response, audit và metric.
 
-## 5. Core Concepts
+# 5. Thành phần và failure mode
+SolarWinds có thể gặp resource exhaustion, network partition, stale state, permission error, disk failure hoặc bad change; xác định impact của từng lỗi.
 
-### 5.1 SolarWinds Orion Platform
+# 6. Concepts quan trọng
+Availability, durability, consistency, latency, throughput, capacity, timeout, retry, idempotency và least privilege.
 
-#### Definition
-Nền tảng tập trung (Suite) bao gồm nhiều module khác nhau do SolarWinds cung cấp để giám sát toàn diện mạng, máy chủ, ảo hóa, lưu trữ và cơ sở dữ liệu.
+# 7. Ví dụ thực tế
+Triển khai theo môi trường, version-control config, baseline metric, health check, backup và rollback.
 
-#### Why It Exists
-Cung cấp giải pháp All-in-One "out-of-the-box" cho doanh nghiệp, cài đặt là chạy, có sẵn hàng ngàn template chuẩn (không phải cấu hình yaml mệt mỏi như mã nguồn mở) cùng tính năng support enterprise (có người đền/hỗ trợ khi lỗi).
+# 8. Command / Tool cần biết
+SNMP, WMI, polling logs, NPM/NCM
 
-### 5.2 Key Modules
+# 9. Log và cách đọc
+Correlate timestamp, host/component, request ID, version và user. Giữ evidence trước khi restart hoặc xóa state.
 
-1. **NPM (Network Performance Monitor):**
-   - Chuyên giám sát phần cứng mạng (Router, Switch, Firewall).
-   - Sử dụng giao thức **SNMP** (Simple Network Management Protocol) và ICMP.
-   - Tính năng nổi bật: NetPath (vẽ đường đi từ source đến destination qua từng hop), vẽ Topology map tự động.
+# 10. Metrics
+CPU, memory, disk/inode, network, latency, error rate, queue/connection, replication/lag và SLO.
 
-2. **SAM (Server & Application Monitor):**
-   - Giám sát trạng thái máy chủ vật lý và ứng dụng (IIS, Exchange, Active Directory, SQL Server).
-   - Sử dụng **WMI** (Windows Management Instrumentation) cho Windows hoặc SNMP cho Linux.
-   - Có AppInsight (bộ dashboard chi tiết sâu vào cấu trúc bên trong của AD hoặc SQL).
+# 11. Configuration mẫu
+Config phải review, có timeout/limit, secret ngoài source, permission tối thiểu, health check và rollback.
 
-3. **VMAN (Virtualization Manager):**
-   - Gắn vào vCenter (VMware) hoặc Hyper-V để theo dõi tình trạng ảo hóa (VM sprawl, CPU ready time, storage IOPS).
+# 12. Troubleshooting methodology
+Xác định scope; kiểm tra first bad timestamp và recent change; thu logs/metrics; lập hypothesis; mitigation reversible; verify; RCA.
 
-4. **SRM (Storage Resource Monitor):**
-   - Cắm thẳng vào các bộ SAN Storage (Dell-EMC, Hitachi) qua API hoặc SMI-S để xem LUNs, phân bổ dung lượng RAID, IOPS vật lý.
+# 13. Năm production incidents
+1. Service unavailable: kiểm tra process/listener/health check/dependency.
+2. Latency tăng: kiểm tra saturation, queue, storage và network.
+3. Disk đầy: tìm consumer, cleanup theo policy và mở rộng an toàn.
+4. Permission/TLS lỗi: kiểm tra identity, expiry, chain và recent rotation.
+5. Replication/cluster lỗi: xác định quorum, lag, fencing và failover plan.
 
-### 5.3 Giám sát qua SNMP & WMI
+# 14. So sánh
+Managed giảm vận hành control plane nhưng giảm tùy biến; active-active tăng availability nhưng khó consistency; cache tăng latency tốt nhưng cần invalidation; snapshot nhanh nhưng không thay thế backup.
 
-- **SNMP:** Giao thức chuẩn mạng. Các thiết bị mạng đóng vai trò SNMP Agent, chứa dữ liệu dạng OID (Object Identifiers). SolarWinds đóng vai trò SNMP Manager để đi GET dữ liệu. Gồm 3 phiên bản: v1, v2c (cộng đồng/plain text) và v3 (Mã hóa, khuyên dùng).
-- **WMI:** Giao thức độc quyền của Microsoft để lấy thông số (CPU, RAM, Event Logs, Services) trực tiếp từ hệ điều hành Windows mà không cần cài thêm Agent.
+# 15. Common mistakes
+Không có baseline; alert quá rộng; retry vô hạn; quyền admin; backup chưa restore test; sửa nhiều biến cùng lúc; bỏ qua change record.
 
-## 6. Architecture so với Prometheus
+# 16. Knowledge check
+Giải thích flow, failure domain, metric quan trọng, cách khoanh vùng và tiêu chí rollback của SolarWinds.
 
-| Đặc điểm | SolarWinds | Prometheus |
-|---|---|---|
-| **Đích nhắm** | Traditional IT, Hardware, Windows, Network | Cloud-native, K8s, Microservices, Linux |
-| **Giao thức thu thập**| SNMP, WMI, ICMP (Ping), API, RPC | HTTP (Pull method), /metrics endpoint |
-| **Cấu hình** | UI-driven, Next->Next->Finish, Templates | Code-driven (YAML, PromQL) |
-| **Chi phí** | Commercial, License tính theo Node/Interface | Open-source (Miễn phí) |
-| **Time-to-value**| Nhanh (Cài vào là có sẵn Dashboard đẹp) | Chậm hơn (Phải build dashboard, set rules) |
+# 17. Câu hỏi phỏng vấn
+Thiết kế HA; debug outage; bảo mật access; capacity planning; backup/restore; patch/upgrade; monitoring và RCA.
 
-## 7. Common Interview Questions
+# 18. Đáp án phỏng vấn mẫu
+Nêu assumption, scope, evidence, hypothesis, mitigation, verification và trade-off; tách rõ kinh nghiệm production và lab.
 
-### Q1: SolarWinds lấy dữ liệu từ một con Switch Cisco bằng cách nào?
-**Model Answer:**
-SolarWinds NPM sử dụng giao thức SNMP để poll thông tin định kỳ. Em cần cấu hình SNMP Community String (đối với v2c) hoặc Username/Password/Mã hóa (với v3) trên Switch Cisco. Sau đó trên SolarWinds Add Node bằng IP của switch và cung cấp thông tin xác thực SNMP. Nó sẽ tự lấy được CPU, RAM, băng thông các port (Interfaces) và trạng thái up/down.
+# 19. Follow-up question tree
+Lỗi đơn lẻ hay toàn hệ thống? Có recent change? Component nào chung? Resource/permission/dependency nào bất thường? Action nào an toàn để giảm impact?
 
-### Q2: Để giám sát Domain Controller (Active Directory) toàn diện, em dùng công cụ gì của SolarWinds?
-**Model Answer:**
-Em dùng module SAM (Server & Application Monitor) tích hợp tính năng AppInsight for Active Directory. Nó dùng giao thức WMI để kết nối vào Windows Server và trích xuất chuyên sâu về: Trạng thái đồng bộ hóa (Replication status) giữa các DC, lỗi xác thực, kích thước database NTDS.dit, và trạng thái dịch vụ DNS, thay vì chỉ giám sát CPU/RAM đơn thuần.
+# 20. Checklist sau khi học
+- [ ] Vẽ architecture và dependency.
+- [ ] Chạy được command cơ bản.
+- [ ] Viết runbook incident và rollback.
+- [ ] Có backup/restore hoặc recovery test.
 
-### Q3: Ưu nhược điểm giữa việc dùng SolarWinds và Prometheus/Grafana?
-**Model Answer:**
-- **SolarWinds:** Ưu điểm là giám sát phần cứng, mạng thiết bị vật lý cực tốt, tích hợp sẵn, phù hợp quản lý hạ tầng kế thừa (Legacy). Nhược điểm là License đắt, kiến trúc nguyên khối nặng nề, không linh hoạt trong môi trường CI/CD và K8s.
-- **Prometheus:** Ưu điểm là nhẹ, scale mạnh cho Microservices, miễn phí, hỗ trợ tốt GitOps. Nhược điểm là khó dùng để giám sát chuyên sâu Switch, SAN Storage cũ vì cấu hình MIBs/SNMP exporter khá phức tạp.
-=> Ở Enterprise, em đề xuất dùng kết hợp: SolarWinds cho Infrastructure tầng dưới, Prometheus cho Platform/App layer ở trên.
+# 21. Flashcards
+SLI là phép đo; SLO là mục tiêu; RTO là thời gian phục hồi; RPO là dữ liệu mất; p99 là tail latency; quorum tránh split-brain; health check quyết định failover; least privilege giảm blast radius; idempotency an toàn khi retry; RCA cần prevention.
 
-### Q4: Môi trường Hybrid cần gom chung cảnh báo từ SolarWinds và Prometheus, em làm thế nào?
-**Model Answer:**
-Em có thể setup Webhook. SolarWinds có thể gửi Alert ra ngoài qua HTTP API, còn Prometheus Alertmanager cũng nhận và đẩy đi được. Hoặc tốt nhất là dùng công cụ gom nhóm Alert thứ 3 (như PagerDuty, Opsgenie, hoặc đẩy vào kênh Microsoft Teams/Slack chung) để nhóm vận hành có một kênh duy nhất theo dõi tình trạng sự cố (Single Pane of Glass).
+# 22. Phải hiểu và phải nhớ
+Hiểu causal chain và trade-off; nhớ lifecycle, trạng thái, command, log, metric và escalation.
 
-## 8. Scenario-Based Questions
+# 23. Phân biệt “phải nhớ” và “phải hiểu”
+Nhớ cú pháp không đủ; phải hiểu tác động của workload, baseline, failure domain và dependency.
 
-### Scenario 1: Troubleshooting Ứng dụng IIS trên Windows
-**Situation:** Website chạy trên IIS Server Windows bị chậm.
-**How to approach:** Dùng SolarWinds SAM.
-**Model Answer:**
-Em sẽ kiểm tra SolarWinds SAM để xem các chỉ số WMI của server đó. Cụ thể kiểm tra "AppInsight for IIS" để xem các Application Pool nào đang ăn CPU cao, số lượng connection bị rớt, và bộ nhớ được cấp phát. Nếu hạ tầng ảo hóa bên dưới chậm, em sẽ mở VMAN xem CPU Ready time của máy ảo đó trên VMware.
+# 24. Liên hệ với JD
+Map vào system administration, platform operations, cloud, monitoring, security, incident và change management.
 
-## 9. Key Takeaways
-- SolarWinds là "vua" trong mảng giám sát thiết bị vật lý và Windows truyền thống.
-- Sử dụng SNMP (Mạng/Linux) và WMI (Windows).
-- Cần biết cách đối chiếu và phối hợp giữa SolarWinds (hạ tầng cũ) và Prometheus (hạ tầng K8s mới) cho các bài toán App Modernization.
+# 25. Liên hệ với CV
+Nêu rõ quy mô, vai trò, metric trước/sau, công cụ và bài học; không biến lab thành production claim.
 
-## 10. Quick Reference
-| Thuật ngữ | Ý nghĩa |
-|---|---|
-| NPM | Mạng (Router/Switch/Băng thông) |
-| SAM | Ứng dụng & Server (OS, IIS, SQL) |
-| VMAN | Ảo hóa (VMware/Hyper-V) |
-| SNMP | Giao thức giám sát mạng chuẩn |
-| WMI | Giao thức quản lý của Windows |
+# 26. Enterprise / data center scenario
+Thiết kế HA theo failure domain, access/audit tập trung, backup immutable, DR site, break-glass và vendor escalation.
+
+# 27. Hands-on lab
+Tạo workload lab, ghi baseline, gây lỗi có kiểm soát, thu evidence, khắc phục, kiểm tra recovery và viết RCA.
+
+# 28. Troubleshooting decision tree
+Alert → scope → process/config → network/dependency → resource/storage → state/replication → mitigation → verify → prevention.
+
+# 29. Production readiness review
+SLO, dashboard, alert, capacity, security, ownership, runbook, backup/restore, rollback, patch plan và game day.
+
+# 30. Self-assessment
+Beginner: giải thích concept. Intermediate: vận hành và debug. Advanced: thiết kế HA/DR, cost, security và migration.
+
+# 31. Interview priority
+Architecture → lifecycle → command/evidence → failure mode → mitigation → trade-off → security/DR.
+
+# 32. Final checklist
+- [ ] Trình bày được cơ chế đúng chủ đề SolarWinds.
+- [ ] Debug được incident theo evidence.
+- [ ] Nêu được HA, backup, security, rollback và prevention.
+

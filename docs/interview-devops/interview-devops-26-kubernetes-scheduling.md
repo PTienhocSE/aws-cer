@@ -1,139 +1,274 @@
-# Interview DevOps - Kubernetes Scheduling
+# [26] KUBERNETES SCHEDULING & PLACEMENT
 
-## 1. Mục tiêu học 🔴
-Nắm vững kiến thức nền tảng và nâng cao về Kubernetes Scheduling, hiểu rõ cách công nghệ này vận hành trong môi trường Enterprise, đặc biệt tập trung vào bối cảnh hệ thống Logistics và quản lý hệ thống Enterprise tại Enterprise System. Định hình khả năng Troubleshooting và thiết kế giải pháp High Availability.
+> **Phase:** 3 — DevOps Core
+> **Priority:** 🔴 MUST KNOW
+> **JD Weight:** DevOps Engineer — 40%
+> **Interview Priority:** 🔴 Very High
+> **Prerequisite:** Kubernetes fundamentals, Linux resources, zones/nodes, containers
 
-## 2. Kiến thức nền cần biết 🟠
-- Networking (TCP/IP, Routing, Load Balancing).
-- Hệ điều hành Linux (Namespaces, Cgroups cho container).
-- Storage (Block, File, Object storage).
-- Kiến thức về System Design và Distributed Systems.
+# 1. 🎯 MỤC TIÊU HỌC
 
-## 3. Tổng quan (Enterprise & Tan Cang Sai Gon Enterprise Context) 🔴
-Tại Enterprise System, hệ thống Kubernetes Scheduling đóng vai trò cốt lõi trong quá trình chuyển đổi số (Digital Transformation), giúp hiện đại hóa các ứng dụng quản lý doanh nghiệp lớn, tối ưu hóa quy trình Logistics, đảm bảo tính liên tục (High Availability), và khả năng scale-out linh hoạt trong môi trường Multi-DC và Cloud (AWS/On-premise).
+Hiểu scheduler chọn node thế nào; dùng requests/limits, taint/toleration, node/pod affinity, topology spread và priority; thiết kế placement HA; troubleshoot Pod `Pending`, preemption, resource pressure và topology conflict.
 
-## 4. Kiến trúc / Cách hoạt động 🔴
+# 2. 🧠 KIẾN THỨC NỀN
+
+Cần hiểu CPU/memory requests, cgroups, node labels/taints, zones, capacity/allocatable, Pod lifecycle và replica placement. Scheduler quyết định placement; kubelet mới thực thi container trên node.
+
+# 3. 📚 TỔNG QUAN
+
+Kubernetes scheduler tìm node phù hợp với constraints rồi ghi `spec.nodeName`. Nó không “tạo thêm tài nguyên”; nếu requests không vừa capacity hoặc constraint mâu thuẫn, Pod sẽ `Pending`.
+
+# 4. 🏗️ KIẾN TRÚC / CÁCH HOẠT ĐỘNG
+
 ```text
-+---------------------------------------------------+
-|                  Kubernetes Scheduling Control Plane            |
-|  [ API Server / Controller / Scheduler / etcd ]   |
-+-------------------------+-------------------------+
-                          |
-             +------------+------------+
-             |                         |
-+------------v-----------+ +-----------v------------+
-|      Worker Node 1     | |      Worker Node 2     |
-| [ Runtime / Proxy ]    | | [ Runtime / Proxy ]    |
-+------------------------+ +------------------------+
+Pod created -> scheduler queue -> filter feasible nodes
+            -> score candidates -> bind Pod -> kubelet starts Pod
 ```
 
-## 5. Các thành phần quan trọng 🔴
-- **Control Components**: Điều phối, quản lý state và config của hệ thống.
-- **Worker Components**: Nơi thực thi các workload, quản lý resource (CPU, RAM).
-- **Network/Storage Plugins**: Mở rộng khả năng giao tiếp và lưu trữ lâu dài.
+Filter loại node không phù hợp vì taint, resource, affinity, volume topology. Score xếp hạng node còn lại. Priority/preemption có thể evict Pod ưu tiên thấp nếu policy cho phép.
 
-## 6. Các concept quan trọng 🔴
-- **Cơ bản**: Cách khởi tạo, cấu hình mặc định, lifecycle quản lý resource.
-- **Trung cấp**: Tích hợp CI/CD, config management (Helm/Kustomize), self-healing.
-- **Nâng cao**: Custom Controllers, Operator pattern, Multi-cluster management.
+# 5. 🧩 CÁC THÀNH PHẦN QUAN TRỌNG
 
-## 7. Ví dụ thực tế 🟠
-- **Dev**: Sử dụng local environment (Minikube, Docker Desktop) để test và debug.
-- **Prod**: Cấu hình High Availability (tối thiểu 3 master nodes), tách biệt mạng và bảo mật chặt chẽ.
-- **Enterprise/Multi-DC**: Triển khai Active-Active hoặc Active-Standby giữa các DC (Vd: Primary DC - DC 2).
+| Thành phần | Tác dụng |
+|---|---|
+| requests/limits | scheduling và runtime resource boundary |
+| nodeSelector/affinity | chọn node theo label |
+| taint/toleration | giữ workload khỏi node hoặc cho phép ngoại lệ |
+| topology spread | phân tán replica theo zone/hostname |
+| PriorityClass | thứ tự quan trọng/preemption |
+| ResourceQuota | giới hạn namespace |
+| LimitRange | default/constraint resource |
 
-## 8. Command / Tool cần biết 🔴
-- Khởi tạo và quản lý: `command create/apply`
-- Giám sát trạng thái: `command get/describe`
-- Xử lý sự cố: `command logs / command exec`
+# 6. 📖 CÁC CONCEPT QUAN TRỌNG
 
-## 9. Log 🔴
-- **Vị trí**: System logs thường nằm ở `/var/log/` hoặc xem qua `journalctl -u kubernetes scheduling`. Application logs được stream ra `stdout/stderr`.
-- **Phân tích**: Sử dụng ELK/EFK stack hoặc Datadog để thu thập, phân tích và correlation log từ nhiều nguồn để tìm Root Cause.
+## 6.1. Cơ bản
 
-## 10. Metric 🔴
-- **Resource Metrics**: CPU, Memory, Disk I/O, Network Throughput.
-- **Application Metrics**: Request rate, Error rate, Latency.
-- **Tooling**: Prometheus + Grafana, cAdvisor.
+Scheduler xét `requests`, không xét giới hạn CPU/memory còn trống theo cảm tính. `nodeSelector` là điều kiện cứng. Taint `NoSchedule` chặn Pod mới nếu không có toleration.
 
-## 11. Configuration 🔴
+## 6.2. Trung cấp
+
+Preferred affinity là ưu tiên, required affinity là bắt buộc. `topologySpreadConstraints` giúp replica không dồn vào một zone/node. `podAntiAffinity` phù hợp chống đặt hai replica cùng host nhưng có thể làm Pod Pending nếu cluster nhỏ.
+
+## 6.3. Nâng cao
+
+Preemption có thể gây disruption; PriorityClass phải đi cùng PDB và capacity headroom. Với volume RWO, scheduler còn phải xét topology của volume; với GPU/hugepages cần resource name và device plugin.
+
+# 7. 🌍 VÍ DỤ THỰC TẾ
+
+Dev dùng nodeSelector để test. Production phân tán API replicas theo zone, dành node tainted cho workload đặc biệt, dùng requests sát thực tế và giữ headroom cho failover. Batch job dùng priority thấp hơn traffic production.
+
+# 8. 🛠️ COMMAND / TOOL CẦN BIẾT
+
+```bash
+kubectl describe pod <pod> -n <ns>
+kubectl get nodes --show-labels
+kubectl describe node <node>
+kubectl get priorityclass
+kubectl get resourcequota,limitrange -n <ns>
+kubectl get events -A --sort-by=.lastTimestamp
+kubectl top nodes
+kubectl logs -n kube-system deploy/kube-scheduler
+```
+
+# 9. 📝 LOG
+
+Đọc Pod events trước: `Insufficient cpu`, `untolerated taint`, affinity mismatch, topology conflict. Scheduler log cần dùng khi event không đủ; đối chiếu node labels, allocatable, request và recent node change.
+
+# 10. 📊 METRIC
+
+Theo dõi scheduler pending duration, scheduling attempts/unschedulable, node allocatable-vs-requested, CPU/memory pressure, preemption count, Pod startup latency và topology imbalance.
+
+# 11. ⚙️ CONFIGURATION
+
 ```yaml
-# Mẫu cấu hình tiêu chuẩn cho Kubernetes Scheduling trong môi trường Prod
-apiVersion: v1
-kind: Configuration
+apiVersion: apps/v1
+kind: Deployment
 metadata:
-  name: Kubernetes Scheduling-prod-config
+  name: api
 spec:
   replicas: 3
-  resources:
-    requests:
-      memory: "256Mi"
-      cpu: "500m"
-    limits:
-      memory: "512Mi"
-      cpu: "1"
+  template:
+    metadata:
+      labels: {app: api}
+    spec:
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: topology.kubernetes.io/zone
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels: {app: api}
+      containers:
+        - name: api
+          image: example/api:1.0
+          resources:
+            requests: {cpu: "250m", memory: "512Mi"}
+            limits: {cpu: "1", memory: "1Gi"}
 ```
 
-## 12. Troubleshooting Methodology 🔴
-1. **Identify the Issue**: Thu thập triệu chứng (Alerts, User reports).
-2. **Isolate**: Xác định phạm vi ảnh hưởng (Network, Storage, hay Compute?).
-3. **Analyze**: Kiểm tra Log, Metric, và Configuration.
-4. **Mitigate**: Áp dụng biện pháp khắc phục tạm thời để phục hồi dịch vụ (Restart, Rollback).
-5. **Fix & RCA**: Sửa lỗi gốc rễ và lập báo cáo RCA (Root Cause Analysis).
+# 12. 🔧 TROUBLESHOOTING
 
-## 13. Production Incident 🔴
-### Incident 1: Resource Exhaustion (OOM)
-- **Symptoms**: Dịch vụ liên tục restart, cảnh báo downtime.
-- **Impact**: Gián đoạn xử lý đơn hàng trong 10 phút.
-- **First steps**: Xem alert từ Grafana.
-- **Commands**: `dmesg -T | grep -i oom` hoặc lệnh get events.
-- **Root Cause**: Memory leak trong mã nguồn ứng dụng, limit memory quá thấp.
-- **Mitigation**: Tạm thời tăng memory limit, restart service.
-- **Fix**: Dev fix memory leak, tối ưu hóa resource requests/limits.
-- **Verification**: Theo dõi memory metric trong 24h.
-- **RCA**: Báo cáo nguyên nhân và hướng khắc phục.
-- **Prevention**: Set alert threshold 80% RAM, review code kĩ hơn.
+```text
+Pending -> describe/events
+  -> request có vừa allocatable không?
+  -> taint có toleration không?
+  -> affinity/selector/topology có mâu thuẫn không?
+  -> quota/LimitRange/PVC topology có chặn không?
+  -> scheduler/node health có vấn đề không?
+```
 
-*(4 kịch bản Incident khác: Network Partition, Storage Full, Authentication Failure, Misconfiguration.)*
+Đừng tăng node hoặc xóa Pod trước khi biết constraint nào làm Pod không schedulable.
 
-## 14. So sánh 🟠
-- So sánh Kubernetes Scheduling với các công nghệ tương đương trên thị trường (Ví dụ: K8s vs Docker Swarm, GitLab CI vs GitHub Actions).
+# 13. 🚨 PRODUCTION INCIDENT
 
-## 15. Common Mistakes 🟠
-- Bỏ qua việc set Resource Requests & Limits.
-- Hardcode secret vào file cấu hình thay vì dùng Secret Management.
-- Không cấu hình liveness/readiness probes.
+### Incident 01 — Insufficient CPU
 
-## 16. Interview Knowledge Check 🔴
-1. [Cơ bản] Kubernetes Scheduling là gì và giải quyết bài toán nào?
-2. [Cơ bản] Các thành phần chính của kiến trúc?
-3. [Bản chất] Làm sao Kubernetes Scheduling đảm bảo tính HA?
-4. [Bản chất] Mô tả lifecycle của một request đi qua Kubernetes Scheduling?
-5. [Troubleshooting] Khi node bị down, Kubernetes Scheduling xử lý như thế nào?
-*(Tổng cộng 30 câu hỏi: 10 cơ bản, 10 hiểu bản chất, 10 troubleshooting)*
+Đọc request thực tế, allocatable và Pod priority; scale node hoặc điều chỉnh request dựa trên metric, không hạ request mù quáng.
 
-## 17. Câu hỏi phỏng vấn 🔴
-- Hãy kể một lần bạn gặp sự cố production lớn nhất với Kubernetes Scheduling và cách bạn giải quyết?
-- Làm sao để thiết kế Kubernetes Scheduling cho hệ thống có hàng triệu request mỗi ngày?
+### Incident 02 — Taint sau node failure
 
-## 18. Đáp án phỏng vấn 🔴
-- **Trả lời ngắn (30s)**: Tập trung vào định nghĩa và keyword cốt lõi.
-- **Trả lời sâu (1-2m)**: Giải thích cách hoạt động bên dưới (under the hood), cách các component giao tiếp.
-- **Bẫy (Traps)**: Chú ý các giới hạn (limits) của hệ thống hoặc đánh đổi (trade-offs) giữa Performance và Consistency.
+Kiểm tra node condition/taint, workload toleration và capacity zone khác. Drain/replace node theo PDB rồi verify replica distribution.
 
-## 19. Cách trả lời như Engineer 🔴
-- Bắt đầu với ngữ cảnh, phân tích trade-off (Pros/Cons).
-- Luôn liên kết với Metric, Log, và Impact đến business.
+### Incident 03 — Replica dồn một zone
 
-## 20. Follow-up Question Tree 🟠
-- Trả lời đúng về kiến trúc -> Hỏi sâu về cách đảm bảo bảo mật.
-- Trả lời đúng về Troubleshooting -> Hỏi về cách tự động hóa (Self-healing, Auto-scaling).
+Kiểm tra topology labels/spread policy và node capacity. Bổ sung constraint/capacity trước khi rollout để không tự tạo outage.
 
-## 21. Checklist sau khi học 🟠
-- [ ] Vẽ lại được kiến trúc trên giấy.
-- [ ] Liệt kê được 5 lệnh troubleshooting quan trọng nhất.
-- [ ] Giải thích được 3 production incidents.
+### Incident 04 — Preemption làm mất traffic
 
-## 22. Flashcards (20+ Q&A) 🟠
-- **Q**: Port mặc định của Kubernetes Scheduling là gì? -> **A**: ...
-- **Q**: Lệnh xem log của Kubernetes Scheduling? -> **A**: ...
+Đối chiếu PriorityClass, PDB và eviction timeline. Hạ priority batch hoặc tăng headroom; không tắt preemption nếu production vẫn cần bảo vệ workload critical.
+
+### Incident 05 — PVC làm Pod Pending
+
+Kiểm tra volume topology, StorageClass `WaitForFirstConsumer` và node zone. Không bind volume sai zone để ép scheduler.
+
+# 14. ⚖️ SO SÁNH & TRADE-OFF
+
+| Cơ chế | Mạnh | Trade-off |
+|---|---|---|
+| nodeSelector | đơn giản | ít linh hoạt |
+| node affinity | biểu đạt tốt | dễ tạo constraint khó debug |
+| taint/toleration | cô lập node | toleration quá rộng làm mất isolation |
+| anti-affinity | HA rõ | cần đủ node/capacity |
+| topology spread | cân zone | `DoNotSchedule` có thể Pending |
+| preemption | bảo vệ workload cao | eviction/disruption |
+
+# 15. ❌ COMMON MISTAKES
+
+- Không đặt requests rồi ngạc nhiên khi placement sai.
+- Dùng required affinity quá chặt trong cluster nhỏ.
+- Toleration `operator: Exists` quá rộng.
+- Nghĩ `topologySpread` tạo thêm node.
+- Bỏ qua allocatable, system reservation và DaemonSet overhead.
+- Dùng preemption thay cho capacity planning.
+
+# 16. ✅ INTERVIEW KNOWLEDGE CHECK
+
+1. Scheduler dùng requests hay limits để filter node?
+2. Taint khác affinity thế nào?
+3. Khi nào Pod bị preempt?
+4. `DoNotSchedule` khác `ScheduleAnyway` ra sao?
+5. Vì sao Pod Pending dù node nhìn còn CPU?
+6. Requests ảnh hưởng QoS class thế nào?
+7. PDB có ngăn mọi eviction không?
+
+# 17. 🎤 CÂU HỎI PHỎNG VẤN
+
+- Mô tả scheduler filter/score/bind.
+- Debug Pod Pending thế nào?
+- Thiết kế 3 replicas trải đều multi-AZ ra sao?
+- Khi nào dùng taint/toleration?
+- Preemption có rủi ro gì?
+- Volume topology ảnh hưởng scheduling thế nào?
+
+# 18. 🗣️ ĐÁP ÁN PHỎNG VẤN
+
+**Pod Pending:** Em bắt đầu bằng `kubectl describe pod` và Events để lấy constraint cụ thể, sau đó so request với node allocatable, kiểm tra taint/toleration, affinity, topology, quota và PVC. Em không xóa Pod hay giảm request ngay; em xác định impact, chọn mitigation ít rủi ro, rồi verify placement/replica distribution bằng metrics và events.
+
+# 19. 🧑‍💻 CÁCH TRẢ LỜI NHƯ ENGINEER
+
+Luôn nói cả hai mặt: placement tốt cần HA và capacity, nhưng constraint quá chặt sẽ làm giảm khả năng phục hồi. Nêu rõ request được đo từ workload, không copy số tùy ý.
+
+# 20. 🌳 FOLLOW-UP QUESTION TREE
+
+```text
+Pod Pending?
+ -> request/allocatable?
+ -> taint/toleration?
+ -> selector/affinity?
+ -> topology/PVC?
+ -> quota/priority/preemption?
+ -> scheduler/node health?
+```
+
+# 21. 📋 CHECKLIST SAU KHI HỌC
+
+- [ ] Hiểu filter/score/bind.
+- [ ] Đọc được events và node allocatable.
+- [ ] Dùng đúng requests/limits, affinity, taint và spread.
+- [ ] Thiết kế HA multi-zone.
+- [ ] Debug được Pending, preemption và topology conflict.
+
+# 22. 🃏 FLASHCARDS
+
+**Q:** Scheduler xét gì? **A:** Requests và constraints của Pod/node.  
+**Q:** Taint `NoSchedule` là gì? **A:** Chặn Pod mới không có toleration.  
+**Q:** `DoNotSchedule` làm gì? **A:** Giữ constraint phân tán và để Pod Pending nếu không đạt.  
+**Q:** Preemption là gì? **A:** Evict workload ưu tiên thấp để schedule workload ưu tiên cao.
+
+# 23. 🧠 PHÂN BIỆT “PHẢI NHỚ” VÀ “PHẢI HIỂU”
+
+🔴 Phải hiểu: requests, filter/score, topology, taint và preemption.  
+🟠 Phải nắm: events, allocatable, affinity và capacity.  
+🟡 Nên biết: scheduler profile, device plugin và NUMA/hugepages.
+
+# 24. 🎯 LIÊN HỆ VỚI JD
+
+Scheduling quyết định resource utilization, HA, rollout và khả năng phục hồi của cluster; đây là năng lực vận hành Kubernetes Production trực tiếp.
+
+# 25. 📌 LIÊN HỆ VỚI CV
+
+Nếu CV ghi autoscaling/EKS/Kubernetes, cần phân biệt đã thiết kế placement/requests hay chỉ deploy workload.
+
+# 26. 🏢 ENTERPRISE / DATA CENTER SCENARIO
+
+Cluster multi-AZ có node group riêng cho system, application và batch; taint node đặc biệt, spread API theo zone, quota theo team, PDB cho critical service và headroom khi mất một AZ.
+
+# 27. 🧪 HANDS-ON LAB
+
+1. Tạo Pod Pending vì thiếu CPU và đọc Events.
+2. Thêm taint/toleration, kiểm tra placement.
+3. Dùng topology spread trên 3 node/zone.
+4. Tạo PriorityClass thấp/cao và quan sát preemption trong lab.
+5. Kết hợp PVC topology với scheduler.
+
+# 28. 🔍 TROUBLESHOOTING DECISION TREE
+
+`Pending` → Events → resource → taint → affinity → topology/PVC → quota/priority → scheduler/node health.
+
+# 29. 🧾 PRODUCTION READINESS REVIEW
+
+Review request dựa trên metric, zone capacity, system reservation, PDB, spread policy, priority, autoscaler interaction, drain/upgrade plan và cảnh báo unschedulable duration.
+
+# 30. 🧭 FINAL SELF-ASSESSMENT
+
+| Skill | Beginner | Intermediate | Advanced |
+|---|---:|---:|---:|
+| Scheduling concept | ☐ | ☐ | ☐ |
+| Placement config | ☐ | ☐ | ☐ |
+| Pending debug | ☐ | ☐ | ☐ |
+| HA/capacity design | ☐ | ☐ | ☐ |
+| Interview | ☐ | ☐ | ☐ |
+
+# 31. 🔥 INTERVIEW PRIORITY
+
+Ưu tiên: Pod Pending, requests/limits, allocatable, taint/toleration, affinity, topology spread, PDB, PriorityClass, preemption và volume topology.
+
+# 32. 📋 FINAL CHECKLIST
+
+- [ ] Giải thích được scheduler flow.
+- [ ] Debug được Pod Pending theo evidence.
+- [ ] Thiết kế placement HA và multi-zone.
+- [ ] Hiểu trade-off của constraint/preemption.
+- [ ] Biết kiểm tra capacity trước rollout.
+
+---
+END OF FILE

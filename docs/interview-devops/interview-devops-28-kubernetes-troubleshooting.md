@@ -1,139 +1,245 @@
-# Interview DevOps - Kubernetes Troubleshooting
+# [28] KUBERNETES TROUBLESHOOTING & INCIDENT RESPONSE
 
-## 1. Mục tiêu học 🔴
-Nắm vững kiến thức nền tảng và nâng cao về Kubernetes Troubleshooting, hiểu rõ cách công nghệ này vận hành trong môi trường Enterprise, đặc biệt tập trung vào bối cảnh hệ thống Logistics và quản lý hệ thống Enterprise tại Enterprise System. Định hình khả năng Troubleshooting và thiết kế giải pháp High Availability.
+> **Phase:** 3 — DevOps Core
+> **Priority:** 🔴 MUST KNOW
+> **JD Weight:** DevOps Engineer — 40%
+> **Interview Priority:** 🔴 Very High
+> **Prerequisite:** Kubernetes fundamentals, Linux, networking, observability, containers
 
-## 2. Kiến thức nền cần biết 🟠
-- Networking (TCP/IP, Routing, Load Balancing).
-- Hệ điều hành Linux (Namespaces, Cgroups cho container).
-- Storage (Block, File, Object storage).
-- Kiến thức về System Design và Distributed Systems.
+# 1. 🎯 MỤC TIÊU HỌC
 
-## 3. Tổng quan (Enterprise & Tan Cang Sai Gon Enterprise Context) 🔴
-Tại Enterprise System, hệ thống Kubernetes Troubleshooting đóng vai trò cốt lõi trong quá trình chuyển đổi số (Digital Transformation), giúp hiện đại hóa các ứng dụng quản lý doanh nghiệp lớn, tối ưu hóa quy trình Logistics, đảm bảo tính liên tục (High Availability), và khả năng scale-out linh hoạt trong môi trường Multi-DC và Cloud (AWS/On-premise).
+Xử lý Kubernetes incident theo evidence: xác định impact, phân biệt control plane/node/workload/network/storage failure, dùng command/log/metric đúng, mitigation có rollback, recovery và RCA.
 
-## 4. Kiến trúc / Cách hoạt động 🔴
+# 2. 🧠 KIẾN THỨC NỀN
+
+Nắm Pod lifecycle, Deployment/StatefulSet, scheduler, Service/CNI, PV/CSI, probes, requests/limits, Events, container runtime và API object state. Troubleshooting bắt đầu từ symptom chứ không bắt đầu bằng restart.
+
+# 3. 📚 TỔNG QUAN
+
+Một incident Kubernetes có thể xuất hiện ở client/Ingress, Service/CNI, Pod/container, node/runtime, control plane, storage hoặc dependency. Mỗi lớp có evidence khác nhau; cần khoanh vùng blast radius trước khi thay đổi.
+
+# 4. 🏗️ KIẾN TRÚC / CÁCH HOẠT ĐỘNG
+
 ```text
-+---------------------------------------------------+
-|                  Kubernetes Troubleshooting Control Plane            |
-|  [ API Server / Controller / Scheduler / etcd ]   |
-+-------------------------+-------------------------+
-                          |
-             +------------+------------+
-             |                         |
-+------------v-----------+ +-----------v------------+
-|      Worker Node 1     | |      Worker Node 2     |
-| [ Runtime / Proxy ]    | | [ Runtime / Proxy ]    |
-+------------------------+ +------------------------+
+Alert/user report
+ -> edge/Ingress -> Service/Endpoint -> Pod/probe
+ -> node/kubelet/runtime -> CNI/CSI
+ -> API server/controller/scheduler/etcd
+ -> external dependency/database/cloud API
 ```
 
-## 5. Các thành phần quan trọng 🔴
-- **Control Components**: Điều phối, quản lý state và config của hệ thống.
-- **Worker Components**: Nơi thực thi các workload, quản lý resource (CPU, RAM).
-- **Network/Storage Plugins**: Mở rộng khả năng giao tiếp và lưu trữ lâu dài.
+Desired state nằm trong API; controller reconcile; scheduler đặt Pod; kubelet thực thi; dataplane phục vụ traffic. Sự khác nhau giữa desired/current state là evidence quan trọng.
 
-## 6. Các concept quan trọng 🔴
-- **Cơ bản**: Cách khởi tạo, cấu hình mặc định, lifecycle quản lý resource.
-- **Trung cấp**: Tích hợp CI/CD, config management (Helm/Kustomize), self-healing.
-- **Nâng cao**: Custom Controllers, Operator pattern, Multi-cluster management.
+# 5. 🧩 CÁC THÀNH PHẦN QUAN TRỌNG
 
-## 7. Ví dụ thực tế 🟠
-- **Dev**: Sử dụng local environment (Minikube, Docker Desktop) để test và debug.
-- **Prod**: Cấu hình High Availability (tối thiểu 3 master nodes), tách biệt mạng và bảo mật chặt chẽ.
-- **Enterprise/Multi-DC**: Triển khai Active-Active hoặc Active-Standby giữa các DC (Vd: Primary DC - DC 2).
+Client, LoadBalancer/Ingress, Service/EndpointSlice, Deployment/ReplicaSet, Pod/container, node/kubelet/runtime, CNI/CSI, API server/controller/scheduler, metrics/logging và dependency.
 
-## 8. Command / Tool cần biết 🔴
-- Khởi tạo và quản lý: `command create/apply`
-- Giám sát trạng thái: `command get/describe`
-- Xử lý sự cố: `command logs / command exec`
+# 6. 📖 CÁC CONCEPT QUAN TRỌNG
 
-## 9. Log 🔴
-- **Vị trí**: System logs thường nằm ở `/var/log/` hoặc xem qua `journalctl -u kubernetes troubleshooting`. Application logs được stream ra `stdout/stderr`.
-- **Phân tích**: Sử dụng ELK/EFK stack hoặc Datadog để thu thập, phân tích và correlation log từ nhiều nguồn để tìm Root Cause.
+## 6.1. Cơ bản
 
-## 10. Metric 🔴
-- **Resource Metrics**: CPU, Memory, Disk I/O, Network Throughput.
-- **Application Metrics**: Request rate, Error rate, Latency.
-- **Tooling**: Prometheus + Grafana, cAdvisor.
+`Pending` thường là scheduling/resource/volume; `ContainerCreating` thường là image/network/volume; `CrashLoopBackOff` là container start rồi exit; `ImagePullBackOff` là registry/auth/tag/network; `Ready` không đồng nghĩa application không lỗi.
 
-## 11. Configuration 🔴
-```yaml
-# Mẫu cấu hình tiêu chuẩn cho Kubernetes Troubleshooting trong môi trường Prod
-apiVersion: v1
-kind: Configuration
-metadata:
-  name: Kubernetes Troubleshooting-prod-config
-spec:
-  replicas: 3
-  resources:
-    requests:
-      memory: "256Mi"
-      cpu: "500m"
-    limits:
-      memory: "512Mi"
-      cpu: "1"
+## 6.2. Trung cấp
+
+Probe failure làm Pod không nhận traffic hoặc restart. OOMKilled liên quan limit/cgroup hoặc memory pressure. `kubectl describe` Events thường cho biết bước thất bại; log app cho biết nguyên nhân bên trong.
+
+## 6.3. Nâng cao
+
+Tách mitigation khỏi root cause, tránh thay đổi đồng thời nhiều biến, dùng canary/rollback, giữ timeline và kiểm tra correlation với deploy/config/traffic/dependency.
+
+# 7. 🌍 VÍ DỤ THỰC TẾ
+
+- **Dev:** tạo CrashLoop/ImagePull/Probe failure trong namespace test.
+- **Prod:** rollout làm latency tăng; giữ revision cũ, rollback nếu impact tăng, sau đó phân tích revision/config.
+- **Enterprise:** node/AZ failure cần xem replica spread, PDB, capacity và dependency failover.
+
+# 8. 🛠️ COMMAND / TOOL CẦN BIẾT
+
+```bash
+kubectl get pods -A -o wide
+kubectl describe pod <pod> -n <ns>
+kubectl logs <pod> -n <ns> --all-containers --previous
+kubectl get events -A --sort-by=.lastTimestamp
+kubectl get deploy,rs,svc,endpointslice -n <ns>
+kubectl rollout history deploy/<name> -n <ns>
+kubectl rollout undo deploy/<name> -n <ns>
+kubectl top pods,nodes
+kubectl get nodes; kubectl describe node <node>
+kubectl get --raw='/readyz?verbose'
 ```
 
-## 12. Troubleshooting Methodology 🔴
-1. **Identify the Issue**: Thu thập triệu chứng (Alerts, User reports).
-2. **Isolate**: Xác định phạm vi ảnh hưởng (Network, Storage, hay Compute?).
-3. **Analyze**: Kiểm tra Log, Metric, và Configuration.
-4. **Mitigate**: Áp dụng biện pháp khắc phục tạm thời để phục hồi dịch vụ (Restart, Rollback).
-5. **Fix & RCA**: Sửa lỗi gốc rễ và lập báo cáo RCA (Root Cause Analysis).
+# 9. 📝 LOG
 
-## 13. Production Incident 🔴
-### Incident 1: Resource Exhaustion (OOM)
-- **Symptoms**: Dịch vụ liên tục restart, cảnh báo downtime.
-- **Impact**: Gián đoạn xử lý đơn hàng trong 10 phút.
-- **First steps**: Xem alert từ Grafana.
-- **Commands**: `dmesg -T | grep -i oom` hoặc lệnh get events.
-- **Root Cause**: Memory leak trong mã nguồn ứng dụng, limit memory quá thấp.
-- **Mitigation**: Tạm thời tăng memory limit, restart service.
-- **Fix**: Dev fix memory leak, tối ưu hóa resource requests/limits.
-- **Verification**: Theo dõi memory metric trong 24h.
-- **RCA**: Báo cáo nguyên nhân và hướng khắc phục.
-- **Prevention**: Set alert threshold 80% RAM, review code kĩ hơn.
+Thu thập alert/event trước, rồi Pod log/current và previous, kubelet/runtime, CNI/CSI, Ingress, controller/scheduler/API audit. Lưu namespace, UID, node, image digest, revision, timestamp UTC và request ID.
 
-*(4 kịch bản Incident khác: Network Partition, Storage Full, Authentication Failure, Misconfiguration.)*
+# 10. 📊 METRIC
 
-## 14. So sánh 🟠
-- So sánh Kubernetes Troubleshooting với các công nghệ tương đương trên thị trường (Ví dụ: K8s vs Docker Swarm, GitLab CI vs GitHub Actions).
+SLO/error/latency/traffic; restart/OOM/readiness; pending/startup duration; node CPU/memory/disk pressure; API server latency/error; scheduler unschedulable; CNI/CSI failure; dependency health.
 
-## 15. Common Mistakes 🟠
-- Bỏ qua việc set Resource Requests & Limits.
-- Hardcode secret vào file cấu hình thay vì dùng Secret Management.
-- Không cấu hình liveness/readiness probes.
+# 11. ⚙️ CONFIGURATION
 
-## 16. Interview Knowledge Check 🔴
-1. [Cơ bản] Kubernetes Troubleshooting là gì và giải quyết bài toán nào?
-2. [Cơ bản] Các thành phần chính của kiến trúc?
-3. [Bản chất] Làm sao Kubernetes Troubleshooting đảm bảo tính HA?
-4. [Bản chất] Mô tả lifecycle của một request đi qua Kubernetes Troubleshooting?
-5. [Troubleshooting] Khi node bị down, Kubernetes Troubleshooting xử lý như thế nào?
-*(Tổng cộng 30 câu hỏi: 10 cơ bản, 10 hiểu bản chất, 10 troubleshooting)*
+Production workload cần requests/limits, readiness/liveness/startup probe phù hợp, rolling strategy, PDB, topology spread, termination grace period, revision history và observability labels. Không dùng probe quá ngắn làm false restart.
 
-## 17. Câu hỏi phỏng vấn 🔴
-- Hãy kể một lần bạn gặp sự cố production lớn nhất với Kubernetes Troubleshooting và cách bạn giải quyết?
-- Làm sao để thiết kế Kubernetes Troubleshooting cho hệ thống có hàng triệu request mỗi ngày?
+# 12. 🔧 TROUBLESHOOTING
 
-## 18. Đáp án phỏng vấn 🔴
-- **Trả lời ngắn (30s)**: Tập trung vào định nghĩa và keyword cốt lõi.
-- **Trả lời sâu (1-2m)**: Giải thích cách hoạt động bên dưới (under the hood), cách các component giao tiếp.
-- **Bẫy (Traps)**: Chú ý các giới hạn (limits) của hệ thống hoặc đánh đổi (trade-offs) giữa Performance và Consistency.
+```text
+1. Xác nhận symptom và impact
+2. Xác định phạm vi: một Pod, namespace, node, AZ hay toàn cluster
+3. Kiểm tra recent change/deploy
+4. Đọc Events -> metric -> logs -> network/storage/dependency
+5. Mitigate có rollback và thông báo owner
+6. Verify bằng SLO/traffic/log
+7. RCA và prevention
+```
 
-## 19. Cách trả lời như Engineer 🔴
-- Bắt đầu với ngữ cảnh, phân tích trade-off (Pros/Cons).
-- Luôn liên kết với Metric, Log, và Impact đến business.
+# 13. 🚨 PRODUCTION INCIDENT
 
-## 20. Follow-up Question Tree 🟠
-- Trả lời đúng về kiến trúc -> Hỏi sâu về cách đảm bảo bảo mật.
-- Trả lời đúng về Troubleshooting -> Hỏi về cách tự động hóa (Self-healing, Auto-scaling).
+### CrashLoopBackOff
 
-## 21. Checklist sau khi học 🟠
-- [ ] Vẽ lại được kiến trúc trên giấy.
-- [ ] Liệt kê được 5 lệnh troubleshooting quan trọng nhất.
-- [ ] Giải thích được 3 production incidents.
+Đọc current/previous log, exit code, probe, config/Secret và OOM. Rollback revision hoặc tắt traffic có kiểm soát; sửa startup/config rồi verify restart count và readiness.
 
-## 22. Flashcards (20+ Q&A) 🟠
-- **Q**: Port mặc định của Kubernetes Troubleshooting là gì? -> **A**: ...
-- **Q**: Lệnh xem log của Kubernetes Troubleshooting? -> **A**: ...
+### ImagePullBackOff
+
+Kiểm tra image tag/digest, registry DNS/network, imagePullSecret, IAM và registry quota. Không đổi sang `latest` để bypass; dùng immutable digest.
+
+### Pending
+
+Đọc Events, resource requests, taint/affinity/topology/quota/PVC. Sửa constraint hoặc bổ sung capacity dựa trên evidence.
+
+### OOMKilled / node pressure
+
+Đối chiếu container limit, working set, leak, node memory/disk/inode pressure và eviction. Mitigate bằng scale/rollback/tăng limit có sizing; sửa memory behavior và alert.
+
+### Service/Ingress 5xx
+
+Kiểm tra endpoint/readiness/port, DNS/CNI/policy, Ingress upstream timeout và app/dependency log. Curl từng hop để xác định boundary.
+
+# 14. ⚖️ SO SÁNH & TRADE-OFF
+
+| Biện pháp | Khi dùng | Rủi ro |
+|---|---|---|
+| Restart Pod | process transient | mất evidence/state |
+| Rollback | recent deploy/config | quay lại bug cũ |
+| Scale out | capacity/traffic | dependency có thể quá tải |
+| Tăng limit | thiếu sizing | che memory leak/cost |
+| Drain node | node failure | cần PDB/capacity |
+| Disable policy | emergency rất hạn chế | tăng blast radius/security risk |
+
+# 15. ❌ COMMON MISTAKES
+
+- Restart trước khi lấy log/events.
+- Chỉ nhìn Pod status mà không xem Endpoint/readiness.
+- Xóa Pod/namespace làm mất evidence.
+- Kết luận OOM chỉ vì memory cao mà không xem limit/cgroup.
+- Rollback nhưng không verify traffic và dependency.
+- Không ghi timeline, impact và owner.
+
+# 16. ✅ INTERVIEW KNOWLEDGE CHECK
+
+1. Pending, CrashLoop và ImagePull khác nhau thế nào?
+2. Đọc `--previous` khi nào?
+3. Readiness khác liveness ra sao?
+4. Debug 5xx theo hop thế nào?
+5. Khi nào rollback, khi nào scale?
+6. Vì sao cần Events trước log app?
+7. Node pressure ảnh hưởng Pod ra sao?
+
+# 17. 🎤 CÂU HỎI PHỎNG VẤN
+
+- Một deployment rollout làm 5xx tăng, bạn làm gì trong 10 phút đầu?
+- Debug CrashLoopBackOff theo trình tự nào?
+- Pod Pending nhưng cluster còn node, vì sao?
+- Xử lý node NotReady thế nào?
+- Phân biệt application failure và platform failure ra sao?
+- Sau incident bạn viết RCA và prevention thế nào?
+
+# 18. 🗣️ ĐÁP ÁN PHỎNG VẤN
+
+**Incident rollout:** Em xác nhận SLO/impact và phạm vi, kiểm tra deploy revision/events/metrics/log, so sánh Pod mới-cũ. Nếu tương quan rõ và rollback an toàn, em rollback để giảm impact, verify error/latency/recovery rồi mới điều tra root cause qua diff/config/dependency. Em ghi timeline, quyết định và action prevention.
+
+# 19. 🧑‍💻 CÁCH TRẢ LỜI NHƯ ENGINEER
+
+Câu trả lời tốt phải có thứ tự, lý do của từng bước, evidence và nhánh A/B. Không đọc danh sách command; hãy nói command trả lời giả thuyết nào.
+
+# 20. 🌳 FOLLOW-UP QUESTION TREE
+
+```text
+Pod lỗi?
+ -> status/events?
+ -> logs/previous/exit code?
+ -> probe/config/secret/image?
+ -> node/CNI/CSI/dependency?
+ -> recent change?
+ -> mitigation/verification/RCA?
+```
+
+# 21. 📋 CHECKLIST SAU KHI HỌC
+
+- [ ] Khoanh vùng impact trước khi sửa.
+- [ ] Biết dùng Events, logs, metrics và audit.
+- [ ] Debug được 5 failure state phổ biến.
+- [ ] Có rollback/mitigation/verification.
+- [ ] Viết được RCA và prevention.
+
+# 22. 🃏 FLASHCARDS
+
+**Q:** `CrashLoopBackOff` nghĩa là gì? **A:** Container liên tục start rồi exit, backoff restart.  
+**Q:** `Pending` kiểm tra gì? **A:** Events, resource, taint, affinity, quota, PVC.  
+**Q:** `--previous` dùng khi nào? **A:** Khi container đã restart và cần log lần chạy trước.  
+**Q:** Rollback cần verify gì? **A:** SLO, traffic, readiness, error và dependency health.
+
+# 23. 🧠 PHÂN BIỆT “PHẢI NHỚ” VÀ “PHẢI HIỂU”
+
+🔴 Phải hiểu: scope, evidence, control/data plane và failure state.  
+🟠 Phải nắm: Events, logs, metrics, rollback và drain.  
+🟡 Nên biết: profiling, eBPF, scheduler/controller internals.
+
+# 24. 🎯 LIÊN HỆ VỚI JD
+
+Đây là năng lực trực tiếp của DevOps/SRE: xử lý alert, production incident, rollout, capacity và service reliability.
+
+# 25. 📌 LIÊN HỆ VỚI CV
+
+Nếu CV ghi Kubernetes/EKS, cần phân biệt đã trực tiếp on-call/troubleshoot hay chỉ triển khai manifest/lab.
+
+# 26. 🏢 ENTERPRISE / DATA CENTER SCENARIO
+
+Cluster có multi-AZ, ingress, database, queue và monitoring. Khi một revision lỗi, rollback application nhưng vẫn kiểm tra migration/schema compatibility, queue backlog, DB connection và customer impact.
+
+# 27. 🧪 HANDS-ON LAB
+
+Tạo và xử lý lần lượt CrashLoop, ImagePull, Pending, OOM, Service 503 và node pressure. Mỗi lab phải ghi hypothesis, command, evidence, mitigation, verification và RCA.
+
+# 28. 🔍 TROUBLESHOOTING DECISION TREE
+
+`Alert` → impact/scope → recent change → object/events → metrics → logs → network/storage/dependency → mitigation → verify → RCA.
+
+# 29. 🧾 PRODUCTION READINESS REVIEW
+
+Có alert/SLO, runbook, log/metric/tracing, rollback, PDB, capacity, access control, change audit, backup/restore, on-call và post-incident action owner.
+
+# 30. 🧭 FINAL SELF-ASSESSMENT
+
+| Skill | Beginner | Intermediate | Advanced |
+|---|---:|---:|---:|
+| Pod/workload debug | ☐ | ☐ | ☐ |
+| Node/platform debug | ☐ | ☐ | ☐ |
+| Incident response | ☐ | ☐ | ☐ |
+| Rollback/RCA | ☐ | ☐ | ☐ |
+| Interview | ☐ | ☐ | ☐ |
+
+# 31. 🔥 INTERVIEW PRIORITY
+
+Ưu tiên: CrashLoopBackOff, Pending, ImagePullBackOff, OOMKilled, probes, Service/Ingress 5xx, node pressure, rollback, evidence và RCA.
+
+# 32. 📋 FINAL CHECKLIST
+
+- [ ] Xác định được impact và failure boundary.
+- [ ] Dùng đúng Events/logs/metrics/commands.
+- [ ] Mitigate/rollback mà không phá evidence.
+- [ ] Verify recovery bằng SLO và dependency health.
+- [ ] Hoàn thành RCA/prevention.
+
+---
+END OF FILE

@@ -1,139 +1,224 @@
-# Interview DevOps - Argocd
+# [36] ARGOCD & GITOPS OPERATIONS
 
-## 1. Mục tiêu học 🔴
-Nắm vững kiến thức nền tảng và nâng cao về Argocd, hiểu rõ cách công nghệ này vận hành trong môi trường Enterprise, đặc biệt tập trung vào bối cảnh hệ thống Logistics và quản lý hệ thống Enterprise tại Enterprise System. Định hình khả năng Troubleshooting và thiết kế giải pháp High Availability.
+> **Phase:** 3 — DevOps Core
+> **Priority:** 🔴 MUST KNOW
+> **JD Weight:** DevOps Engineer — 40%
+> **Interview Priority:** 🔴 Very High
+> **Prerequisite:** GitOps, Kubernetes, Helm/Kustomize, RBAC, Git repositories
 
-## 2. Kiến thức nền cần biết 🟠
-- Networking (TCP/IP, Routing, Load Balancing).
-- Hệ điều hành Linux (Namespaces, Cgroups cho container).
-- Storage (Block, File, Object storage).
-- Kiến thức về System Design và Distributed Systems.
+# 1. 🎯 MỤC TIÊU HỌC
 
-## 3. Tổng quan (Enterprise & Tan Cang Sai Gon Enterprise Context) 🔴
-Tại Enterprise System, hệ thống Argocd đóng vai trò cốt lõi trong quá trình chuyển đổi số (Digital Transformation), giúp hiện đại hóa các ứng dụng quản lý doanh nghiệp lớn, tối ưu hóa quy trình Logistics, đảm bảo tính liên tục (High Availability), và khả năng scale-out linh hoạt trong môi trường Multi-DC và Cloud (AWS/On-premise).
+Hiểu ArgoCD components, Application/ApplicationSet, repo credential, project/RBAC, sync/health, automated sync, prune/self-heal, hooks/waves, multi-cluster, notifications và rollback.
 
-## 4. Kiến trúc / Cách hoạt động 🔴
+# 2. 🧠 KIẾN THỨC NỀN
+
+Ôn Kubernetes API/RBAC, Git refs, Helm/Kustomize rendering, GitOps desired state, network/TLS/SSH, Secret management và deployment health.
+
+# 3. 📚 TỔNG QUAN
+
+ArgoCD là pull-based GitOps controller. Nó render manifests từ Git/Helm/Kustomize, so sánh desired với live state, báo OutOfSync/Degraded và sync theo policy. ArgoCD không tự sửa lỗi application hoặc database migration.
+
+# 4. 🏗️ KIẾN TRÚC / CÁCH HOẠT ĐỘNG
+
 ```text
-+---------------------------------------------------+
-|                  Argocd Control Plane            |
-|  [ API Server / Controller / Scheduler / etcd ]   |
-+-------------------------+-------------------------+
-                          |
-             +------------+------------+
-             |                         |
-+------------v-----------+ +-----------v------------+
-|      Worker Node 1     | |      Worker Node 2     |
-| [ Runtime / Proxy ]    | | [ Runtime / Proxy ]    |
-+------------------------+ +------------------------+
+Git repo -> repo-server/render -> application-controller -> Kubernetes API
+                                   |                    -> live resources
+                                   +-> diff/sync/health/notifications
+API/UI/CLI -> argocd-server -> RBAC/project
 ```
 
-## 5. Các thành phần quan trọng 🔴
-- **Control Components**: Điều phối, quản lý state và config của hệ thống.
-- **Worker Components**: Nơi thực thi các workload, quản lý resource (CPU, RAM).
-- **Network/Storage Plugins**: Mở rộng khả năng giao tiếp và lưu trữ lâu dài.
+# 5. 🧩 CÁC THÀNH PHẦN QUAN TRỌNG
 
-## 6. Các concept quan trọng 🔴
-- **Cơ bản**: Cách khởi tạo, cấu hình mặc định, lifecycle quản lý resource.
-- **Trung cấp**: Tích hợp CI/CD, config management (Helm/Kustomize), self-healing.
-- **Nâng cao**: Custom Controllers, Operator pattern, Multi-cluster management.
+argocd-server, repo-server, application-controller, Redis/cache, Application, ApplicationSet, AppProject, repository credential, cluster credential, sync/health/custom resource health và notification.
 
-## 7. Ví dụ thực tế 🟠
-- **Dev**: Sử dụng local environment (Minikube, Docker Desktop) để test và debug.
-- **Prod**: Cấu hình High Availability (tối thiểu 3 master nodes), tách biệt mạng và bảo mật chặt chẽ.
-- **Enterprise/Multi-DC**: Triển khai Active-Active hoặc Active-Standby giữa các DC (Vd: Primary DC - DC 2).
+# 6. 📖 CÁC CONCEPT QUAN TRỌNG
 
-## 8. Command / Tool cần biết 🔴
-- Khởi tạo và quản lý: `command create/apply`
-- Giám sát trạng thái: `command get/describe`
-- Xử lý sự cố: `command logs / command exec`
+`OutOfSync` là desired/live khác; `Degraded` là health không đạt. Automated sync có thể prune/self-heal; sync wave/hook điều phối thứ tự. AppProject giới hạn source repo, destination cluster/namespace và resource kind.
 
-## 9. Log 🔴
-- **Vị trí**: System logs thường nằm ở `/var/log/` hoặc xem qua `journalctl -u argocd`. Application logs được stream ra `stdout/stderr`.
-- **Phân tích**: Sử dụng ELK/EFK stack hoặc Datadog để thu thập, phân tích và correlation log từ nhiều nguồn để tìm Root Cause.
+# 7. 🌍 VÍ DỤ THỰC TẾ
 
-## 10. Metric 🔴
-- **Resource Metrics**: CPU, Memory, Disk I/O, Network Throughput.
-- **Application Metrics**: Request rate, Error rate, Latency.
-- **Tooling**: Prometheus + Grafana, cAdvisor.
+Một Application trỏ env repo/Helm values staging; ApplicationSet tạo app cho nhiều cluster; Production auto-sync chỉ sau PR approval, prune có guardrail, health custom cho workload và notification tới on-call.
 
-## 11. Configuration 🔴
+# 8. 🛠️ COMMAND / TOOL CẦN BIẾT
+
+```bash
+argocd login <server>
+argocd app list
+argocd app get <app>
+argocd app diff <app>
+argocd app sync <app> --dry-run
+argocd app sync <app> --prune
+argocd app history <app>
+argocd app rollback <app> <id>
+argocd app manifests <app>
+kubectl get app,appproject,applicationset -n argocd
+```
+
+# 9. 📝 LOG
+
+Đọc application-controller sync log, repo-server render/auth log, argocd-server audit, Kubernetes Events và workload log. Correlate app name, Git revision, sync operation ID, cluster/server và resource UID.
+
+# 10. 📊 METRIC
+
+App sync/health status, reconciliation lag, render/error count, API latency, queue depth, repo fetch failure, controller restart, drift count, deployment/rollback duration và notification failure.
+
+# 11. ⚙️ CONFIGURATION
+
 ```yaml
-# Mẫu cấu hình tiêu chuẩn cho Argocd trong môi trường Prod
-apiVersion: v1
-kind: Configuration
+apiVersion: argoproj.io/v1alpha1
+kind: Application
 metadata:
-  name: Argocd-prod-config
+  name: orders-staging
+  namespace: argocd
 spec:
-  replicas: 3
-  resources:
-    requests:
-      memory: "256Mi"
-      cpu: "500m"
-    limits:
-      memory: "512Mi"
-      cpu: "1"
+  project: platform
+  source:
+    repoURL: https://github.com/example/platform-config.git
+    targetRevision: main
+    path: apps/orders/overlays/staging
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: orders
+  syncPolicy:
+    automated:
+      selfHeal: true
+      prune: false
+    syncOptions:
+      - CreateNamespace=true
 ```
 
-## 12. Troubleshooting Methodology 🔴
-1. **Identify the Issue**: Thu thập triệu chứng (Alerts, User reports).
-2. **Isolate**: Xác định phạm vi ảnh hưởng (Network, Storage, hay Compute?).
-3. **Analyze**: Kiểm tra Log, Metric, và Configuration.
-4. **Mitigate**: Áp dụng biện pháp khắc phục tạm thời để phục hồi dịch vụ (Restart, Rollback).
-5. **Fix & RCA**: Sửa lỗi gốc rễ và lập báo cáo RCA (Root Cause Analysis).
+Production nên tách project/permission và cân nhắc prune/self-heal theo resource risk.
 
-## 13. Production Incident 🔴
-### Incident 1: Resource Exhaustion (OOM)
-- **Symptoms**: Dịch vụ liên tục restart, cảnh báo downtime.
-- **Impact**: Gián đoạn xử lý đơn hàng trong 10 phút.
-- **First steps**: Xem alert từ Grafana.
-- **Commands**: `dmesg -T | grep -i oom` hoặc lệnh get events.
-- **Root Cause**: Memory leak trong mã nguồn ứng dụng, limit memory quá thấp.
-- **Mitigation**: Tạm thời tăng memory limit, restart service.
-- **Fix**: Dev fix memory leak, tối ưu hóa resource requests/limits.
-- **Verification**: Theo dõi memory metric trong 24h.
-- **RCA**: Báo cáo nguyên nhân và hướng khắc phục.
-- **Prevention**: Set alert threshold 80% RAM, review code kĩ hơn.
+# 12. 🔧 TROUBLESHOOTING
 
-*(4 kịch bản Incident khác: Network Partition, Storage Full, Authentication Failure, Misconfiguration.)*
+```text
+App Unknown -> repo-server/repo credential/network
+InvalidSpec -> path/Helm values/Kustomize/render
+OutOfSync -> diff/ignore rule/manual drift
+Sync failed -> API/RBAC/admission/immutable field
+Synced but Degraded -> health/probe/dependency
+Auto-sync loop -> operator/field manager/mutating webhook
+```
 
-## 14. So sánh 🟠
-- So sánh Argocd với các công nghệ tương đương trên thị trường (Ví dụ: K8s vs Docker Swarm, GitLab CI vs GitHub Actions).
+# 13. 🚨 PRODUCTION INCIDENT
 
-## 15. Common Mistakes 🟠
-- Bỏ qua việc set Resource Requests & Limits.
-- Hardcode secret vào file cấu hình thay vì dùng Secret Management.
-- Không cấu hình liveness/readiness probes.
+1. **Render failed:** xem repo-server log, commit/path/dependency/values và revert commit nếu cần.  
+2. **Sync rejected:** đọc resource error/RBAC/admission, không retry mù.  
+3. **Bad auto-sync:** suspend automation hoặc revert Git, verify health và audit resource impact.  
+4. **OutOfSync loop:** tìm manual actor/operator/webhook/ignore rule và xác định source owner.  
+5. **Controller unavailable:** cluster giữ state hiện tại nhưng delivery dừng; khôi phục repo-server/controller, kiểm tra queue rồi sync có kiểm soát.
 
-## 16. Interview Knowledge Check 🔴
-1. [Cơ bản] Argocd là gì và giải quyết bài toán nào?
-2. [Cơ bản] Các thành phần chính của kiến trúc?
-3. [Bản chất] Làm sao Argocd đảm bảo tính HA?
-4. [Bản chất] Mô tả lifecycle của một request đi qua Argocd?
-5. [Troubleshooting] Khi node bị down, Argocd xử lý như thế nào?
-*(Tổng cộng 30 câu hỏi: 10 cơ bản, 10 hiểu bản chất, 10 troubleshooting)*
+# 14. ⚖️ SO SÁNH & TRADE-OFF
 
-## 17. Câu hỏi phỏng vấn 🔴
-- Hãy kể một lần bạn gặp sự cố production lớn nhất với Argocd và cách bạn giải quyết?
-- Làm sao để thiết kế Argocd cho hệ thống có hàng triệu request mỗi ngày?
+| Cơ chế | Mạnh | Trade-off |
+|---|---|---|
+| Manual sync | kiểm soát cao | chậm, human error |
+| Auto-sync | feedback nhanh | bad commit blast radius |
+| Self-heal | sửa drift | can conflict with legitimate emergency change |
+| Prune | cleanup desired | xóa resource nguy hiểm |
+| ApplicationSet | multi-cluster/app scale | template/ownership complexity |
+| Sync wave | thứ tự deploy | hook/wave deadlock |
 
-## 18. Đáp án phỏng vấn 🔴
-- **Trả lời ngắn (30s)**: Tập trung vào định nghĩa và keyword cốt lõi.
-- **Trả lời sâu (1-2m)**: Giải thích cách hoạt động bên dưới (under the hood), cách các component giao tiếp.
-- **Bẫy (Traps)**: Chú ý các giới hạn (limits) của hệ thống hoặc đánh đổi (trade-offs) giữa Performance và Consistency.
+# 15. ❌ COMMON MISTAKES
 
-## 19. Cách trả lời như Engineer 🔴
-- Bắt đầu với ngữ cảnh, phân tích trade-off (Pros/Cons).
-- Luôn liên kết với Metric, Log, và Impact đến business.
+Auto-prune Production không guardrail; ArgoCD có cluster-admin; dùng `argocd app sync` thay PR; ignore diff che lỗi; repo credential long-lived; không backup repo/Argo config; rollback code nhưng quên data migration.
 
-## 20. Follow-up Question Tree 🟠
-- Trả lời đúng về kiến trúc -> Hỏi sâu về cách đảm bảo bảo mật.
-- Trả lời đúng về Troubleshooting -> Hỏi về cách tự động hóa (Self-healing, Auto-scaling).
+# 16. ✅ INTERVIEW KNOWLEDGE CHECK
 
-## 21. Checklist sau khi học 🟠
-- [ ] Vẽ lại được kiến trúc trên giấy.
-- [ ] Liệt kê được 5 lệnh troubleshooting quan trọng nhất.
-- [ ] Giải thích được 3 production incidents.
+ArgoCD so sánh desired/live thế nào? OutOfSync khác Degraded? Repo-server làm gì? AppProject bảo vệ gì? Self-heal/prune rủi ro gì? Sync wave/hook dùng khi nào? Controller down ảnh hưởng gì?
 
-## 22. Flashcards (20+ Q&A) 🟠
-- **Q**: Port mặc định của Argocd là gì? -> **A**: ...
-- **Q**: Lệnh xem log của Argocd? -> **A**: ...
+# 17. 🎤 CÂU HỎI PHỎNG VẤN
+
+Thiết kế ArgoCD multi-cluster; phân quyền Project; xử lý OutOfSync; auto-sync/prune; render failure; sync wave; rollback; controller outage; secret integration.
+
+# 18. 🗣️ ĐÁP ÁN PHỎNG VẤN
+
+Em tách repo/project/cluster permission, render/diff trước sync, giới hạn source/destination/resource, dùng auto-sync phù hợp và health check. Khi lỗi em phân biệt render, sync và runtime health; revert desired state/rollback, verify SLO và điều tra drift/actor thay vì retry mù.
+
+# 19. 🧑‍💻 CÁCH TRẢ LỜI NHƯ ENGINEER
+
+Nêu rõ Git revision, rendered manifest, live object, sync operation và health evidence. ArgoCD chỉ điều phối desired state; application/data reliability vẫn cần runbook riêng.
+
+# 20. 🌳 FOLLOW-UP QUESTION TREE
+
+```text
+OutOfSync?
+ -> diff thực tế?
+ -> manual/operator/webhook?
+ -> render/repo?
+Sync fail?
+ -> API/RBAC/admission/immutable?
+Synced nhưng Degraded?
+ -> Pod/probe/dependency/health custom?
+```
+
+# 21. 📋 CHECKLIST SAU KHI HỌC
+
+- [ ] Hiểu ArgoCD components/Application/Project.
+- [ ] Debug render, sync, drift và health.
+- [ ] Cấu hình repo/cluster/RBAC an toàn.
+- [ ] Dùng auto-sync/prune/self-heal có policy.
+- [ ] Có rollback/controller outage runbook.
+
+# 22. 🃏 FLASHCARDS
+
+**Q:** `OutOfSync` là gì? **A:** Desired state khác live state.  
+**Q:** `Degraded` là gì? **A:** Resource health không đạt.  
+**Q:** Repo-server làm gì? **A:** Fetch/render manifests.  
+**Q:** Self-heal? **A:** Reconcile live drift về desired state.  
+**Q:** Prune? **A:** Xóa resource không còn trong desired state.
+
+# 23. 🧠 PHÂN BIỆT “PHẢI NHỚ” VÀ “PHẢI HIỂU”
+
+🔴 Hiểu desired/live diff, render/sync/health.  
+🟠 Nắm Application, Project, ApplicationSet, CLI/log.  
+🟡 Biết waves/hooks, custom health, notifications và multi-cluster.
+
+# 24. 🎯 LIÊN HỆ VỚI JD
+
+ArgoCD là kỹ năng GitOps delivery, deployment audit, drift control và Kubernetes operations.
+
+# 25. 📌 LIÊN HỆ VỚI CV
+
+Nêu rõ app/project/repo model, sync strategy, secret, rollback, multi-cluster và incident đã làm.
+
+# 26. 🏢 ENTERPRISE / DATA CENTER SCENARIO
+
+ArgoCD HA trong management cluster, AppProject theo team, ApplicationSet multi-cluster, private repo, external Secret, protected Production promotion, notifications và audit.
+
+# 27. 🧪 HANDS-ON LAB
+
+Tạo App từ Kustomize/Helm; test diff/sync; cố ý manual drift; bật self-heal; test prune an toàn; tạo render/sync failure; rollback revision và test ApplicationSet.
+
+# 28. 🔍 TROUBLESHOOTING DECISION TREE
+
+Repo/auth/render → Application spec → diff → API/RBAC/admission → sync waves/hooks → resource health → drift/actor → rollback.
+
+# 29. 🧾 PRODUCTION READINESS REVIEW
+
+Review controller HA, repo/cluster credential, Project RBAC, source/destination restriction, prune/self-heal, health, sync window, audit, notification, backup và rollback.
+
+# 30. 🧭 FINAL SELF-ASSESSMENT
+
+| Skill | Beginner | Intermediate | Advanced |
+|---|---:|---:|---:|
+| Application/Project | ☐ | ☐ | ☐ |
+| Render/sync | ☐ | ☐ | ☐ |
+| Drift/health | ☐ | ☐ | ☐ |
+| Multi-cluster/security | ☐ | ☐ | ☐ |
+| Incident | ☐ | ☐ | ☐ |
+
+# 31. 🔥 INTERVIEW PRIORITY
+
+Ưu tiên: OutOfSync/Degraded, repo-server, Application/Project, RBAC, auto-sync/prune/self-heal, hooks/waves, rollback và controller outage.
+
+# 32. 📋 FINAL CHECKLIST
+
+- [ ] Mô tả ArgoCD reconciliation.
+- [ ] Debug render/sync/health/drift.
+- [ ] Giới hạn project/source/destination/quyền.
+- [ ] Dùng auto-sync/prune/self-heal an toàn.
+- [ ] Có rollback, audit và controller recovery.
+
+---
+END OF FILE

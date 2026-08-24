@@ -1,139 +1,107 @@
-# Interview DevOps - Docker
+# Docker — Cẩm nang phỏng vấn
 
-## 1. Mục tiêu học 🔴
-Nắm vững kiến thức nền tảng và nâng cao về Docker, hiểu rõ cách công nghệ này vận hành trong môi trường Enterprise, đặc biệt tập trung vào bối cảnh hệ thống Logistics và quản lý hệ thống Enterprise tại Enterprise System. Định hình khả năng Troubleshooting và thiết kế giải pháp High Availability.
+# 1. Mục tiêu học
+image layers, container lifecycle, namespaces/cgroups, volumes, networks, registry; liên hệ concept với vận hành, failure mode và quyết định production.
 
-## 2. Kiến thức nền cần biết 🟠
-- Networking (TCP/IP, Routing, Load Balancing).
-- Hệ điều hành Linux (Namespaces, Cgroups cho container).
-- Storage (Block, File, Object storage).
-- Kiến thức về System Design và Distributed Systems.
+# 2. Kiến thức nền cần có
+Linux, networking, storage, identity, scripting, observability và change management.
 
-## 3. Tổng quan (Enterprise & Tan Cang Sai Gon Enterprise Context) 🔴
-Tại Enterprise System, hệ thống Docker đóng vai trò cốt lõi trong quá trình chuyển đổi số (Digital Transformation), giúp hiện đại hóa các ứng dụng quản lý doanh nghiệp lớn, tối ưu hóa quy trình Logistics, đảm bảo tính liên tục (High Availability), và khả năng scale-out linh hoạt trong môi trường Multi-DC và Cloud (AWS/On-premise).
+# 3. Tổng quan kiến trúc
+Mô tả control plane, data plane, state, dependency, traffic flow và failure domain của Docker.
 
-## 4. Kiến trúc / Cách hoạt động 🔴
-```text
-+---------------------------------------------------+
-|                  Docker Control Plane            |
-|  [ API Server / Controller / Scheduler / etcd ]   |
-+-------------------------+-------------------------+
-                          |
-             +------------+------------+
-             |                         |
-+------------v-----------+ +-----------v------------+
-|      Worker Node 1     | |      Worker Node 2     |
-| [ Runtime / Proxy ]    | | [ Runtime / Proxy ]    |
-+------------------------+ +------------------------+
-```
+# 4. Cách hoạt động
+Mô tả lifecycle từ request/config đến execution, persistence, response, audit và metric.
 
-## 5. Các thành phần quan trọng 🔴
-- **Control Components**: Điều phối, quản lý state và config của hệ thống.
-- **Worker Components**: Nơi thực thi các workload, quản lý resource (CPU, RAM).
-- **Network/Storage Plugins**: Mở rộng khả năng giao tiếp và lưu trữ lâu dài.
+# 5. Thành phần và failure mode
+Docker có thể gặp resource exhaustion, network partition, stale state, permission error, disk failure hoặc bad change; xác định impact của từng lỗi.
 
-## 6. Các concept quan trọng 🔴
-- **Cơ bản**: Cách khởi tạo, cấu hình mặc định, lifecycle quản lý resource.
-- **Trung cấp**: Tích hợp CI/CD, config management (Helm/Kustomize), self-healing.
-- **Nâng cao**: Custom Controllers, Operator pattern, Multi-cluster management.
+# 6. Concepts quan trọng
+Availability, durability, consistency, latency, throughput, capacity, timeout, retry, idempotency và least privilege.
 
-## 7. Ví dụ thực tế 🟠
-- **Dev**: Sử dụng local environment (Minikube, Docker Desktop) để test và debug.
-- **Prod**: Cấu hình High Availability (tối thiểu 3 master nodes), tách biệt mạng và bảo mật chặt chẽ.
-- **Enterprise/Multi-DC**: Triển khai Active-Active hoặc Active-Standby giữa các DC (Vd: Primary DC - DC 2).
+# 7. Ví dụ thực tế
+Triển khai theo môi trường, version-control config, baseline metric, health check, backup và rollback.
 
-## 8. Command / Tool cần biết 🔴
-- Khởi tạo và quản lý: `command create/apply`
-- Giám sát trạng thái: `command get/describe`
-- Xử lý sự cố: `command logs / command exec`
+# 8. Command / Tool cần biết
+docker ps, inspect, logs, stats, events, buildx
 
-## 9. Log 🔴
-- **Vị trí**: System logs thường nằm ở `/var/log/` hoặc xem qua `journalctl -u docker`. Application logs được stream ra `stdout/stderr`.
-- **Phân tích**: Sử dụng ELK/EFK stack hoặc Datadog để thu thập, phân tích và correlation log từ nhiều nguồn để tìm Root Cause.
+# 9. Log và cách đọc
+Correlate timestamp, host/component, request ID, version và user. Giữ evidence trước khi restart hoặc xóa state.
 
-## 10. Metric 🔴
-- **Resource Metrics**: CPU, Memory, Disk I/O, Network Throughput.
-- **Application Metrics**: Request rate, Error rate, Latency.
-- **Tooling**: Prometheus + Grafana, cAdvisor.
+# 10. Metrics
+CPU, memory, disk/inode, network, latency, error rate, queue/connection, replication/lag và SLO.
 
-## 11. Configuration 🔴
-```yaml
-# Mẫu cấu hình tiêu chuẩn cho Docker trong môi trường Prod
-apiVersion: v1
-kind: Configuration
-metadata:
-  name: Docker-prod-config
-spec:
-  replicas: 3
-  resources:
-    requests:
-      memory: "256Mi"
-      cpu: "500m"
-    limits:
-      memory: "512Mi"
-      cpu: "1"
-```
+# 11. Configuration mẫu
+Config phải review, có timeout/limit, secret ngoài source, permission tối thiểu, health check và rollback.
 
-## 12. Troubleshooting Methodology 🔴
-1. **Identify the Issue**: Thu thập triệu chứng (Alerts, User reports).
-2. **Isolate**: Xác định phạm vi ảnh hưởng (Network, Storage, hay Compute?).
-3. **Analyze**: Kiểm tra Log, Metric, và Configuration.
-4. **Mitigate**: Áp dụng biện pháp khắc phục tạm thời để phục hồi dịch vụ (Restart, Rollback).
-5. **Fix & RCA**: Sửa lỗi gốc rễ và lập báo cáo RCA (Root Cause Analysis).
+# 12. Troubleshooting methodology
+Xác định scope; kiểm tra first bad timestamp và recent change; thu logs/metrics; lập hypothesis; mitigation reversible; verify; RCA.
 
-## 13. Production Incident 🔴
-### Incident 1: Resource Exhaustion (OOM)
-- **Symptoms**: Dịch vụ liên tục restart, cảnh báo downtime.
-- **Impact**: Gián đoạn xử lý đơn hàng trong 10 phút.
-- **First steps**: Xem alert từ Grafana.
-- **Commands**: `dmesg -T | grep -i oom` hoặc lệnh get events.
-- **Root Cause**: Memory leak trong mã nguồn ứng dụng, limit memory quá thấp.
-- **Mitigation**: Tạm thời tăng memory limit, restart service.
-- **Fix**: Dev fix memory leak, tối ưu hóa resource requests/limits.
-- **Verification**: Theo dõi memory metric trong 24h.
-- **RCA**: Báo cáo nguyên nhân và hướng khắc phục.
-- **Prevention**: Set alert threshold 80% RAM, review code kĩ hơn.
+# 13. Năm production incidents
+1. Service unavailable: kiểm tra process/listener/health check/dependency.
+2. Latency tăng: kiểm tra saturation, queue, storage và network.
+3. Disk đầy: tìm consumer, cleanup theo policy và mở rộng an toàn.
+4. Permission/TLS lỗi: kiểm tra identity, expiry, chain và recent rotation.
+5. Replication/cluster lỗi: xác định quorum, lag, fencing và failover plan.
 
-*(4 kịch bản Incident khác: Network Partition, Storage Full, Authentication Failure, Misconfiguration.)*
+# 14. So sánh
+Managed giảm vận hành control plane nhưng giảm tùy biến; active-active tăng availability nhưng khó consistency; cache tăng latency tốt nhưng cần invalidation; snapshot nhanh nhưng không thay thế backup.
 
-## 14. So sánh 🟠
-- So sánh Docker với các công nghệ tương đương trên thị trường (Ví dụ: K8s vs Docker Swarm, GitLab CI vs GitHub Actions).
+# 15. Common mistakes
+Không có baseline; alert quá rộng; retry vô hạn; quyền admin; backup chưa restore test; sửa nhiều biến cùng lúc; bỏ qua change record.
 
-## 15. Common Mistakes 🟠
-- Bỏ qua việc set Resource Requests & Limits.
-- Hardcode secret vào file cấu hình thay vì dùng Secret Management.
-- Không cấu hình liveness/readiness probes.
+# 16. Knowledge check
+Giải thích flow, failure domain, metric quan trọng, cách khoanh vùng và tiêu chí rollback của Docker.
 
-## 16. Interview Knowledge Check 🔴
-1. [Cơ bản] Docker là gì và giải quyết bài toán nào?
-2. [Cơ bản] Các thành phần chính của kiến trúc?
-3. [Bản chất] Làm sao Docker đảm bảo tính HA?
-4. [Bản chất] Mô tả lifecycle của một request đi qua Docker?
-5. [Troubleshooting] Khi node bị down, Docker xử lý như thế nào?
-*(Tổng cộng 30 câu hỏi: 10 cơ bản, 10 hiểu bản chất, 10 troubleshooting)*
+# 17. Câu hỏi phỏng vấn
+Thiết kế HA; debug outage; bảo mật access; capacity planning; backup/restore; patch/upgrade; monitoring và RCA.
 
-## 17. Câu hỏi phỏng vấn 🔴
-- Hãy kể một lần bạn gặp sự cố production lớn nhất với Docker và cách bạn giải quyết?
-- Làm sao để thiết kế Docker cho hệ thống có hàng triệu request mỗi ngày?
+# 18. Đáp án phỏng vấn mẫu
+Nêu assumption, scope, evidence, hypothesis, mitigation, verification và trade-off; tách rõ kinh nghiệm production và lab.
 
-## 18. Đáp án phỏng vấn 🔴
-- **Trả lời ngắn (30s)**: Tập trung vào định nghĩa và keyword cốt lõi.
-- **Trả lời sâu (1-2m)**: Giải thích cách hoạt động bên dưới (under the hood), cách các component giao tiếp.
-- **Bẫy (Traps)**: Chú ý các giới hạn (limits) của hệ thống hoặc đánh đổi (trade-offs) giữa Performance và Consistency.
+# 19. Follow-up question tree
+Lỗi đơn lẻ hay toàn hệ thống? Có recent change? Component nào chung? Resource/permission/dependency nào bất thường? Action nào an toàn để giảm impact?
 
-## 19. Cách trả lời như Engineer 🔴
-- Bắt đầu với ngữ cảnh, phân tích trade-off (Pros/Cons).
-- Luôn liên kết với Metric, Log, và Impact đến business.
+# 20. Checklist sau khi học
+- [ ] Vẽ architecture và dependency.
+- [ ] Chạy được command cơ bản.
+- [ ] Viết runbook incident và rollback.
+- [ ] Có backup/restore hoặc recovery test.
 
-## 20. Follow-up Question Tree 🟠
-- Trả lời đúng về kiến trúc -> Hỏi sâu về cách đảm bảo bảo mật.
-- Trả lời đúng về Troubleshooting -> Hỏi về cách tự động hóa (Self-healing, Auto-scaling).
+# 21. Flashcards
+SLI là phép đo; SLO là mục tiêu; RTO là thời gian phục hồi; RPO là dữ liệu mất; p99 là tail latency; quorum tránh split-brain; health check quyết định failover; least privilege giảm blast radius; idempotency an toàn khi retry; RCA cần prevention.
 
-## 21. Checklist sau khi học 🟠
-- [ ] Vẽ lại được kiến trúc trên giấy.
-- [ ] Liệt kê được 5 lệnh troubleshooting quan trọng nhất.
-- [ ] Giải thích được 3 production incidents.
+# 22. Phải hiểu và phải nhớ
+Hiểu causal chain và trade-off; nhớ lifecycle, trạng thái, command, log, metric và escalation.
 
-## 22. Flashcards (20+ Q&A) 🟠
-- **Q**: Port mặc định của Docker là gì? -> **A**: ...
-- **Q**: Lệnh xem log của Docker? -> **A**: ...
+# 23. Phân biệt “phải nhớ” và “phải hiểu”
+Nhớ cú pháp không đủ; phải hiểu tác động của workload, baseline, failure domain và dependency.
+
+# 24. Liên hệ với JD
+Map vào system administration, platform operations, cloud, monitoring, security, incident và change management.
+
+# 25. Liên hệ với CV
+Nêu rõ quy mô, vai trò, metric trước/sau, công cụ và bài học; không biến lab thành production claim.
+
+# 26. Enterprise / data center scenario
+Thiết kế HA theo failure domain, access/audit tập trung, backup immutable, DR site, break-glass và vendor escalation.
+
+# 27. Hands-on lab
+Tạo workload lab, ghi baseline, gây lỗi có kiểm soát, thu evidence, khắc phục, kiểm tra recovery và viết RCA.
+
+# 28. Troubleshooting decision tree
+Alert → scope → process/config → network/dependency → resource/storage → state/replication → mitigation → verify → prevention.
+
+# 29. Production readiness review
+SLO, dashboard, alert, capacity, security, ownership, runbook, backup/restore, rollback, patch plan và game day.
+
+# 30. Self-assessment
+Beginner: giải thích concept. Intermediate: vận hành và debug. Advanced: thiết kế HA/DR, cost, security và migration.
+
+# 31. Interview priority
+Architecture → lifecycle → command/evidence → failure mode → mitigation → trade-off → security/DR.
+
+# 32. Final checklist
+- [ ] Trình bày được cơ chế đúng chủ đề Docker.
+- [ ] Debug được incident theo evidence.
+- [ ] Nêu được HA, backup, security, rollback và prevention.
+

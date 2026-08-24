@@ -1,139 +1,254 @@
-# Interview DevOps - Helm
+# [31] HELM PACKAGE MANAGEMENT
 
-## 1. Mục tiêu học 🔴
-Nắm vững kiến thức nền tảng và nâng cao về Helm, hiểu rõ cách công nghệ này vận hành trong môi trường Enterprise, đặc biệt tập trung vào bối cảnh hệ thống Logistics và quản lý hệ thống Enterprise tại Enterprise System. Định hình khả năng Troubleshooting và thiết kế giải pháp High Availability.
+> **Phase:** 3 — DevOps Core
+> **Priority:** 🔴 MUST KNOW
+> **JD Weight:** DevOps Engineer — 40%
+> **Interview Priority:** 🔴 Very High
+> **Prerequisite:** Kubernetes manifests, YAML, templating, Git, CI/CD
 
-## 2. Kiến thức nền cần biết 🟠
-- Networking (TCP/IP, Routing, Load Balancing).
-- Hệ điều hành Linux (Namespaces, Cgroups cho container).
-- Storage (Block, File, Object storage).
-- Kiến thức về System Design và Distributed Systems.
+# 1. 🎯 MỤC TIÊU HỌC
 
-## 3. Tổng quan (Enterprise & Tan Cang Sai Gon Enterprise Context) 🔴
-Tại Enterprise System, hệ thống Helm đóng vai trò cốt lõi trong quá trình chuyển đổi số (Digital Transformation), giúp hiện đại hóa các ứng dụng quản lý doanh nghiệp lớn, tối ưu hóa quy trình Logistics, đảm bảo tính liên tục (High Availability), và khả năng scale-out linh hoạt trong môi trường Multi-DC và Cloud (AWS/On-premise).
+Hiểu chart/repository/release, values/template/rendering, dependency, hooks, upgrade/rollback, schema, security và cách đưa Helm vào CI/CD/GitOps mà không tạo drift.
 
-## 4. Kiến trúc / Cách hoạt động 🔴
+# 2. 🧠 KIẾN THỨC NỀN
+
+Ôn Kubernetes object/apiVersion, YAML merge, labels/annotations, immutable image, namespaces, RBAC, Git diff và release lifecycle.
+
+# 3. 📚 TỔNG QUAN
+
+Helm đóng gói Kubernetes manifests thành chart và quản lý release state. Helm không thay Kubernetes controller, không phải secret manager và không tự kiểm tra application health ngoài readiness/rollback strategy được cấu hình.
+
+# 4. 🏗️ KIẾN TRÚC / CÁCH HOẠT ĐỘNG
+
 ```text
-+---------------------------------------------------+
-|                  Helm Control Plane            |
-|  [ API Server / Controller / Scheduler / etcd ]   |
-+-------------------------+-------------------------+
-                          |
-             +------------+------------+
-             |                         |
-+------------v-----------+ +-----------v------------+
-|      Worker Node 1     | |      Worker Node 2     |
-| [ Runtime / Proxy ]    | | [ Runtime / Proxy ]    |
-+------------------------+ +------------------------+
+Chart + values + release name
+          -> helm template/render
+          -> Kubernetes manifests
+          -> API Server
+          -> release state (Secret/ConfigMap)
+          -> controller rollout -> Pods/Services
 ```
 
-## 5. Các thành phần quan trọng 🔴
-- **Control Components**: Điều phối, quản lý state và config của hệ thống.
-- **Worker Components**: Nơi thực thi các workload, quản lý resource (CPU, RAM).
-- **Network/Storage Plugins**: Mở rộng khả năng giao tiếp và lưu trữ lâu dài.
+# 5. 🧩 CÁC THÀNH PHẦN QUAN TRỌNG
 
-## 6. Các concept quan trọng 🔴
-- **Cơ bản**: Cách khởi tạo, cấu hình mặc định, lifecycle quản lý resource.
-- **Trung cấp**: Tích hợp CI/CD, config management (Helm/Kustomize), self-healing.
-- **Nâng cao**: Custom Controllers, Operator pattern, Multi-cluster management.
+Chart.yaml, values.yaml, templates, `_helpers.tpl`, schema, dependencies, repository/OCI registry, release Secret, hooks, `helm upgrade`, `helm rollback` và diff plugin.
 
-## 7. Ví dụ thực tế 🟠
-- **Dev**: Sử dụng local environment (Minikube, Docker Desktop) để test và debug.
-- **Prod**: Cấu hình High Availability (tối thiểu 3 master nodes), tách biệt mạng và bảo mật chặt chẽ.
-- **Enterprise/Multi-DC**: Triển khai Active-Active hoặc Active-Standby giữa các DC (Vd: Primary DC - DC 2).
+# 6. 📖 CÁC CONCEPT QUAN TRỌNG
 
-## 8. Command / Tool cần biết 🔴
-- Khởi tạo và quản lý: `command create/apply`
-- Giám sát trạng thái: `command get/describe`
-- Xử lý sự cố: `command logs / command exec`
+## 6.1. Cơ bản
 
-## 9. Log 🔴
-- **Vị trí**: System logs thường nằm ở `/var/log/` hoặc xem qua `journalctl -u helm`. Application logs được stream ra `stdout/stderr`.
-- **Phân tích**: Sử dụng ELK/EFK stack hoặc Datadog để thu thập, phân tích và correlation log từ nhiều nguồn để tìm Root Cause.
+Chart là package; release là một installation instance; values là input. `helm template` render local, `helm install/upgrade` gửi object đến API server. Template phải tạo resource hợp lệ và deterministic.
 
-## 10. Metric 🔴
-- **Resource Metrics**: CPU, Memory, Disk I/O, Network Throughput.
-- **Application Metrics**: Request rate, Error rate, Latency.
-- **Tooling**: Prometheus + Grafana, cAdvisor.
+## 6.2. Trung cấp
 
-## 11. Configuration 🔴
+Dùng `values.schema.json`, named templates, dependency pinning, environment values riêng và `--atomic --wait` khi phù hợp. Không đặt Secret plaintext trong chart repository.
+
+## 6.3. Nâng cao
+
+Helm upgrade có thể thay đổi immutable field, hook gây timeout, CRD lifecycle không giống resource thường, và `--reuse-values` có thể giữ config cũ ngoài ý muốn. GitOps nên render/diff trước sync.
+
+# 7. 🌍 VÍ DỤ THỰC TẾ
+
+Dev dùng chart local với `helm lint/template`. Prod pin chart/app version, values qua Git, image digest, schema validation, canary/rollback và release history. Shared chart phải có compatibility matrix.
+
+# 8. 🛠️ COMMAND / TOOL CẦN BIẾT
+
+```bash
+helm lint ./chart
+helm dependency build ./chart
+helm template orders ./chart -f values-prod.yaml --debug
+helm diff upgrade orders ./chart -n orders -f values-prod.yaml
+helm upgrade --install orders ./chart -n orders --create-namespace --atomic --wait
+helm list -A
+helm history orders -n orders
+helm rollback orders <revision> -n orders --wait
+helm get manifest/values/status orders -n orders
+```
+
+# 9. 📝 LOG
+
+Helm client output/release history chỉ cho biết operation; cần đọc Kubernetes Events, Deployment/Pod logs, admission rejection và Git/ArgoCD sync log để biết rollout thực tế.
+
+# 10. 📊 METRIC
+
+Release success/failure, upgrade duration, rollback count, rollout readiness, Pod restart/error/latency, hook duration, sync drift và API/admission errors.
+
+# 11. ⚙️ CONFIGURATION
+
 ```yaml
-# Mẫu cấu hình tiêu chuẩn cho Helm trong môi trường Prod
-apiVersion: v1
-kind: Configuration
-metadata:
-  name: Helm-prod-config
-spec:
-  replicas: 3
-  resources:
-    requests:
-      memory: "256Mi"
-      cpu: "500m"
-    limits:
-      memory: "512Mi"
-      cpu: "1"
+# values-prod.yaml
+image:
+  repository: 123456789012.dkr.ecr.ap-southeast-1.amazonaws.com/orders
+  digest: sha256:...
+replicaCount: 3
+resources:
+  requests: {cpu: 250m, memory: 512Mi}
+  limits: {cpu: "1", memory: 1Gi}
 ```
 
-## 12. Troubleshooting Methodology 🔴
-1. **Identify the Issue**: Thu thập triệu chứng (Alerts, User reports).
-2. **Isolate**: Xác định phạm vi ảnh hưởng (Network, Storage, hay Compute?).
-3. **Analyze**: Kiểm tra Log, Metric, và Configuration.
-4. **Mitigate**: Áp dụng biện pháp khắc phục tạm thời để phục hồi dịch vụ (Restart, Rollback).
-5. **Fix & RCA**: Sửa lỗi gốc rễ và lập báo cáo RCA (Root Cause Analysis).
+Template dùng `required` cho giá trị bắt buộc, schema để validate type/range và không in Secret vào rendered manifest/log.
 
-## 13. Production Incident 🔴
-### Incident 1: Resource Exhaustion (OOM)
-- **Symptoms**: Dịch vụ liên tục restart, cảnh báo downtime.
-- **Impact**: Gián đoạn xử lý đơn hàng trong 10 phút.
-- **First steps**: Xem alert từ Grafana.
-- **Commands**: `dmesg -T | grep -i oom` hoặc lệnh get events.
-- **Root Cause**: Memory leak trong mã nguồn ứng dụng, limit memory quá thấp.
-- **Mitigation**: Tạm thời tăng memory limit, restart service.
-- **Fix**: Dev fix memory leak, tối ưu hóa resource requests/limits.
-- **Verification**: Theo dõi memory metric trong 24h.
-- **RCA**: Báo cáo nguyên nhân và hướng khắc phục.
-- **Prevention**: Set alert threshold 80% RAM, review code kĩ hơn.
+# 12. 🔧 TROUBLESHOOTING
 
-*(4 kịch bản Incident khác: Network Partition, Storage Full, Authentication Failure, Misconfiguration.)*
+```text
+Render lỗi -> helm lint/template/schema/dependency
+Apply lỗi -> API version/RBAC/admission/immutable field
+Rollout treo -> describe/events/probe/image/config/dependency
+Release sai -> helm diff/get values/history/Git commit
+Rollback -> chọn revision, kiểm tra CRD/schema/data migration rồi verify
+```
 
-## 14. So sánh 🟠
-- So sánh Helm với các công nghệ tương đương trên thị trường (Ví dụ: K8s vs Docker Swarm, GitLab CI vs GitHub Actions).
+# 13. 🚨 PRODUCTION INCIDENT
 
-## 15. Common Mistakes 🟠
-- Bỏ qua việc set Resource Requests & Limits.
-- Hardcode secret vào file cấu hình thay vì dùng Secret Management.
-- Không cấu hình liveness/readiness probes.
+### Incident 01 — Upgrade tạo Pod không Ready
 
-## 16. Interview Knowledge Check 🔴
-1. [Cơ bản] Helm là gì và giải quyết bài toán nào?
-2. [Cơ bản] Các thành phần chính của kiến trúc?
-3. [Bản chất] Làm sao Helm đảm bảo tính HA?
-4. [Bản chất] Mô tả lifecycle của một request đi qua Helm?
-5. [Troubleshooting] Khi node bị down, Helm xử lý như thế nào?
-*(Tổng cộng 30 câu hỏi: 10 cơ bản, 10 hiểu bản chất, 10 troubleshooting)*
+Đọc diff, revision, Events/probe/log/config. Nếu impact tăng, rollback atomic/revision cũ; kiểm tra migration và backward compatibility trước khi retry.
 
-## 17. Câu hỏi phỏng vấn 🔴
-- Hãy kể một lần bạn gặp sự cố production lớn nhất với Helm và cách bạn giải quyết?
-- Làm sao để thiết kế Helm cho hệ thống có hàng triệu request mỗi ngày?
+### Incident 02 — Values production bị ghi đè
 
-## 18. Đáp án phỏng vấn 🔴
-- **Trả lời ngắn (30s)**: Tập trung vào định nghĩa và keyword cốt lõi.
-- **Trả lời sâu (1-2m)**: Giải thích cách hoạt động bên dưới (under the hood), cách các component giao tiếp.
-- **Bẫy (Traps)**: Chú ý các giới hạn (limits) của hệ thống hoặc đánh đổi (trade-offs) giữa Performance và Consistency.
+Xác định source/precedence `-f`/`--set`, commit và release values. Freeze deploy, rollback config, rồi tách values/environment và schema.
 
-## 19. Cách trả lời như Engineer 🔴
-- Bắt đầu với ngữ cảnh, phân tích trade-off (Pros/Cons).
-- Luôn liên kết với Metric, Log, và Impact đến business.
+### Incident 03 — Hook timeout
 
-## 20. Follow-up Question Tree 🟠
-- Trả lời đúng về kiến trúc -> Hỏi sâu về cách đảm bảo bảo mật.
-- Trả lời đúng về Troubleshooting -> Hỏi về cách tự động hóa (Self-healing, Auto-scaling).
+Kiểm tra hook Pod/log/deadline/RBAC và side effect. Xóa/re-run chỉ khi idempotent; tránh hook migration không có backup/rollback.
 
-## 21. Checklist sau khi học 🟠
-- [ ] Vẽ lại được kiến trúc trên giấy.
-- [ ] Liệt kê được 5 lệnh troubleshooting quan trọng nhất.
-- [ ] Giải thích được 3 production incidents.
+### Incident 04 — CRD/API version không tương thích
 
-## 22. Flashcards (20+ Q&A) 🟠
-- **Q**: Port mặc định của Helm là gì? -> **A**: ...
-- **Q**: Lệnh xem log của Helm? -> **A**: ...
+Kiểm tra cluster version, CRD schema và rendered manifest. Migrate CRD theo tài liệu, không để Helm uninstall xóa CRD production ngoài chủ ý.
+
+### Incident 05 — Release drift ngoài Git
+
+So sánh `helm get manifest`/live object với Git/desired state, xác định manual change, reconcile có approval và bổ sung policy ngăn sửa trực tiếp.
+
+# 14. ⚖️ SO SÁNH & TRADE-OFF
+
+| Lựa chọn | Ưu điểm | Trade-off |
+|---|---|---|
+| Helm | package/release/rollback | template complexity |
+| Kustomize | patch rõ, ít template | package/dependency yếu hơn |
+| Helm trực tiếp CD | đơn giản | quyền cluster nằm ở pipeline |
+| Helm qua GitOps | audit/reconcile | cần xử lý drift/secret |
+| `--atomic` | rollback khi timeout | không cứu data migration |
+| `--reuse-values` | tiện upgrade | giữ config cũ ngoài ý muốn |
+
+# 15. ❌ COMMON MISTAKES
+
+- Dùng `helm upgrade` mà không render/diff.
+- Đặt Secret plaintext trong values.
+- Không pin dependency/image digest.
+- Dùng hook không idempotent.
+- Nghĩ rollback app luôn rollback database schema.
+- Xóa CRD/data khi uninstall chart.
+- Dùng `--set` quá nhiều làm mất auditability.
+
+# 16. ✅ INTERVIEW KNOWLEDGE CHECK
+
+1. Chart khác release thế nào?
+2. `helm template` khác `helm upgrade` ra sao?
+3. Values precedence gồm gì?
+4. `--atomic --wait` có giới hạn nào?
+5. Hook có rủi ro gì?
+6. Helm rollback có rollback database không?
+7. Vì sao cần schema/diff?
+
+# 17. 🎤 CÂU HỎI PHỎNG VẤN
+
+- Thiết kế chart production-ready.
+- Debug upgrade bị timeout.
+- Quản lý values cho dev/staging/prod thế nào?
+- Helm và GitOps phối hợp ra sao?
+- Xử lý CRD/dependency upgrade thế nào?
+- Làm sao tránh Secret leak?
+
+# 18. 🗣️ ĐÁP ÁN PHỎNG VẤN
+
+Em luôn render và diff trước upgrade, validate schema/dependency, pin image/chart, dùng `--atomic --wait` phù hợp, theo dõi rollout và giữ release history. Nếu lỗi, em phân biệt manifest/config/app/data migration; rollback chỉ là một phần mitigation, sau đó phải verify và RCA.
+
+# 19. 🧑‍💻 CÁCH TRẢ LỜI NHƯ ENGINEER
+
+Nói về input → rendered output → API apply → controller rollout → health verification. Không mô tả Helm như một runtime hoặc service discovery platform.
+
+# 20. 🌳 FOLLOW-UP QUESTION TREE
+
+```text
+Upgrade fail?
+ -> render/schema/dependency?
+ -> API/RBAC/admission?
+ -> rollout/probe/image/config?
+ -> hook/CRD/migration?
+ -> rollback/verify/drift?
+```
+
+# 21. 📋 CHECKLIST SAU KHI HỌC
+
+- [ ] Tạo chart có schema và helper.
+- [ ] Render/diff được theo environment.
+- [ ] Debug upgrade/rollback/hook/CRD.
+- [ ] Quản lý Secret và dependency an toàn.
+- [ ] Kết nối được Helm với GitOps.
+
+# 22. 🃏 FLASHCARDS
+
+**Q:** Release là gì? **A:** Một instance của chart trong cluster.  
+**Q:** `helm template` dùng làm gì? **A:** Render manifest mà chưa apply.  
+**Q:** `--atomic` làm gì? **A:** Rollback khi upgrade thất bại/timeout theo điều kiện wait.  
+**Q:** Helm rollback có sửa DB không? **A:** Không đảm bảo; migration cần chiến lược riêng.
+
+# 23. 🧠 PHÂN BIỆT “PHẢI NHỚ” VÀ “PHẢI HIỂU”
+
+🔴 Phải hiểu: render/apply/reconcile, values precedence, release và rollback.  
+🟠 Phải nắm: lint/template/diff/history/get/status.  
+🟡 Nên biết: hooks, CRD, OCI registry, schema và GitOps drift.
+
+# 24. 🎯 LIÊN HỆ VỚI JD
+
+Helm là kỹ năng đóng gói/deploy/rollback phổ biến trong Kubernetes CI/CD và GitOps.
+
+# 25. 📌 LIÊN HỆ VỚI CV
+
+Nếu CV ghi Helm, cần nói được chart structure, values, release, rollback và một incident; không chỉ “biết viết YAML”.
+
+# 26. 🏢 ENTERPRISE / DATA CENTER SCENARIO
+
+Monorepo chart được version/pin dependency, values production review qua PR, CI lint/render/security scan, ArgoCD sync, secret external và rollback runbook.
+
+# 27. 🧪 HANDS-ON LAB
+
+1. Viết chart Deployment/Service với schema.
+2. Render dev/prod và review diff.
+3. Cố ý sai value/probe để tạo failed rollout.
+4. Test rollback và release history.
+5. Thử dependency/CRD upgrade trong cluster test.
+
+# 28. 🔍 TROUBLESHOOTING DECISION TREE
+
+Render → schema/dependency; apply → API/RBAC/admission; rollout → Pod/probe/image/config; release → values/history/Git drift; rollback → data/CRD compatibility.
+
+# 29. 🧾 PRODUCTION READINESS REVIEW
+
+Review chart lint/schema, immutable image, values/Secret, dependency pin, diff approval, resource/probe/PDB, hook idempotency, CRD lifecycle, rollback và release ownership.
+
+# 30. 🧭 FINAL SELF-ASSESSMENT
+
+| Skill | Beginner | Intermediate | Advanced |
+|---|---:|---:|---:|
+| Chart/template | ☐ | ☐ | ☐ |
+| Values/schema | ☐ | ☐ | ☐ |
+| Release/rollback | ☐ | ☐ | ☐ |
+| GitOps integration | ☐ | ☐ | ☐ |
+| Incident debug | ☐ | ☐ | ☐ |
+
+# 31. 🔥 INTERVIEW PRIORITY
+
+Ưu tiên: chart/release, values, render/diff, `--atomic`, rollback, hooks, CRD, Secret, dependency và GitOps drift.
+
+# 32. 📋 FINAL CHECKLIST
+
+- [ ] Viết được chart có schema và values rõ ràng.
+- [ ] Render/diff trước deploy.
+- [ ] Upgrade/rollback an toàn.
+- [ ] Không leak Secret và không phá CRD/data.
+- [ ] Debug được failed release theo evidence.
+
+---
+END OF FILE
