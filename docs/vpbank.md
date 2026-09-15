@@ -145,6 +145,124 @@ Hai câu chuyện chính: XBrain/AWS chứng minh DevOps; FPT Software chứng m
 
 **Công thức trả lời theo VPBank:** bối cảnh hệ thống → business risk → phần trực tiếp sở hữu → thay đổi kỹ thuật → safety gate → evidence/kết quả → residual risk và bài học.
 
+### Incident tôi đã xử lý - Production Multi-Service Degradation
+
+> **Thời gian:** 20/07/2026, 00:22-02:37 ICT  
+> **Môi trường:** EKS techx-tf2-prod, namespace techx-corp-prod  
+> **Mức độ:** Critical  
+> **Trạng thái:** Resolved sau khi PR #161 được merge và ArgoCD sync thành công
+
+#### Bối cảnh và ảnh hưởng
+
+Trong thời gian incident, hệ thống production bị suy giảm nhiều service. Checkout bị breach SLO nghiêm trọng, trong khi Browse và Cart vẫn giữ được mức phục vụ bình thường.
+
+| SLO | Mục tiêu | Thực tế | Trạng thái |
+|---|---:|---:|---|
+| Checkout success rate | >= 99% | **88,158%** | BREACH |
+| Browse success rate | >= 99,5% | 100,000% | OK |
+| Cart success rate | >= 99,5% | 100,000% | OK |
+| Storefront p95 latency | < 1 giây | 36,644 ms | OK |
+
+#### Cách tôi điều tra
+
+Tôi bắt đầu từ alert checkout success rate trên Discord, sau đó đối chiếu Grafana SLO dashboard, Karpenter controller logs, Kubernetes eviction events và trạng thái ArgoCD.
+
+Các bằng chứng chính:
+
+- Karpenter chạy consolidation WhenUnderutilized, đã terminate/replace 5 node trong khoảng 8 phút.
+- Có tổng cộng 15 pod bị eviction, trong đó có 2 checkout pod.
+- PDB của checkout trước đó dùng minAvailable: 1. Kubernetes vẫn tôn trọng PDB, nhưng để lại chỉ một pod Ready, không đáp ứng availability floor tối thiểu của Directive 3.
+- ArgoCD báo Degraded vì shopping-copilot bị CrashLoopBackOff. Đây là lỗi dependency riêng của AI team: package thiếu llm_guard trong requirements.txt, không phải root cause của checkout SLO breach.
+- Tôi kiểm tra cả blast radius và phân biệt hai vấn đề: checkout capacity collapse do node disruption/PDB; shopping-copilot crash loop do missing Python dependency.
+
+#### Root cause
+
+Root cause chính là Karpenter eviction xảy ra đồng thời trên nhiều node trong khi PDB của critical service chỉ bảo vệ minAvailable: 1. PDB đã ngăn việc evict hết pod, nhưng không đủ để bảo đảm hai instance Ready, capacity headroom, topology khác failure domain hoặc application health.
+
+Vì vậy, việc chỉ nói “đã có PDB” là chưa đủ. Availability cần kết hợp replica floor, PDB, readiness probe, rollout an toàn, topology spread, graceful termination và capacity pre-flight.
+
+#### Phần xử lý của tôi
+
+1. Cập nhật Helm chart để PDB hỗ trợ cấu hình động maxUnavailable hoặc minAvailable.
+2. Bảo vệ checkout và cart trong production bằng:
+
+       checkout:
+         pdb:
+           maxUnavailable: 1
+       cart:
+         pdb:
+           maxUnavailable: 1
+
+3. Cập nhật verify-directive-03.ps1 để CI kiểm tra đúng cấu hình PDB mới.
+4. Cập nhật values.schema.json để Helm lint/schema validation chấp nhận trường pdb.
+5. Đưa thay đổi qua GitOps trong PR #161, không patch trực tiếp trên production.
+6. Sau khi ArgoCD sync, kiểm tra lại PDB, Ready replicas, pod placement, EndpointSlice, capacity headroom và trạng thái service.
+7. Xác minh remediation bằng SLO dashboard, Grafana, Kubernetes events và ArgoCD Synced/Healthy.
+
+Không dùng kubectl drain --force hoặc --disable-eviction, vì các flag này có thể bypass safety mechanism và biến thiếu capacity thành outage.
+
+#### Kết quả và evidence
+
+PR #161 được merge, ArgoCD sync thành công và các storefront service trở lại trạng thái Healthy. Evidence gồm alert history, Grafana SLO dashboard, Karpenter logs, Kubernetes eviction events, ArgoCD application status và output của policy validation.
+
+Kết luận chính xác khi phỏng vấn:
+
+> Tôi đã xử lý phần platform/reliability bằng cách xác định Karpenter consolidation và PDB chưa đủ an toàn, cập nhật Helm/PDB/CI validation qua GitOps, rồi kiểm chứng lại bằng SLO, Kubernetes và ArgoCD evidence. Lỗi shopping-copilot thiếu llm_guard thuộc AI engineering team; tôi phân biệt và phối hợp theo đúng ownership, không nhận đó là phần mình trực tiếp sửa.
+
+#### Cách trả lời theo STAR
+
+- **Situation:** Checkout success rate giảm còn 88,158% trong lúc Karpenter evict nhiều pod trên EKS production.
+- **Task:** Khôi phục customer path và loại bỏ nguy cơ maintenance làm mất availability floor, đồng thời xác định các lỗi phụ trong hệ thống.
+- **Action:** Đối chiếu alert, SLO, controller logs và eviction events; xác định PDB minAvailable: 1 chưa đủ; cập nhật PDB/Helm/schema/CI qua PR #161; để AI team xử lý dependency llm_guard; xác minh qua ArgoCD, Grafana và Kubernetes.
+- **Result:** PR được merge, ArgoCD sync, storefront services Healthy; remediation có evidence và không dùng thao tác bypass an toàn.
+
+#### Câu hỏi follow-up có thể gặp
+
+**Vì sao có PDB mà vẫn breach?**  
+PDB chỉ giới hạn voluntary eviction; nó không tự bảo đảm capacity, topology, readiness hoặc application health. PDB minAvailable: 1 vẫn cho phép hệ thống rơi xuống một pod, thấp hơn availability floor cần thiết.
+
+**Vì sao không dùng kubectl drain --force?**  
+Vì --force bypass safety mechanism. Khi PDB block drain, đó là tín hiệu cần điều tra capacity, replica, topology và dependency chứ không phải lý do để bỏ qua cơ chế bảo vệ.
+
+**Bạn có trực tiếp xử lý lỗi shopping-copilot không?**  
+Không. Report xác định lỗi thiếu llm_guard thuộc AI engineering team. Tôi phát hiện và phân loại nó là secondary issue, phối hợp đúng team; phần tôi trực tiếp xử lý là platform reliability, PDB và GitOps remediation.
+
+**Bài học là gì?**  
+Một cấu hình “đúng” riêng lẻ chưa tạo ra HA. Cần nhìn toàn bộ chuỗi: disruption policy -> PDB -> replica -> scheduling -> readiness -> graceful termination -> capacity -> SLO evidence.
+
+
+### Tài liệu tham khảo và evidence theo Mandate
+
+> Dùng các nguồn dưới đây để mở evidence khi bị hỏi sâu. Khi trình bày, chỉ claim phần mình trực tiếp làm và phân biệt rõ implementation, verification và mentor/sign-off.
+
+| Mandate | Loại nguồn | Tài liệu |
+|---|---|---|
+| 1 | Documentation | [Client VPN documentation](https://github.com/tf2-team/tf2-corp-infra/blob/main/docs/client-vpn.md) |
+| 1 | Task | [ClickUp task 86ey9580y](https://app.clickup.com/t/9018218066/86ey9580y) |
+| 2 | Video demo | [Mandate 2 video demo](https://drive.google.com/file/d/1jph3WQsf-ZT9Z1ymyF1a1e_Bg0AY9Dmu/view?usp=drive_link) |
+| 3 | Video demo | [Mandate 3 video demo](https://drive.google.com/file/d/1Oqe8rtuLznUl7Aci6zszbauqeA_hNe5s/view?usp=sharing) |
+| 5 | Submission report | [Mandate 5 mentor submission](https://github.com/tf2-team/tf2-corp-chart/blob/main/docs/adr/evidence/sec-07/14-mentor-submission.md) |
+| 5 | Alert report | [Container escape alerting report](https://github.com/tf2-team/tf2-corp-chart/blob/main/docs/evidence/container-escape-alerting-report.md) |
+| 8 | Submission report | [Directive 8 submission](https://github.com/tf2-team/tf2-corp-chart/blob/main/docs/operations/directive-08-submission.md) |
+| 8 | Cutover report | [Directive 8 managed data cutover](https://github.com/tf2-team/tf2-corp-chart/blob/main/docs/operations/directive-08-managed-data-cutover.md) |
+| 8 | Video demo | [Mandate 8 video demo](https://drive.google.com/file/d/1306-SVK4jRNDUUgu4fwpMef-zenuNFpj/view?usp=sharing) |
+| 12 | Video demo | [Mandate 12 video demo](https://drive.google.com/file/d/1zvgmLKlwTq42U2MvOs2Q0VYFUj-6xz1N/view?usp=sharing) |
+| 16 | ADR | [ADR-M16 - latency under load](https://github.com/tf2-team/tf2-corp-chart/blob/main/docs/adr/ADR-M16-latency-under-load.md) |
+| 17 | ADR | [ADR-M17 - resilience containment](https://github.com/tf2-team/tf2-corp-chart/blob/main/docs/adr/ADR-M17-resilience-containment.md) |
+| 17 | Evidence | [Mandate 17 resilience evidence](https://github.com/tf2-team/tf2-corp-chart/blob/main/docs/evidence/mandate-17/resilience.md) |
+| 17 | Video demo | [Mandate 17 video demo](https://drive.google.com/file/d/1tIf8KSYa-qA3-XqxCT3Za9tBcI31CpHw/view?usp=drive_link) |
+| 20 | ADR | [ADR-BCP-20 - Phoenix resilience and zero data loss](https://github.com/tf2-team/tf2-corp-infra/blob/main/docs/adr/ADR-BCP-20-phoenix-resilience-and-zero-data-loss.md) |
+| 20 | Evidence | [Mandate 20 evidence index](https://github.com/tf2-team/tf2-corp-infra/blob/main/docs/evidence/mandate-20/2026-07-27/README.md) |
+| 20 | Video demo | [Mandate 20 video demo](https://drive.google.com/file/d/12CTquBsI385k1LUX_oX4TUzIAEe7MtOP/view?usp=sharing) |
+
+#### Cách dùng reference khi phỏng vấn
+
+- **Câu hỏi về ownership:** mở submission/task tương ứng và chỉ ra phần mình trực tiếp thực hiện.
+- **Câu hỏi về production safety:** dùng ADR, runbook và alert report để nói về risk, guardrail, rollback và approval.
+- **Câu hỏi về kết quả:** dùng evidence, dashboard, logs hoặc video demo; không biến “đã triển khai” thành “đã được mentor sign-off”.
+- **Câu hỏi về quyền truy cập:** các link ClickUp/Google Drive có thể yêu cầu tài khoản hoặc quyền chia sẻ phù hợp.
+
+
 ### Hướng xử lý Mandate 3, 8 và 20 — chuẩn bị phỏng vấn
 
 Tài liệu này tổng hợp từ runbook, postmortem và evidence trong workspace.
