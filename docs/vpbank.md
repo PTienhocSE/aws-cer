@@ -135,6 +135,547 @@ Hai câu chuyện chính: XBrain/AWS chứng minh DevOps; FPT Software chứng m
 
 ## DevOps Intern – XBrain × AWS Accelerator
 
+### Mapping Mandate vào năng lực VPBank
+
+| Nội dung XBrain | Năng lực vị trí vận hành hệ thống CNTT | Cách trình bày với Hội đồng |
+|---|---|---|
+| Mandate 3 - maintenance không gián đoạn | High Availability, Kubernetes operations, incident response | Nêu failure mode, KPI customer path, safety gate, cách đo bằng k6/Grafana và rollback |
+| Mandate 8 - managed data cutover | Migration, security, data integrity, change management | Nêu private/TLS, ESO, parity, cutover từng store, rollback và residual risk |
+| Mandate 20 - backup/PITR | Business continuity, disaster recovery, RPO/RTO | Nêu restore thật, isolated target, hash, CloudTrail evidence và giới hạn không claim vượt evidence |
+
+**Công thức trả lời theo VPBank:** bối cảnh hệ thống → business risk → phần trực tiếp sở hữu → thay đổi kỹ thuật → safety gate → evidence/kết quả → residual risk và bài học.
+
+### Hướng xử lý Mandate 3, 8 và 20 — chuẩn bị phỏng vấn
+
+Tài liệu này tổng hợp từ runbook, postmortem và evidence trong workspace.
+Khi trình bày cần phân biệt: **đã triển khai**, **đã kiểm chứng**, và **đã
+mentor sign-off**.
+
+#### Tóm tắt
+
+| Mandate | Mục tiêu | Kết quả |
+|---|---|---|
+| 3 | Bảo trì production không gián đoạn Browse/Cart/Checkout | Đã bổ sung HA/PDB/safe drain và xử lý incident; formal acceptance cần evidence + mentor confirmation. |
+| 8 | Chuyển PostgreSQL, Valkey, Kafka sang AWS managed/private | Hồ sơ ghi 100% complete; parity Delta = 0, không có 5xx trong migration window. |
+| 20 | Backup, PITR, chống xóa nhầm và chứng minh RPO/RTO | DynamoDB và RDS drill PASS; infrastructure gate complete; mentor/data-owner sign-off pending. |
+
+#### 1. Mandate 3 — Zero-downtime maintenance
+
+##### Yêu cầu
+
+Trong lúc drain node hoặc restart/rollout Deployment production:
+
+| Flow | SLO |
+|---|---:|
+| Browse | >= 99,5% |
+| Cart | >= 99,5% |
+| Checkout | >= 99% |
+| Public storefront | p95 < 1 giây |
+
+Không được có critical Service mất toàn bộ Ready endpoint. Test phải đi qua
+public storefront, không dùng port-forward/internal ALB.
+
+##### Vấn đề đã xảy ra
+
+Postmortem `INCIDENT_REPORT_CHECKOUT_20260720.md` ghi nhận checkout success
+**88,158%**, vi phạm ngưỡng 99%; Browse và Cart vẫn 100%, storefront p95 là
+36,644 ms. PDB giữ lại một pod nhưng chưa đủ bảo đảm availability floor. Một
+CrashLoopBackOff riêng của Shopping Copilot do thiếu `llm_guard` cũng cho thấy
+phải kiểm tra health trước khi drain.
+
+##### Cách xử lý
+
+- Production stateless money path có tối thiểu 2 replicas.
+- `PodDisruptionBudget minAvailable: 1` cho Deployment nhiều replica.
+- Readiness probe loại pod chưa sẵn sàng khỏi Service endpoints.
+- Rolling update: `maxUnavailable: 0`, `maxSurge: 1`.
+- Hard topology spread theo zone và hostname, `minDomains: 2`.
+- Native `preStop` 10 giây + termination grace 30 giây để EndpointSlice/ALB
+  deregister trước SIGTERM.
+- Cart dùng ElastiCache Valkey Multi-AZ primary/replica và automatic failover;
+  không dùng singleton Valkey production.
+- Kafka không nằm trên synchronous checkout response path; checkout ghi
+  DynamoDB durable outbox, worker retry publish sau.
+
+`flagd` là singleton có chủ đích trên Critical MNG vì local UI state không nên
+bị chia giữa nhiều `emptyDir`; BTC HTTP là authoritative.
+
+##### Quy trình thực hiện
+
+1. Chạy policy check:
+
+   ```powershell
+   powershell.exe -NoProfile -ExecutionPolicy Bypass -File scripts\verify-directive-03.ps1
+   ```
+
+2. Kiểm tra Argo CD `Synced/Healthy`, Ready replicas, PDB
+   `ALLOWED DISRUPTIONS >= 1`, pod placement, capacity headroom, Valkey và
+   candidate node. Không chọn node có Kafka/PostgreSQL/OpenSearch.
+3. Chạy k6 qua public URL và tạo baseline xanh ít nhất 5 phút.
+4. Sau mentor/incident commander approval:
+
+   ```bash
+   kubectl cordon "$NODE"
+   kubectl drain "$NODE" --ignore-daemonsets --delete-emptydir-data --timeout=10m
+   ```
+
+   Không dùng `--force` hoặc `--disable-eviction`.
+5. Theo dõi pods, PDB, EndpointSlice; replacement chỉ nhận traffic sau
+   readiness pass.
+6. Nếu checkout <99%, Browse/Cart <99,5%, p95 >=1 giây, zero endpoint, Pending
+   hoặc timeout: abort, uncordon và rollback qua GitOps.
+7. Giữ traffic ổn định thêm 5 phút, uncordon và lưu k6/Grafana/Kubernetes
+   evidence.
+
+##### Kết quả và cách trả lời
+
+Policy check kiểm tra HA floor, PDB, rollout, readiness, drain hook và spread.
+Incident đã được resolve sau khi merge PR và Argo CD sync; acceptance PASS chỉ
+được tuyên bố khi k6 exit 0, đủ SLO, không mất Ready endpoint và có mentor xác nhận.
+
+**Hỏi: Vì sao có PDB mà vẫn breach?** PDB chỉ giới hạn voluntary eviction, không
+tự bảo đảm capacity, topology hoặc application health. Vì vậy cần kết hợp
+replica floor, hard spread, readiness, safe rollout và capacity pre-flight.
+
+**Hỏi: Vì sao không drain `--force`?** Vì nó bypass safety mechanism và có thể
+biến cảnh báo thiếu capacity thành outage; PDB block là tín hiệu phải điều tra.
+
+Nguồn: [runbook](tf2-corp-chart/docs/operations/directive-03-maintenance.md),
+[evidence template](tf2-corp-chart/docs/operations/directive-03-evidence-template.md),
+[postmortem](tf2-corp-chart/docs/postmortems/INCIDENT_REPORT_CHECKOUT_20260720.md).
+
+#### 2. Mandate 8 — Managed data cutover
+
+##### Yêu cầu
+
+Di chuyển ba data stores production mà không làm mất dữ liệu/SLO:
+
+- PostgreSQL -> Amazon RDS.
+- Redis -> ElastiCache Valkey.
+- Kafka -> Amazon MSK.
+- Private subnet, TLS, encryption, authentication, ESO secrets, parity,
+  rollback rõ ràng; sau cutover không còn `postgresql-0`, `valkey-cart-0`,
+  `kafka-0` trên money path.
+
+##### Cách làm
+
+**PostgreSQL**
+
+1. Provision RDS private, KMS, backup.
+2. Phương án production ưu tiên là DMS logical replication + CDC. Capstone bị
+   giới hạn IAM nên không tạo được DMS replication instance.
+3. Dùng NLB nội bộ tạm `postgresql-migration-lb` trỏ vào source pod.
+4. `pg_dump -Fc` source, `pg_restore` vào RDS, chạy job `pg-parity`.
+5. Đổi `DB_CONNECTION_STRING` của product-catalog, product-reviews, accounting,
+   mem0 sang RDS; xóa NLB sau validation.
+
+Parity: `catalog.products` 10 -> 10, `reviews.productreviews` 50 -> 50,
+accounting tables 0 -> 0; tất cả Delta = 0.
+
+**Valkey**
+
+- ElastiCache Valkey 7.2, private DNS `valkey-cart.techx.internal`.
+- TLS + Auth Token từ Secrets Manager qua ESO.
+- Đổi `REDIS_ADDR` cho cart/fraud-detection và kiểm tra key/configuration.
+
+**Kafka**
+
+- MSK private 2 brokers, TLS port 9096 + SASL/SCRAM-SHA-512.
+- Core topics 3 partitions, replication factor 2; tạo `orders-persisted` cho
+  accounting commit ACK trước khi checkout xóa outbox item.
+- Đổi checkout producer và accounting/fraud-detection consumers; kiểm tra
+  publish/consume và lag.
+
+##### Safety gate và rollback
+
+Chỉ cutover khi Terraform plan đúng scope, inventory source/target đã lưu,
+TLS/auth pass từ EKS, lag trong bound, checkout baseline 30 phút >=99%, và đã
+ghi revision rollback. Cutover từng store, quan sát >=60 phút, freeze promotion
+không liên quan. Secret value không vào Git/log.
+
+Rollback bằng GitOps: bật lại component cũ trong `values-prod.yaml`, đổi endpoint
+về ClusterIP cũ và restore data nếu cần. Không patch live vì Argo CD sẽ ghi đè.
+
+##### Kết quả và cách trả lời
+
+Submission ghi PostgreSQL/ElastiCache/MSK **100% complete**; self-hosted pods đã
+disabled/removed, parity Delta = 0, migration audit không có HTTP 5xx, Cart
+Success Rate 100%, Argo CD `Synced/Healthy`.
+
+Điểm residual risk cần nói: RDS và ElastiCache trong submission là Single-AZ;
+managed service giảm vận hành nhưng không đồng nghĩa full region/AZ DR. Mandate
+20 bổ sung backup/PITR.
+
+**Hỏi: Vì sao không dùng DMS?** DMS là production option ưu tiên; do IAM
+capstone không cho tạo replication instance nên dùng NLB nội bộ + dump/restore
++ parity + SLO gate, rồi xóa NLB. Đây là trade-off đã ghi nhận, không claim CDC.
+
+**Hỏi: Làm sao tránh mất order khi đổi Kafka?** DynamoDB outbox ghi trước khi
+publish; worker retry; accounting chỉ xóa sau RDS commit và `orders-persisted`
+ACK. Kafka là transport, không phải record cuối cùng.
+
+Nguồn: [cutover runbook](tf2-corp-chart/docs/operations/directive-08-managed-data-cutover.md),
+[submission](tf2-corp-chart/docs/operations/directive-08-submission.md),
+[raw logs](tf2-corp-chart/docs/operations/rds_migration_raw_logs.md).
+
+#### 3. Mandate 20 — Backup, recovery và zero data loss
+
+##### Yêu cầu
+
+Backup phải được chứng minh bằng restore thật: có cadence/retention/encryption,
+operator không xóa/tắt PITR, restore sang resource mới private/isolated, hash
+đúng, đo RPO/RTO, có CloudTrail evidence và không overwrite production.
+
+| Data | Cơ chế | RPO | RTO |
+|---|---|---:|---:|
+| RDS PostgreSQL | transaction logs + automated backup + AWS Backup | <=5 phút | <=30 phút |
+| DynamoDB outbox | PITR 35 ngày + AWS Backup | <=10 phút | <=30 phút |
+| Valkey cart | daily snapshot | <=24 giờ | <=20 phút |
+| EBS observability | hourly AWS Backup theo tag | <=1 giờ | <=60 phút |
+
+##### Cách làm
+
+- AWS Backup vault lock `techx-prod-tf2-mandate20`, retention 7–35 ngày, KMS CMK.
+- RDS deletion protection; DynamoDB PITR 35 ngày; Valkey encryption + 7-day
+  snapshot; EBS chọn bằng `Mandate20Backup=hourly`.
+- Deny policy cho `TF2-TEAM` đối với destructive RDS/DynamoDB/ElastiCache/EBS/
+  AWS Backup action; restore vẫn allowed.
+- Terraform state bật versioning, SSE-KMS, public-access block và deny
+  `s3:DeleteObjectVersion` với production state object.
+
+##### PITR drill
+
+1. Preflight account, PITR, backup job, Argo CD, readiness, storefront.
+2. Tạo marker duy nhất `status=drill-hold` để worker không publish.
+3. Chờ `LatestRestorableDateTime` bao phủ marker; chọn `T_safe` theo HTTP Date
+   của AWS endpoint.
+4. Xóa chỉ marker ở source, ghi `T_loss`.
+5. Restore sang target mới, ví dụ `m20-drill-outbox-*`/`m20-rds-drill-*`.
+6. Đọc marker/canary, so sánh full SHA-256 hash.
+7. Tính `RPO = T_loss - T_safe`; `RTO = T_integrity_confirmed - T_restore_start`.
+8. Kiểm tra source không bị overwrite, storefront HTTP 200, CloudTrail có event.
+9. Giữ target cho mentor; cleanup sau evidence/sign-off.
+
+Script mặc định read-only; `-Execute` và hai confirmation mới được controlled
+loss. Không tự cleanup target.
+
+##### Kết quả
+
+**DynamoDB — PASS:** RPO **337 giây (5m37s)** <=10m; RTO **16,77 phút** <=30m;
+SHA-256 khớp; source marker absent; production không overwrite; HTTP 200 trước/sau;
+có `RestoreTableToPointInTime` CloudTrail event.
+
+**RDS — PASS:** RPO **272 giây (4m32s)** <=5m; RTO **13,11 phút** <=30m; canary
+khôi phục đúng trên isolated private instance; source không overwrite/cutover;
+HTTP 200 sau drill; có `RestoreDBInstanceToPointInTime` event.
+
+Kết luận chính xác: technical evidence và infrastructure gate đã PASS; formal
+document vẫn chờ mentor/data-owner sign-off.
+
+**Hỏi: Backup khác DR thế nào?** Backup là recovery point; DR phải chứng minh
+restore được, integrity đúng, đạt RPO/RTO và có procedure cutover. Mandate 20
+không claim AZ/region failover vì scope đó chưa test.
+
+**Hỏi: Vì sao restore target mới?** Giữ source cho production và forensics,
+tránh làm hỏng dữ liệu đang phục vụ khách hàng; chỉ cutover sau validation và
+approved change.
+
+**Hỏi: Vì sao không auto-restore khi DROP/TRUNCATE alarm?** Alarm chỉ early
+warning, chưa chứng minh data loss hay `T_safe`; auto-restore/cutover có thể
+làm sự cố lớn hơn.
+
+Nguồn: [ADR-BCP-20](tf2-corp-infra/docs/adr/ADR-BCP-20-phoenix-resilience-and-zero-data-loss.md),
+[RDS detection runbook](tf2-corp-infra/docs/operations/mandate-20-rds-data-loss-detection.md),
+[evidence index](tf2-corp-infra/docs/evidence/mandate-20/2026-07-27/README.md).
+
+#### 4. Công thức trả lời phỏng vấn
+
+Trả lời theo thứ tự: **Problem -> Business risk -> Design -> Execution ->
+Evidence -> Residual risk**.
+
+> “Vấn đề là ...; rủi ro là ... Tôi xử lý bằng ... Đặt gate bằng ... Kiểm chứng
+> bằng ... Kết quả ... Phần còn lại là ... và tôi không claim vượt quá evidence.”
+
+Ví dụ: “Mandate 8 không chỉ là đổi endpoint. Tôi migrate data, parity check,
+giữ secret ngoài Git, TLS/private network, bảo vệ checkout bằng outbox, theo dõi
+SLO rồi mới tắt self-hosted. Kết quả Delta = 0, không 5xx, Argo Synced/Healthy.
+Single-AZ vẫn là residual risk nên Mandate 20 bổ sung PITR.”
+
+#### 5. Phiên bản trình bày cho nhà tuyển dụng bên ngoài
+
+Khi nói với công ty khác, không mở đầu bằng “Mandate 3, 8, 20” vì đó là mã
+công việc nội bộ. Hãy nói bằng tên bài toán: **high availability khi bảo trì**,
+**managed data migration**, và **backup/disaster recovery**.
+
+##### 5.1. Giới thiệu hệ thống
+
+> “Đây là một nền tảng e-commerce chạy trên AWS EKS. Customer journey chính là
+> Browse sản phẩm, thêm vào Cart và Checkout. Phía sau có các microservice như
+> product catalog, cart, checkout, accounting và fraud detection. Hệ thống dùng
+> Kubernetes, Helm, Argo CD và Terraform; PostgreSQL, Valkey và Kafka là các
+> thành phần data/messaging. Vì Checkout là money path, tôi tập trung vào ba
+> rủi ro: bảo trì node không được làm gián đoạn khách hàng, migration không được
+> mất dữ liệu, và khi có data loss thì phải restore được trong RPO/RTO.”
+
+> “Cách tôi làm là đặt KPI trước, thiết kế safety gate, triển khai qua GitOps,
+> sau đó dùng load test, parity check và restore drill để đo kết quả.”
+
+##### 5.2. Bài toán 1: bảo trì không downtime
+
+> “Trước khi xử lý, khi drain hoặc reschedule Kubernetes node, hệ thống có thể
+> chỉ còn một replica, replacement chưa Ready hoặc hai replica cùng failure
+> domain. Đã có incident checkout success giảm còn 88,158%, trong khi yêu cầu
+> là tối thiểu 99%. Điều này cho thấy chỉ có PDB là chưa đủ.”
+
+> “Yêu cầu là trong lúc maintenance Browse và Cart phải đạt từ 99,5%, Checkout
+> từ 99%, storefront p95 dưới một giây và không Service nào mất toàn bộ Ready
+> endpoint.”
+
+> “Tôi update theo nhiều lớp: đặt tối thiểu hai replicas cho stateless money
+> path; thêm PDB, readiness probe và rolling update với `maxUnavailable: 0`;
+> dùng hard topology spread theo hostname và AZ; thêm preStop 10 giây cùng
+> termination grace 30 giây. Cart chuyển sang managed Valkey có replica và
+> automatic failover. Checkout ghi DynamoDB durable outbox trước khi publish để
+> Kafka lỗi tạm thời không làm mất order.”
+
+> “Tôi kiểm chứng bằng cách chạy k6 qua public storefront, kiểm tra Argo CD,
+> PDB, EndpointSlice, placement và capacity, rồi cordon/drain một node có kiểm
+> soát. Trong lúc drain tôi theo dõi replacement pod, Grafana và SLO; sau đó
+> quan sát thêm năm phút. Kết quả presentation ghi nhận live node drain hoàn
+> tất và customer traffic tiếp tục phục vụ. Evidence gồm k6 summary, Grafana
+> screenshot, Kubernetes output và timeline.”
+
+> “Điểm rút ra là availability không đến từ một cấu hình đơn lẻ. Phải kết hợp
+> replica, scheduling, health check, graceful termination, capacity và cơ chế
+> bảo vệ dữ liệu.”
+
+##### 5.3. Bài toán 2: chuyển data platform không mất dữ liệu
+
+> “Trước đó PostgreSQL, Valkey và Kafka chạy self-hosted trong Kubernetes. Điều
+> này làm team phải tự lo storage, failover, backup và patching. Nếu đổi
+> endpoint trực tiếp thì có rủi ro mất dữ liệu hoặc ảnh hưởng Checkout.”
+
+> “Yêu cầu là chuyển PostgreSQL sang RDS, Redis sang ElastiCache Valkey và Kafka
+> sang MSK; tất cả dùng private endpoint, TLS/encryption, secret không nằm trong
+> Git, source-target phải parity, customer path không downtime và có rollback.”
+
+> “Phương án production ưu tiên cho PostgreSQL là DMS logical replication và
+> CDC. Nhưng trong capstone IAM không cho tạo DMS replication instance, nên tôi
+> dùng NLB nội bộ tạm thời, `pg_dump -Fc`, `pg_restore` và job parity. Sau khi
+> kiểm tra xong tôi xóa NLB. Valkey dùng TLS và Auth Token từ Secrets Manager;
+> MSK dùng TLS port 9096 và SASL/SCRAM-SHA-512.”
+
+> “Tôi cutover từng store, freeze thay đổi không liên quan và chỉ đi tiếp khi
+> Terraform plan đúng scope, TLS/auth pass, lag trong giới hạn, checkout baseline
+> đạt KPI và rollback revision đã được ghi nhận. Secret value được ESO inject.
+> Durable outbox giữ order intent nếu Kafka chưa publish được.”
+
+> “Kết quả là products 10 thành 10, reviews 50 thành 50, accounting Delta bằng
+> 0; migration audit không có HTTP 5xx; Cart đạt 100%, Checkout đạt 100% trong
+> cutover theo submission, self-hosted data pods được disable/remove và Argo CD
+> ở trạng thái Synced/Healthy.”
+
+> “Tôi cũng nêu rõ residual risk: RDS và ElastiCache dùng Single-AZ theo budget
+> capstone. Managed service giải quyết vận hành và migration, nhưng chưa đồng
+> nghĩa full multi-AZ DR; phần recovery được chứng minh ở bài toán tiếp theo.”
+
+##### 5.4. Bài toán 3: backup và recovery có thể chứng minh
+
+> “Trước đó, nói ‘đã có snapshot’ chưa đủ. Tôi cần chứng minh operator không xóa
+> nhầm backup, PITR thực sự restore được, dữ liệu sau restore còn nguyên vẹn và
+> hệ thống đạt RPO/RTO.”
+
+> “Mục tiêu là RDS RPO không quá 5 phút/RTO không quá 30 phút; DynamoDB outbox
+> RPO không quá 10 phút/RTO không quá 30 phút. Restore phải vào resource mới,
+> private, không ghi đè production.”
+
+> “Tôi triển khai AWS Backup vault lock, retention và KMS; bật RDS automated
+> backup, DynamoDB PITR, Valkey snapshots và hourly EBS backup theo tag. Tôi
+> thêm explicit deny cho nhóm operator để không xóa recovery point hoặc tắt
+> PITR, đồng thời bảo vệ Terraform state bằng versioning và SSE-KMS.”
+
+> “Khi drill, tôi tạo marker/canary riêng, chờ AWS xác nhận marker nằm trong
+> restorable window, xóa có kiểm soát và restore sang target mới. Sau đó tôi
+> so sánh SHA-256, kiểm tra source không bị overwrite, storefront vẫn HTTP 200
+> và CloudTrail có restore event. RPO là khoảng cách từ safe point đến lúc mất
+> dữ liệu; RTO là từ lúc bắt đầu restore đến khi integrity check pass.”
+
+> “Kết quả DynamoDB đạt RPO 337 giây và RTO 16,77 phút. RDS đạt RPO 272 giây và
+> RTO 13,11 phút. Cả hai hash đều khớp, source không bị overwrite, storefront
+> vẫn HTTP 200 và có audit event. Tôi không claim full region failover vì phần
+> đó ngoài scope; kết luận chính xác là backup/PITR và isolated restore đã được
+> chứng minh bằng số liệu.”
+
+##### 5.5. Bản nói gộp 2–3 phút
+
+> “Tôi làm trên nền tảng e-commerce chạy EKS, trong đó Browse, Cart và Checkout
+> là customer journey chính. Tôi giải quyết ba rủi ro. Thứ nhất, maintenance có
+> thể làm mất capacity và gây lỗi Checkout, nên tôi bổ sung replica floor, PDB,
+> readiness, safe rollout, hard spread khác AZ, graceful termination và durable
+> outbox. Tôi kiểm chứng bằng live node drain, k6 và Grafana.”
+
+> “Thứ hai, data store self-hosted gây rủi ro vận hành và migration. Tôi chuyển
+> PostgreSQL sang RDS, Valkey sang ElastiCache và Kafka sang MSK, dùng private
+> network, TLS, ESO, parity check và cutover từng store. Kết quả data Delta bằng
+> 0, migration không có HTTP 5xx, Cart 100% và Checkout 100% trong cutover.”
+
+> “Thứ ba, backup phải được chứng minh bằng restore thật. Tôi dùng AWS Backup,
+> PITR, vault lock, IAM deny policy và isolated restore drill. DynamoDB đạt RPO
+> 337 giây/RTO 16,77 phút; RDS đạt RPO 272 giây/RTO 13,11 phút. Hash khớp và
+> production không bị overwrite. Tôi cũng nêu rõ giới hạn như Single-AZ và
+> mentor sign-off pending để kết luận luôn bám đúng evidence.”
+
+##### 5.6. Nếu nhà tuyển dụng hỏi “bạn đóng góp cụ thể gì?”
+
+> “Đóng góp của tôi không chỉ là sửa YAML. Tôi phân tích failure mode, đặt
+> SLO/KPI, thiết kế guardrail, thay đổi Helm/Terraform và application contract,
+> chạy verification script, thực hiện controlled test, đọc metric/log/evidence
+> và ghi rollback cùng residual risk. Tôi biến yêu cầu reliability thành điều
+> kiện kiểm thử được và kết quả có số liệu.”
+
+##### 5.7. Công thức nhớ khi trả lời
+
+**Hệ thống là gì → trước đó có vấn đề gì → yêu cầu/KPI → đã thay đổi gì → test
+như thế nào → kết quả → giới hạn còn lại.**
+
+Không nói: “Tôi làm Mandate 3.”  
+Nên nói: “Tôi xử lý bài toán high availability trong lúc Kubernetes
+maintenance; trong tài liệu nội bộ phần này được gọi là Mandate 3.”
+
+#### 5. Kịch bản nói khi phỏng vấn/present
+
+Phần này viết theo văn nói. Khi trình bày, không cần đọc hết chi tiết lệnh;
+hãy nói theo mạch **trước đó -> KPI/rủi ro -> đã update gì -> đo thế nào -> kết quả**.
+
+##### 5.1. Mở đầu chung
+
+> “Ba mandate này cùng giải quyết một vấn đề là production phải vừa ổn định,
+> vừa bảo toàn dữ liệu. Ban đầu hệ thống còn phụ thuộc nhiều vào workload và
+> data store chạy trong Kubernetes. Vì vậy khi maintenance, migration hoặc
+> data loss xảy ra thì KPI customer path có nguy cơ bị ảnh hưởng. Tôi xử lý theo
+> hướng đặt KPI trước, sau đó thay đổi architecture/configuration, cuối cùng
+> dùng test và evidence để chứng minh chứ không chỉ nói là đã làm xong.”
+
+##### 5.2. Cách nói về Mandate 3
+
+> “Trước khi update Mandate 3, khi drain hoặc reschedule node, hệ thống có thể
+> chỉ còn một pod phục vụ. PDB có thể chặn eviction nhưng chưa đủ bảo đảm pod
+> replacement đã Ready, nằm khác node/AZ và customer traffic vẫn đi được. Có
+> incident checkout success giảm còn 88,158%, trong khi KPI yêu cầu ít nhất 99%.
+> Đây là dấu hiệu rõ là cơ chế bảo vệ lúc đó chưa đủ.”
+
+> “Tôi update theo nhiều lớp. Thứ nhất, đặt tối thiểu hai replicas cho các
+> service Browse, Cart và Checkout. Thứ hai, thêm PDB, readiness probe và
+> rolling update `maxUnavailable: 0`, `maxSurge: 1`. Thứ ba, dùng hard spread
+> theo hostname và Availability Zone để hai replica không nằm cùng failure
+> domain. Thứ tư, thêm preStop 10 giây và termination grace 30 giây để load
+> balancer có thời gian bỏ pod cũ khỏi endpoint. Với Cart, tôi chuyển state sang
+> managed Valkey có replica và automatic failover. Với Kafka, checkout ghi
+> durable outbox trước nên Kafka tạm lỗi không làm mất order.”
+
+> “Sau update, tôi không test bằng pod đơn lẻ mà chạy đúng customer path qua
+> public storefront. Tôi kiểm tra Argo Synced/Healthy, Ready replicas, PDB,
+> EndpointSlice, pod placement và capacity trước. Sau đó chạy k6 tạo baseline,
+> cordon và drain một node có kiểm soát, theo dõi replacement pod và KPI trong
+> lúc drain, rồi giữ traffic ổn định thêm năm phút.”
+
+> “KPI sau update là không gián đoạn traffic; Browse và Cart phải từ 99,5% trở
+> lên, Checkout từ 99% trở lên và storefront p95 dưới một giây. Deck kết quả
+> ghi nhận live node drain hoàn tất và customer traffic tiếp tục phục vụ. Tôi
+> cũng lưu ý rằng PASS chính thức phải đi kèm k6 exit code 0, Grafana/Kubernetes
+> evidence và mentor confirmation.”
+
+Nếu bị hỏi ngắn “đã update gì để đạt KPI?”, trả lời:
+
+> “Tôi không chỉ tăng replica. Tôi kết hợp replica floor, PDB, readiness,
+> rollout an toàn, spread khác AZ, graceful termination, capacity pre-flight và
+> durable outbox. KPI được đo bằng k6 và Grafana trong chính lúc drain node.”
+
+##### 5.3. Cách nói về Mandate 8
+
+> “Trước Mandate 8, PostgreSQL, Valkey và Kafka đều chạy self-hosted trong
+> Kubernetes. Điều đó làm team phải tự lo storage, failover, patching và bảo vệ
+> data trong lúc thay đổi. Nếu đổi endpoint trực tiếp mà không có parity và
+> rollback thì có thể mất dữ liệu hoặc làm checkout lỗi.”
+
+> “Tôi chuyển PostgreSQL sang RDS, Valkey sang ElastiCache và Kafka sang MSK.
+> Các service được nối qua private endpoint, bật TLS/encryption, còn credential
+> được giữ trong Secrets Manager và inject bằng ESO. Với PostgreSQL, phương án
+> production ưu tiên là DMS logical replication và CDC. Nhưng trong capstone,
+> IAM không cho tạo DMS replication instance, nên tôi dùng NLB nội bộ tạm thời,
+> `pg_dump -Fc`, `pg_restore` và job parity. NLB chỉ tồn tại trong thời gian
+> migration rồi được xóa.”
+
+> “Tôi migrate từng store và đặt safety gate trước cutover: Terraform plan đúng
+> scope, inventory source/target, TLS/auth pass, lag trong giới hạn, checkout
+> baseline đạt KPI và có revision rollback. Checkout có DynamoDB outbox nên
+> order intent vẫn được giữ nếu Kafka tạm thời chưa publish được. Sau khi
+> target ổn định, tôi đổi Helm values/secret references qua GitOps rồi disable
+> self-hosted pod.”
+
+> “Kết quả là PostgreSQL parity không có chênh lệch: products 10 thành 10,
+> reviews 50 thành 50, Delta bằng 0. Migration window không có HTTP 5xx; Cart
+> đạt 100%, Checkout đạt 100% trong cutover theo deck/submission, và Argo CD
+> Synced/Healthy. KPI ở đây không chỉ là uptime mà còn là data integrity,
+> security của kết nối và khả năng rollback.”
+
+Nếu bị hỏi “vì sao cần outbox?”, trả lời:
+
+> “Nếu ghi database thành công nhưng publish Kafka thất bại thì không được làm
+> mất order. Outbox giữ event bền vững, worker retry, accounting chỉ xác nhận
+> hoàn tất sau khi commit RDS và publish persistence ACK. Vì vậy Kafka là
+> transport, không phải nơi duy nhất giữ order.”
+
+##### 5.4. Cách nói về Mandate 20
+
+> “Trước Mandate 20, có backup hoặc snapshot chưa có nghĩa là hệ thống recovery
+> được. Rủi ro là operator có thể xóa nhầm recovery point, PITR chưa được chứng
+> minh bằng restore thật, và chưa biết RPO/RTO thực tế là bao nhiêu.”
+
+> “Tôi triển khai AWS Backup vault lock, retention và KMS; bật PITR cho DynamoDB,
+> automated backup cho RDS, snapshot cho Valkey và hourly backup cho EBS theo
+> tag. Tôi thêm deny policy cho nhóm operator để không xóa backup hoặc tắt PITR,
+> đồng thời bảo vệ version của Terraform state. Restore permission vẫn được
+> giữ cho luồng khôi phục được phê duyệt.”
+
+> “Để đo KPI, tôi tạo một marker/canary riêng, chờ AWS xác nhận point-in-time đã
+> bao phủ marker, sau đó xóa có kiểm soát và restore sang resource mới. Tôi không
+> restore đè production. Khi target ready, tôi so sánh payload bằng SHA-256,
+> kiểm tra source không bị thay đổi, kiểm tra storefront HTTP 200 và CloudTrail
+> có restore event. RPO là khoảng cách từ T_safe đến thời điểm mất dữ liệu; RTO
+> là từ lúc bắt đầu restore đến khi integrity check pass.”
+
+> “Kết quả DynamoDB đạt RPO 337 giây, mục tiêu 10 phút, và RTO 16,77 phút, mục
+> tiêu 30 phút. RDS đạt RPO 272 giây, mục tiêu 5 phút, và RTO 13,11 phút, mục
+> tiêu 30 phút. Hash khớp, source không bị overwrite, storefront vẫn HTTP 200
+> và có CloudTrail event. Vì vậy technical evidence đã PASS. Tuy nhiên tôi vẫn
+> nói rõ mentor/data-owner sign-off là bước formal còn pending, không claim
+> vượt quá evidence.”
+
+Nếu bị hỏi “tại sao không tự động restore khi có DROP TABLE?”, trả lời:
+
+> “Alarm chỉ là early warning, chưa chứng minh data loss và chưa xác định safe
+> restore point. Tự động restore hoặc đổi endpoint có thể làm mất dữ liệu mới
+> hơn. Tôi dùng alarm để notify, sau đó operator xác minh audit, chọn T_safe,
+> restore isolated và kiểm tra integrity trước khi có quyết định cutover.”
+
+##### 5.5. Bảng nói nhanh trước khi vào slide KPI
+
+| Mandate | Trước đó | Update chính | KPI/kết quả nên nói |
+|---|---|---|---|
+| 3 | Drain có thể làm giảm capacity; incident checkout 88,158% | Replica floor, PDB, readiness, safe rollout, hard spread, preStop, outbox | Traffic không gián đoạn; Browse/Cart >=99,5%, Checkout >=99%, p95 <1s |
+| 8 | Self-hosted stores, migration có rủi ro data loss/downtime | RDS + ElastiCache + MSK, private/TLS, parity, ESO, từng store, rollback | Delta = 0; Cart 100%; Checkout 100% trong cutover; 0 HTTP 5xx |
+| 20 | Có backup nhưng chưa đủ proof restore/RPO/RTO | Vault lock, PITR, deny policy, isolated drill, hash, CloudTrail | DynamoDB RPO 337s/RTO 16,77m; RDS RPO 272s/RTO 13,11m; PASS |
+
+##### 5.6. Câu kết presentation
+
+> “Điểm quan trọng là mỗi mandate đều có before và after đo được. Mandate 3
+> bảo vệ availability trong maintenance; Mandate 8 bảo vệ data path trong
+> migration; Mandate 20 chứng minh khi có data loss thì phục hồi được trong
+> RPO/RTO. Các con số được lấy từ k6, SLO audit, parity job và restore drill.
+> Những phần chưa sign-off hoặc residual risk như Single-AZ và mentor approval
+> tôi ghi rõ thay vì coi technical implementation là đã đóng hoàn toàn.”
+
 ### Bullet 1: Provisioned and managed AWS infrastructure
 
 Phải chuẩn bị resource cụ thể đã tạo, module/resource Terraform do mình sở hữu, state/backend, dependency, lỗi từng gặp và cách xác minh sau khi sửa.
