@@ -61,11 +61,56 @@ export async function getOptionalAuthUser(req: NextRequest) {
   return getAuthenticatedUser(req);
 }
 
-// Legacy alias — now requires real auth, no longer falls back to demo
+async function getGuestUser() {
+  const guest = await prisma.user.upsert({
+    where: { email: 'guest@aws-cert.local' },
+    update: {},
+    create: {
+      email: 'guest@aws-cert.local',
+      name: 'Guest Learner',
+      role: 'USER',
+      passwordHash: '$2a$10$7cC8j8wWqgQ8nZ8e9h0oOe0e5O5xQJwWg2j0e6mZQ3kR5T7uV9i2a',
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      activeQuestionBankId: true,
+    },
+  });
+
+  let activeQuestionBankId = guest.activeQuestionBankId;
+  if (!activeQuestionBankId) {
+    const defaultGuestBank = await prisma.questionBank.findUnique({
+      where: { slug: 'aws-saa-c03-udemy-all' },
+      select: { id: true, status: true },
+    });
+    if (defaultGuestBank?.status === 'PUBLISHED') {
+      activeQuestionBankId = defaultGuestBank.id;
+      await prisma.user.update({
+        where: { id: guest.id },
+        data: { activeQuestionBankId },
+      });
+    }
+  }
+
+  return {
+    userId: guest.id,
+    email: guest.email,
+    name: guest.name || undefined,
+    role: guest.role,
+    activeQuestionBankId,
+  };
+}
+
+// Core learning APIs can use a shared guest profile when the browser has guest-mode enabled.
 export async function getAuthUserOrDemo(req: NextRequest) {
   const user = await getAuthenticatedUser(req);
   if (user) return user;
 
-  // Fallback: return null — callers should handle unauthorized
+  const guestMode = req.cookies.get('guest-mode')?.value === '1' || req.headers.get('x-guest-mode') === '1';
+  if (guestMode) return getGuestUser();
+
   return null;
 }

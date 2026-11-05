@@ -220,6 +220,12 @@ export default function Navbar() {
             ) : (
               /* Unauthenticated Guest Landing Page Nav Links */
               <nav className="hidden md:flex items-center space-x-6 text-xs sm:text-sm font-bold text-slate-600">
+                <Link href="/questions" className="hover:text-slate-900 transition">
+                  Học ngay
+                </Link>
+                <Link href="/exam" className="hover:text-slate-900 transition">
+                  Thi thử
+                </Link>
                 <Link
                   href="/docs"
                   className={`hover:text-slate-900 transition ${

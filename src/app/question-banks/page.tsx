@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Award, BookOpen, CheckCircle2, ChevronRight, Play } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
+import { enableGuestMode } from '@/lib/guest';
 
 export default function QuestionBanksPage() {
   const router = useRouter();
@@ -34,19 +35,16 @@ export default function QuestionBanksPage() {
 
   const enrollMutation = useMutation({
     mutationFn: async (bankId: string) => {
-      if (!user) {
-        router.push('/login');
-        return;
-      }
+      if (!user) enableGuestMode();
       const res = await fetch(`/api/question-banks/${bankId}/enroll`, { method: 'POST' });
       return res.json();
     },
     onSuccess: (data, bankId) => {
-      if (user && data) {
-        setUser({ ...user, activeQuestionBankId: bankId });
+      if (data?.success) {
+        if (user) setUser({ ...user, activeQuestionBankId: bankId });
         queryClient.invalidateQueries({ queryKey: ['questionBanksCatalog'] });
         queryClient.invalidateQueries({ queryKey: ['progressOverview'] });
-        toast.success('Đã đăng ký và chuyển sang môn học mới!');
+        toast.success(user ? 'Đã đăng ký và chuyển sang môn học mới!' : 'Đã vào chế độ khách. Bạn có thể học ngay mà không cần đăng nhập.');
         router.push('/questions');
       }
     },
@@ -55,8 +53,9 @@ export default function QuestionBanksPage() {
   const switchActiveMutation = useMutation({
     mutationFn: async (bankId: string) => {
       if (!user) {
-        router.push('/login');
-        return;
+        enableGuestMode();
+        const res = await fetch(`/api/question-banks/${bankId}/enroll`, { method: 'POST' });
+        return res.json();
       }
       const res = await fetch('/api/me/active-question-bank', {
         method: 'PATCH',
@@ -78,7 +77,8 @@ export default function QuestionBanksPage() {
 
   const handleCardAction = (bankId: string, isEnrolled: boolean, isCurrentActive: boolean) => {
     if (!user) {
-      router.push('/login');
+      enableGuestMode();
+      enrollMutation.mutate(bankId);
       return;
     }
     if (isCurrentActive) {
@@ -160,7 +160,7 @@ export default function QuestionBanksPage() {
                     disabled={enrollMutation.isPending}
                     className="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-extrabold text-xs rounded-xl transition shadow-md shadow-amber-500/20 flex items-center justify-center"
                   >
-                    Đăng ký học ngay
+                    {user ? 'Đăng ký học ngay' : 'Học ngay không cần đăng nhập'}
                   </button>
                 )}
               </div>

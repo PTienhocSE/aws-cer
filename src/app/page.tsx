@@ -35,6 +35,7 @@ import {
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
+import { enableGuestMode } from '@/lib/guest';
 
 async function fetchQuestionBanks() {
   const res = await fetch('/api/question-banks');
@@ -135,7 +136,8 @@ export default function HomePage() {
 
   const handleStartLearning = () => {
     if (!user) {
-      router.push('/login');
+      enableGuestMode();
+      router.push('/question-banks');
     } else if (user.activeQuestionBankId) {
       router.push('/questions');
     } else {
@@ -145,8 +147,7 @@ export default function HomePage() {
 
   const handleEnrollBank = async (bankId: string) => {
     if (!user) {
-      router.push('/login');
-      return;
+      enableGuestMode();
     }
     try {
       const res = await fetch(`/api/question-banks/${bankId}/enroll`, { method: 'POST' });
