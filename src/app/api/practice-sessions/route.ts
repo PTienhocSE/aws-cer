@@ -3,6 +3,75 @@ import { prisma } from '@/lib/prisma';
 import { getAuthUserOrDemo } from '@/lib/auth';
 import { shuffleAndTake, takeFromPriorityGroups } from '@/lib/practice-selection';
 
+export async function GET(req: NextRequest) {
+  try {
+    const authUser = await getAuthUserOrDemo(req);
+    if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+    const userId = authUser.userId;
+
+    const { searchParams } = new URL(req.url);
+    const requestedBankId = searchParams.get('questionBankId');
+    const bankId = requestedBankId || authUser.activeQuestionBankId;
+
+    const where: any = { userId };
+    if (bankId) {
+      where.questionBankId = bankId;
+    }
+
+    const sessions = await prisma.practiceSession.findMany({
+      where,
+      orderBy: { updatedAt: 'desc' },
+      include: {
+        questionBank: {
+          select: { id: true, name: true, version: true },
+        },
+        answers: {
+          select: { id: true, isCorrect: true, questionId: true },
+        },
+      },
+      take: 60,
+    });
+
+    const formatted = sessions.map((s) => {
+      let totalQuestions = 0;
+      try {
+        const qIds = JSON.parse(s.questionIds || '[]');
+        totalQuestions = Array.isArray(qIds) ? qIds.length : 0;
+      } catch {
+        totalQuestions = 0;
+      }
+
+      const answeredCount = s.answers.length;
+      const correctCount = s.answers.filter((a) => a.isCorrect).length;
+      const incorrectCount = answeredCount - correctCount;
+      const isCompleted = totalQuestions > 0 && answeredCount >= totalQuestions;
+      const accuracyRate = answeredCount > 0 ? Math.round((correctCount / answeredCount) * 100) : 0;
+
+      return {
+        id: s.id,
+        title: s.title || `Phiên luyện tập ${s.mode}`,
+        mode: s.mode,
+        sourceType: s.sourceType,
+        sourceId: s.sourceId,
+        questionBank: s.questionBank,
+        totalQuestions,
+        answeredCount,
+        correctCount,
+        incorrectCount,
+        isCompleted,
+        accuracyRate,
+        createdAt: s.createdAt,
+        updatedAt: s.updatedAt,
+      };
+    });
+
+    return NextResponse.json({ sessions: formatted });
+  } catch (error) {
+    console.error('Get practice sessions error:', error);
+    return NextResponse.json({ error: 'Lỗi tải danh sách phiên luyện tập' }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const authUser = await getAuthUserOrDemo(req);

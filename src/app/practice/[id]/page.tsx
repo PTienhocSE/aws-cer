@@ -1,8 +1,9 @@
 'use client';
 
-import { useState, useEffect, useCallback, use } from 'react';
+import { useState, useEffect, useCallback, use, Suspense } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import Link from 'next/link';
 import {
   ArrowLeft,
   ArrowRight,
@@ -19,6 +20,7 @@ import {
   XCircle,
   Award,
   Check,
+  Clock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import HighlightableText from '@/components/HighlightableText';
@@ -51,20 +53,31 @@ interface QuestionState {
   explanation: string | null;
 }
 
-export default function PracticeSessionPage({ params }: { params: Promise<{ id: string }> }) {
+function PracticeSessionContent({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const sessionId = resolvedParams.id;
   const router = useRouter();
+  const searchParams = useSearchParams();
   const queryClient = useQueryClient();
+
+  const modeParam = searchParams.get('mode');
 
   const [currentIndex, setCurrentIndex] = useState(0);
   // Per-question state map: key = questionId
   const [qStateMap, setQStateMap] = useState<Record<string, QuestionState>>({});
   const [initialized, setInitialized] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
-  const [viewMode, setViewMode] = useState<'PRACTICE' | 'REVIEW'>('PRACTICE');
+  const [viewMode, setViewMode] = useState<'PRACTICE' | 'REVIEW'>(
+    modeParam === 'review' ? 'REVIEW' : 'PRACTICE'
+  );
   const [activeReviewNoteId, setActiveReviewNoteId] = useState<string | null>(null);
   const [isStartingNextBatch, setIsStartingNextBatch] = useState(false);
+
+  useEffect(() => {
+    if (modeParam === 'review') {
+      setViewMode('REVIEW');
+    }
+  }, [modeParam]);
 
   const [noteContent, setNoteContent] = useState('');
   const [noteStatus, setNoteStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -600,12 +613,20 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
 
           {/* Action Buttons Row */}
           <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
-            <button
-              onClick={() => setViewMode('PRACTICE')}
-              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition flex items-center cursor-pointer"
-            >
-              <ArrowLeft className="w-4 h-4 mr-1.5" /> Quay lại chế độ làm bài
-            </button>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => setViewMode('PRACTICE')}
+                className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition flex items-center cursor-pointer"
+              >
+                <ArrowLeft className="w-4 h-4 mr-1.5" /> Quay lại chế độ làm bài
+              </button>
+              <Link
+                href="/practice"
+                className="px-4 py-2.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-600 hover:text-slate-900 font-extrabold text-xs rounded-xl transition flex items-center"
+              >
+                <Clock className="w-4 h-4 mr-1.5 text-slate-500" /> Quản lý các phiên
+              </Link>
+            </div>
 
             <div className="flex flex-wrap items-center gap-2.5">
               {incorrectIds.length > 0 && (
@@ -868,12 +889,21 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
       {/* Header & Progress */}
       <div className="space-y-3">
         <div className="flex justify-between items-center text-xs font-extrabold text-slate-500">
-          <button
-            onClick={() => router.push('/')}
-            className="flex items-center text-slate-600 hover:text-slate-900 transition whitespace-nowrap"
-          >
-            <ArrowLeft className="w-4 h-4 mr-1 shrink-0" /> Thoát phiên học
-          </button>
+          <div className="flex items-center gap-2.5">
+            <button
+              onClick={() => router.push('/')}
+              className="flex items-center text-slate-600 hover:text-slate-900 transition whitespace-nowrap cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1 shrink-0" /> Thoát phiên học
+            </button>
+            <span className="text-slate-300 hidden sm:inline">•</span>
+            <Link
+              href="/practice"
+              className="hidden sm:flex items-center text-slate-500 hover:text-slate-800 transition"
+            >
+              <Clock className="w-3.5 h-3.5 mr-1 text-slate-400" /> Lịch sử phiên
+            </Link>
+          </div>
           <div className="flex items-center space-x-2.5">
             {allDone && (
               <button
@@ -901,8 +931,8 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex-1 overflow-x-auto pb-1.5 no-scrollbar">
-            <div className="flex items-center gap-1.5 min-w-max py-1">
+          <div className="flex-1 overflow-x-auto py-2.5 px-1 no-scrollbar">
+            <div className="flex items-center gap-2 min-w-max py-1.5 px-1">
               {questionsData.questions.map((question: any, index: number) => {
                 const state = qStateMap[question.id];
                 const isCurrent = currentIndex === index;
@@ -913,15 +943,15 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
                   state.submittedOptionIds.every((optionId) => state.correctOptionIds.includes(optionId));
                 const hasSelectedDraft = !isSubmittedQuestion && (state?.selectedOptionIds?.length ?? 0) > 0;
 
-                // Dedicated, clean, beautiful styling per state — zero browser focus outline
+                // Dedicated, clean, beautiful styling per state — zero browser focus outline, generous ring clearance
                 let btnStyle = '';
                 if (isCurrent) {
                   if (isSubmittedQuestion) {
                     btnStyle = isCorrect
-                      ? 'bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-400 ring-offset-2 ring-offset-white shadow-sm font-black scale-105 z-10'
-                      : 'bg-rose-600 text-white border-rose-600 ring-2 ring-rose-400 ring-offset-2 ring-offset-white shadow-sm font-black scale-105 z-10';
+                      ? 'bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-400 ring-offset-2 ring-offset-white shadow-sm font-black z-10'
+                      : 'bg-rose-600 text-white border-rose-600 ring-2 ring-rose-400 ring-offset-2 ring-offset-white shadow-sm font-black z-10';
                   } else {
-                    btnStyle = 'bg-amber-400 text-slate-950 border-amber-500 ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-sm font-black scale-105 z-10';
+                    btnStyle = 'bg-amber-400 text-slate-950 border-amber-500 ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-sm font-black z-10';
                   }
                 } else {
                   if (isSubmittedQuestion) {
@@ -949,7 +979,7 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
                         ? `Câu ${index + 1}: Đang chọn đáp án`
                         : `Câu ${index + 1}: Chưa làm`
                     }
-                    className={`w-9 h-9 rounded-xl text-xs border transition-all shrink-0 flex items-center justify-center outline-none focus:outline-none focus-visible:outline-none ${btnStyle}`}
+                    className={`w-9 h-9 rounded-xl text-xs border transition-all shrink-0 flex items-center justify-center outline-none focus:outline-none focus-visible:outline-none cursor-pointer ${btnStyle}`}
                   >
                     {index + 1}
                   </button>
@@ -1259,5 +1289,19 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
         </div>
       </div>
     </div>
+  );
+}
+
+export default function PracticeSessionPage(props: { params: Promise<{ id: string }> }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="py-24 text-center text-slate-500 font-bold text-sm">
+          Đang tải phiên luyện tập...
+        </div>
+      }
+    >
+      <PracticeSessionContent {...props} />
+    </Suspense>
   );
 }

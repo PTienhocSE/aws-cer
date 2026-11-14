@@ -26,6 +26,7 @@ import {
   Layers,
   ArrowLeft,
   Check,
+  Clock,
   ExternalLink,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -243,6 +244,14 @@ function ReviewContent() {
 
         {/* Practice CTA Buttons */}
         <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+          <Link
+            href="/practice"
+            className="flex-1 md:flex-none px-4 py-2.5 bg-white hover:bg-slate-50 text-slate-700 font-extrabold text-xs rounded-xl border border-slate-200 shadow-xs flex items-center justify-center transition active:scale-95"
+          >
+            <Clock className="w-3.5 h-3.5 mr-1.5 text-blue-600" />
+            Lịch sử phiên
+          </Link>
+
           {stats.incorrect > 0 && (
             <button
               onClick={() => handleStartPractice('CUSTOM', 'INCORRECT', 25)}

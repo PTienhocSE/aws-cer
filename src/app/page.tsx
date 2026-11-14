@@ -595,6 +595,19 @@ export default function HomePage() {
                 </Link>
 
                 <Link
+                  href="/practice"
+                  className="w-full text-left p-4 rounded-2xl border border-blue-200 bg-blue-50/40 hover:border-blue-400 hover:bg-blue-100/60 transition flex items-center justify-between group shadow-2xs"
+                >
+                  <div>
+                    <div className="text-xs font-black text-slate-900 flex items-center">
+                      <Clock className="w-4 h-4 mr-1.5 text-blue-600" /> Quản lý các phiên luyện tập
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-medium mt-0.5">Lịch sử, xem lại review 15 câu &amp; làm tiếp</div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-blue-600 group-hover:translate-x-1 transition-transform shrink-0 ml-2" />
+                </Link>
+
+                <Link
                   href="/highlights"
                   className="w-full text-left p-4 rounded-2xl border border-pink-200 bg-pink-50/40 hover:border-pink-400 hover:bg-pink-50/80 transition flex items-center justify-between group shadow-2xs"
                 >
