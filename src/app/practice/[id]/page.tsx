@@ -15,10 +15,15 @@ import {
   Sparkles,
   RotateCcw,
   Trophy,
+  CheckCircle2,
+  XCircle,
+  Award,
+  Check,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import HighlightableText from '@/components/HighlightableText';
 import MarkdownExplanation from '@/components/MarkdownExplanation';
+import QuestionNoteBox from '@/components/QuestionNoteBox';
 
 async function fetchPracticeSession(id: string) {
   const res = await fetch(`/api/practice-sessions/${id}`, {
@@ -57,6 +62,9 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
   const [qStateMap, setQStateMap] = useState<Record<string, QuestionState>>({});
   const [initialized, setInitialized] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
+  const [viewMode, setViewMode] = useState<'PRACTICE' | 'REVIEW'>('PRACTICE');
+  const [activeReviewNoteId, setActiveReviewNoteId] = useState<string | null>(null);
+  const [isStartingNextBatch, setIsStartingNextBatch] = useState(false);
 
   const [noteContent, setNoteContent] = useState('');
   const [noteStatus, setNoteStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
@@ -417,6 +425,92 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
     }
   };
 
+  const handleToggleBookmark = async (questionId: string, currentBookmarked: boolean) => {
+    try {
+      const res = await fetch(`/api/questions/${questionId}/bookmark`, {
+        method: 'POST',
+        headers: { 'x-guest-mode': '1' },
+        credentials: 'include',
+      });
+      if (res.ok) {
+        queryClient.setQueryData(['practiceQuestions', sessionId], (old: any) => {
+          if (!old) return old;
+          return {
+            ...old,
+            questions: old.questions.map((q: any) =>
+              q.id === questionId ? { ...q, isBookmarked: !currentBookmarked } : q
+            ),
+          };
+        });
+        toast.success(!currentBookmarked ? 'Đã đánh dấu câu hỏi ⭐' : 'Đã bỏ đánh dấu.');
+      }
+    } catch {
+      toast.error('Không thể lưu trạng thái đánh dấu.');
+    }
+  };
+
+  const handleStartNextBatch = async () => {
+    if (!questionsData?.questions) return;
+    try {
+      setIsStartingNextBatch(true);
+      const currentQuestionIds = questionsData.questions.map((q: any) => q.id);
+      const res = await fetch('/api/practice-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-guest-mode': '1' },
+        credentials: 'include',
+        body: JSON.stringify({
+          mode: 'NEXT_BATCH',
+          excludeQuestionIds: currentQuestionIds,
+          domainId: questionsData.session?.sourceId || undefined,
+          questionBankId: questionsData.session?.questionBankId,
+          limit: 15,
+        }),
+      });
+      const data = await res.json();
+      if (data.sessionId) {
+        toast.success('Bắt đầu bộ 15 câu tiếp theo!');
+        router.push(`/practice/${data.sessionId}`);
+      } else if (data.error) {
+        toast.error(data.error);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Không thể tạo bộ câu hỏi tiếp theo');
+    } finally {
+      setIsStartingNextBatch(false);
+    }
+  };
+
+  const handlePracticeMistakes = async (incorrectIds: string[]) => {
+    if (incorrectIds.length === 0) return;
+    try {
+      setIsStartingNextBatch(true);
+      const res = await fetch('/api/practice-sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'x-guest-mode': '1' },
+        credentials: 'include',
+        body: JSON.stringify({
+          mode: 'CUSTOM',
+          questionIds: incorrectIds,
+          questionBankId: questionsData?.session?.questionBankId,
+          limit: incorrectIds.length,
+        }),
+      });
+      const data = await res.json();
+      if (data.sessionId) {
+        toast.success(`Luyện lại ${incorrectIds.length} câu làm sai!`);
+        router.push(`/practice/${data.sessionId}`);
+      } else if (data.error) {
+        toast.error(data.error);
+      }
+    } catch (e) {
+      console.error(e);
+      toast.error('Không thể tạo phiên học sửa sai');
+    } finally {
+      setIsStartingNextBatch(false);
+    }
+  };
+
   if (questionsLoading || !questionsData || !initialized) {
     return (
       <div className="py-20 text-center text-slate-500 font-semibold text-sm">
@@ -452,6 +546,306 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
   const incorrectCount = answeredCount - correctCount;
   const unansweredCount = totalQuestions - answeredCount;
 
+  const incorrectQuestions = questionsData.questions.filter((q: any) => {
+    const s = qStateMap[q.id];
+    const isCorrect =
+      s?.isSubmitted &&
+      s.submittedOptionIds.length === s.correctOptionIds.length &&
+      s.submittedOptionIds.every((id) => s.correctOptionIds.includes(id));
+    return s?.isSubmitted && !isCorrect;
+  });
+  const incorrectIds = incorrectQuestions.map((q: any) => q.id);
+
+  // Dedicated Full-Session Review Screen
+  if (viewMode === 'REVIEW') {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6 pb-24">
+        {/* Top Summary & Action Header */}
+        <div className="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200/90 shadow-sm space-y-4">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+            <div>
+              <div className="flex items-center space-x-2 text-xs font-black text-amber-600 uppercase tracking-wider">
+                <RotateCcw className="w-4 h-4" />
+                <span>Xem lại kết quả &amp; Review chi tiết</span>
+              </div>
+              <h1 className="text-xl sm:text-2xl font-black text-slate-900 mt-1">
+                Chi tiết toàn bộ {totalQuestions} câu vừa luyện tập
+              </h1>
+              <p className="text-xs text-slate-500 font-medium">
+                Đối chiếu đáp án bạn đã chọn với đáp án chuẩn AWS, đọc giải thích chi tiết và đánh dấu các câu cần lưu ý.
+              </p>
+            </div>
+
+            {/* Score Pill */}
+            <div className="flex items-center gap-3">
+              <div className="text-right">
+                <div className="text-2xl font-black text-slate-900">
+                  {correctCount}/{totalQuestions}
+                </div>
+                <div className="text-[11px] font-bold text-slate-500">
+                  {totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0}% chính xác
+                </div>
+              </div>
+              <div
+                className={`px-3 py-1.5 rounded-2xl text-xs font-black ${
+                  totalQuestions > 0 && Math.round((correctCount / totalQuestions) * 100) >= 72
+                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                    : 'bg-rose-50 text-rose-700 border border-rose-200'
+                }`}
+              >
+                {totalQuestions > 0 && Math.round((correctCount / totalQuestions) * 100) >= 72 ? 'ĐẠT (≥ 72%)' : 'CẦN ÔN LẠI'}
+              </div>
+            </div>
+          </div>
+
+          {/* Action Buttons Row */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 border-t border-slate-100">
+            <button
+              onClick={() => setViewMode('PRACTICE')}
+              className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition flex items-center cursor-pointer"
+            >
+              <ArrowLeft className="w-4 h-4 mr-1.5" /> Quay lại chế độ làm bài
+            </button>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              {incorrectIds.length > 0 && (
+                <button
+                  onClick={() => handlePracticeMistakes(incorrectIds)}
+                  disabled={isStartingNextBatch}
+                  className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold text-xs rounded-xl transition flex items-center disabled:opacity-50 cursor-pointer"
+                >
+                  <Target className="w-4 h-4 mr-1.5 text-rose-600" />
+                  Luyện lại {incorrectIds.length} câu SAI
+                </button>
+              )}
+
+              <button
+                onClick={handleStartNextBatch}
+                disabled={isStartingNextBatch}
+                className="px-5 py-2.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs rounded-xl shadow-md shadow-amber-500/25 transition active:scale-95 flex items-center disabled:opacity-50 cursor-pointer"
+              >
+                <span>{isStartingNextBatch ? 'Đang chuẩn bị...' : 'Tiếp tục luyện tập (15 câu tiếp theo)'}</span>
+                <ArrowRight className="w-4 h-4 ml-1.5" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* 15 Question Review Cards */}
+        <div className="space-y-6">
+          {questionsData.questions.map((q: any, qIdx: number) => {
+            const state = qStateMap[q.id];
+            const userSelectedIds: string[] = state?.submittedOptionIds || q.userSelectedOptionIds || [];
+            const correctIds: string[] =
+              state?.correctOptionIds && state.correctOptionIds.length > 0
+                ? state.correctOptionIds
+                : q.correctOptionIds && q.correctOptionIds.length > 0
+                ? q.correctOptionIds
+                : q.options?.filter((o: any) => o.isCorrect).map((o: any) => o.id) || [];
+
+            const isSubmittedQ = !!state?.isSubmitted || !!q.isAnswered;
+            const isQuestionCorrect =
+              isSubmittedQ &&
+              userSelectedIds.length === correctIds.length &&
+              userSelectedIds.every((id: string) => correctIds.includes(id));
+
+            return (
+              <div
+                key={q.id}
+                className={`card-saas p-5 sm:p-6 space-y-4 border transition-all ${
+                  isSubmittedQ
+                    ? isQuestionCorrect
+                      ? 'border-emerald-300 shadow-2xs'
+                      : 'border-rose-300 shadow-2xs'
+                    : 'border-slate-200/90'
+                }`}
+              >
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 border-b border-slate-100 pb-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="text-[11px] font-black px-2.5 py-0.5 bg-slate-900 text-amber-400 rounded-md">
+                      Câu #{qIdx + 1}
+                    </span>
+                    <span className="text-xs font-bold text-slate-700">
+                      {q.domainName || 'AWS SAA-C03'}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center gap-2 self-end sm:self-auto">
+                    {isSubmittedQ ? (
+                      isQuestionCorrect ? (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200">
+                          <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-600" />
+                          Đã làm: ĐÚNG
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-black bg-rose-50 text-rose-700 border border-rose-200">
+                          <XCircle className="w-3.5 h-3.5 mr-1 text-rose-600" />
+                          Đã làm: SAI
+                        </span>
+                      )
+                    ) : (
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                        Chưa làm
+                      </span>
+                    )}
+
+                    {/* Bookmark Toggle Button */}
+                    <button
+                      onClick={() => handleToggleBookmark(q.id, q.isBookmarked)}
+                      title={q.isBookmarked ? 'Bỏ đánh dấu' : 'Đánh dấu câu hỏi ⭐'}
+                      className={`p-1.5 rounded-lg border transition cursor-pointer ${
+                        q.isBookmarked
+                          ? 'bg-amber-50 border-amber-300 text-amber-600'
+                          : 'bg-white border-slate-200 text-slate-400 hover:text-amber-500 hover:border-amber-300'
+                      }`}
+                    >
+                      <Award className="w-4 h-4 fill-current" />
+                    </button>
+
+                    {/* Note Toggle Button */}
+                    <button
+                      onClick={() =>
+                        setActiveReviewNoteId(activeReviewNoteId === q.id ? null : q.id)
+                      }
+                      title="Ghi chú cá nhân"
+                      className={`p-1.5 rounded-lg border transition cursor-pointer ${
+                        q.userNote
+                          ? 'bg-indigo-50 border-indigo-300 text-indigo-600'
+                          : 'bg-white border-slate-200 text-slate-400 hover:text-indigo-500 hover:border-indigo-300'
+                      }`}
+                    >
+                      <FileText className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Question Text */}
+                <div className="text-sm font-semibold text-slate-800 leading-relaxed">
+                  <HighlightableText
+                    questionId={q.id}
+                    text={q.content}
+                    highlights={q.userHighlights}
+                  />
+                </div>
+
+                {/* Inline Note Box */}
+                {activeReviewNoteId === q.id && (
+                  <div className="pt-1">
+                    <QuestionNoteBox
+                      questionId={q.id}
+                      initialNote={q.userNote || ''}
+                      onSaved={() => {
+                        queryClient.invalidateQueries({ queryKey: ['practiceQuestions', sessionId] });
+                        setActiveReviewNoteId(null);
+                      }}
+                    />
+                  </div>
+                )}
+
+                {/* Options List */}
+                <div className="space-y-2 pt-1">
+                  <div className="text-xs font-black uppercase tracking-wider text-slate-500">
+                    Lựa chọn đáp án:
+                  </div>
+                  <div className="grid grid-cols-1 gap-2">
+                    {q.options?.map((opt: any, optIdx: number) => {
+                      const letter = opt.key || String.fromCharCode(65 + optIdx);
+                      const isUserSelected = userSelectedIds.includes(opt.id);
+                      const isCorrectOption = correctIds.includes(opt.id);
+
+                      let cardClass = 'bg-white border-slate-200 text-slate-600 opacity-70';
+                      let badge = null;
+
+                      if (isUserSelected && isCorrectOption) {
+                        cardClass = 'bg-emerald-50/90 border-2 border-emerald-500 text-emerald-950 font-bold shadow-xs';
+                        badge = (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-600 text-white shrink-0">
+                            <Check className="w-3 h-3 mr-0.5" /> Bạn đã chọn (Chính xác)
+                          </span>
+                        );
+                      } else if (isUserSelected && !isCorrectOption) {
+                        cardClass = 'bg-rose-50/90 border-2 border-rose-500 text-rose-950 font-bold shadow-xs';
+                        badge = (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black bg-rose-600 text-white shrink-0">
+                            <XCircle className="w-3 h-3 mr-0.5" /> Bạn đã chọn (Sai)
+                          </span>
+                        );
+                      } else if (!isUserSelected && isCorrectOption) {
+                        cardClass = 'bg-emerald-50/60 border-2 border-emerald-400 text-emerald-950 font-bold';
+                        badge = (
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-black bg-emerald-100 text-emerald-800 border border-emerald-300 shrink-0">
+                            <Check className="w-3 h-3 mr-0.5 text-emerald-600" /> Đáp án đúng chuẩn AWS
+                          </span>
+                        );
+                      }
+
+                      return (
+                        <div
+                          key={opt.id}
+                          className={`p-3.5 rounded-xl border text-xs sm:text-sm flex items-start gap-3 transition ${cardClass}`}
+                        >
+                          <span
+                            className={`w-6 h-6 rounded-lg text-xs font-black flex items-center justify-center shrink-0 ${
+                              isCorrectOption
+                                ? 'bg-emerald-600 text-white'
+                                : isUserSelected
+                                ? 'bg-rose-600 text-white'
+                                : 'bg-slate-100 text-slate-600'
+                            }`}
+                          >
+                            {letter}
+                          </span>
+                          <div className="flex-1 pt-0.5 leading-relaxed">{opt.content}</div>
+                          {badge}
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Explanation */}
+                {(state?.explanation || q.explanation) && (
+                  <div className="p-4 sm:p-5 rounded-2xl bg-amber-50/50 border border-amber-200/80 space-y-2 mt-2">
+                    <div className="flex items-center space-x-1.5 text-xs font-black uppercase tracking-wider text-amber-800">
+                      <Sparkles className="w-4 h-4 text-amber-600" />
+                      <span>Giải thích chi tiết chuẩn AWS:</span>
+                    </div>
+                    <div className="text-xs sm:text-sm font-medium text-slate-800 leading-relaxed">
+                      <MarkdownExplanation
+                        content={state?.explanation || q.explanation}
+                        theme="light"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Bottom Completion Box */}
+        <div className="card-saas p-6 bg-gradient-to-r from-slate-900 to-slate-800 text-white rounded-3xl shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="space-y-1 text-center sm:text-left">
+            <h3 className="text-base font-black text-amber-400">Bạn đã hoàn tất việc review bộ câu hỏi!</h3>
+            <p className="text-xs text-slate-300">
+              Đạt {correctCount}/{totalQuestions} câu đúng ({totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0}%). Bấm nút để tiếp tục sang bộ 15 câu tiếp theo!
+            </p>
+          </div>
+
+          <button
+            onClick={handleStartNextBatch}
+            disabled={isStartingNextBatch}
+            className="w-full sm:w-auto px-6 py-3.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-sm rounded-2xl transition-all shadow-md shadow-amber-500/25 hover:shadow-lg active:scale-95 flex items-center justify-center space-x-2 shrink-0 disabled:opacity-50 cursor-pointer"
+          >
+            <span>{isStartingNextBatch ? 'Đang chuẩn bị...' : 'Tiếp tục luyện tập (15 câu tiếp theo)'}</span>
+            <ArrowRight className="w-4 h-4 ml-1" />
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   const qState = qStateMap[currentQuestion.id] || {
     selectedOptionIds: [],
     submittedOptionIds: [],
@@ -480,11 +874,20 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
           >
             <ArrowLeft className="w-4 h-4 mr-1 shrink-0" /> Thoát phiên học
           </button>
-          <div className="flex items-center space-x-3">
-            <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full font-extrabold">
+          <div className="flex items-center space-x-2.5">
+            {allDone && (
+              <button
+                onClick={() => setViewMode('REVIEW')}
+                className="px-3.5 py-1 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs rounded-full shadow-xs transition flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Review {totalQuestions} câu</span>
+              </button>
+            )}
+            <span className="text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded-full font-extrabold text-xs">
               {answeredCount}/{totalQuestions} đã làm
             </span>
-            <span className="bg-slate-200/80 px-3 py-1 rounded-full text-slate-700 font-extrabold whitespace-nowrap">
+            <span className="bg-slate-200/80 px-3 py-1 rounded-full text-slate-700 font-extrabold text-xs whitespace-nowrap">
               Câu {currentIndex + 1} / {totalQuestions}
             </span>
           </div>
@@ -598,30 +1001,40 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
 
       {/* Completion Banner — shown when all questions done */}
       {allDone && (
-        <div className="card-saas p-5 sm:p-6 bg-gradient-to-r from-emerald-50 to-amber-50 border border-emerald-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg">
-          <div className="flex items-center space-x-3">
-            <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shrink-0 shadow-md">
-              <Trophy className="w-5 h-5" />
+        <div className="card-saas p-5 sm:p-6 bg-gradient-to-r from-emerald-50 via-teal-50 to-amber-50 border border-emerald-300 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-lg animate-in fade-in">
+          <div className="flex items-center space-x-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-emerald-500 to-teal-400 text-white flex items-center justify-center shrink-0 shadow-md">
+              <Trophy className="w-6 h-6" />
             </div>
             <div>
-              <p className="text-sm font-black text-slate-900">Đã hoàn thành toàn bộ {totalQuestions} câu!</p>
-              <p className="text-xs text-slate-500 mt-0.5">Bấm “Làm lại từ đầu” để xoá đáp án và luyện tập lại toàn bộ phiên này.</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-base font-black text-slate-900">
+                  Đã hoàn thành toàn bộ {totalQuestions} câu!
+                </p>
+                <span className="text-xs font-black px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300">
+                  {correctCount}/{totalQuestions} Đúng ({totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0}%)
+                </span>
+              </div>
+              <p className="text-xs text-slate-600 mt-1">
+                Xem lại toàn bộ {totalQuestions} câu để đọc giải thích chi tiết, xem đáp án chuẩn AWS và note lại trước khi sang bộ mới.
+              </p>
             </div>
           </div>
-          <div className="flex items-center gap-2.5 w-full sm:w-auto">
+          <div className="flex flex-wrap items-center gap-2.5 w-full sm:w-auto">
             <button
-              onClick={() => router.push('/')}
-              className="flex-1 sm:flex-none px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 transition"
+              onClick={() => setViewMode('REVIEW')}
+              className="flex-1 sm:flex-none px-5 py-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs rounded-xl shadow-md transition flex items-center justify-center space-x-1.5 cursor-pointer"
             >
-              Về Dashboard
+              <RotateCcw className="w-4 h-4" />
+              <span>Review toàn bộ {totalQuestions} câu</span>
             </button>
             <button
-              onClick={handleReset}
-              disabled={isResetting}
-              className="flex-1 sm:flex-none px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl transition shadow-md flex items-center justify-center space-x-2 disabled:opacity-50"
+              onClick={handleStartNextBatch}
+              disabled={isStartingNextBatch}
+              className="flex-1 sm:flex-none px-5 py-3 bg-slate-900 hover:bg-slate-800 text-white font-black text-xs rounded-xl transition shadow-md flex items-center justify-center space-x-1.5 disabled:opacity-50 cursor-pointer"
             >
-              <RotateCcw className={`w-3.5 h-3.5 ${isResetting ? 'animate-spin' : ''}`} />
-              <span>{isResetting ? 'Đang reset...' : 'Làm lại từ đầu'}</span>
+              <span>{isStartingNextBatch ? 'Đang tạo...' : 'Sang 15 câu tiếp theo'}</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -805,12 +1218,15 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
 
                   <button
                     onClick={() => {
-                      if (currentIndex < totalQuestions - 1) setCurrentIndex((i) => i + 1);
-                      else router.push('/');
+                      if (currentIndex < totalQuestions - 1) {
+                        setCurrentIndex((i) => i + 1);
+                      } else {
+                        setViewMode('REVIEW');
+                      }
                     }}
                     className="px-6 py-2.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black text-xs sm:text-sm rounded-xl transition shadow-md flex items-center whitespace-nowrap cursor-pointer hover:from-amber-500 hover:to-amber-600"
                   >
-                    <span>{currentIndex < totalQuestions - 1 ? 'Câu tiếp theo' : 'Hoàn thành'}</span>
+                    <span>{currentIndex < totalQuestions - 1 ? 'Câu tiếp theo' : 'Xem kết quả & Review 15 câu'}</span>
                     <ArrowRight className="w-4 h-4 ml-1.5" />
                   </button>
                 </div>

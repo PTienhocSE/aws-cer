@@ -123,6 +123,70 @@ export async function POST(req: NextRequest) {
       });
     }
 
+    if (mode === 'NEXT_BATCH') {
+      const excludeIds: string[] = Array.isArray(body.excludeQuestionIds) ? body.excludeQuestionIds : [];
+
+      const unanswered = await prisma.question.findMany({
+        where: {
+          questionBankId: bankId,
+          ...(domainId ? { domainId } : {}),
+          id: { notIn: excludeIds },
+          progresses: { none: { userId } },
+        },
+        select: { id: true },
+        take: safeLimit,
+        orderBy: [{ rawId: 'asc' }, { createdAt: 'asc' }],
+      });
+
+      let nextIds = unanswered.map((q) => q.id);
+
+      if (nextIds.length < safeLimit) {
+        const remainingNeeded = safeLimit - nextIds.length;
+        const fallback = await prisma.question.findMany({
+          where: {
+            questionBankId: bankId,
+            ...(domainId ? { domainId } : {}),
+            id: { notIn: [...excludeIds, ...nextIds] },
+          },
+          select: { id: true },
+          take: remainingNeeded,
+          orderBy: [{ rawId: 'asc' }, { createdAt: 'asc' }],
+        });
+        nextIds = [...nextIds, ...fallback.map((q) => q.id)];
+      }
+
+      if (nextIds.length === 0) {
+        const anyQuestions = await prisma.question.findMany({
+          where: { questionBankId: bankId, ...(domainId ? { domainId } : {}) },
+          select: { id: true },
+          take: safeLimit,
+        });
+        nextIds = shuffleAndTake(
+          anyQuestions.map((q) => q.id),
+          safeLimit
+        );
+      }
+
+      const session = await prisma.practiceSession.create({
+        data: {
+          userId,
+          questionBankId: bankId,
+          mode: 'CUSTOM',
+          sourceType: 'NEXT_BATCH',
+          sourceId: domainId || null,
+          questionIds: JSON.stringify(nextIds),
+          title: 'Luyện tập 15 câu tiếp theo',
+        },
+      });
+
+      return NextResponse.json({
+        sessionId: session.id,
+        questionBankId: bankId,
+        totalQuestions: nextIds.length,
+        message: 'Đã tạo bộ 15 câu tiếp theo thành công',
+      });
+    }
+
     const questionWhere: any = { questionBankId: bankId };
     if (domainId) {
       questionWhere.domainId = domainId;
