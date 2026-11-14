@@ -280,7 +280,7 @@ export default function MockExamRunnerPage() {
                 <button
                   key={ans.id}
                   onClick={() => setCurrentIndex(idx)}
-                  className={`h-9 rounded-lg border text-xs flex items-center justify-center transition ${btnStyle}`}
+                  className={`h-9 rounded-lg border text-xs flex items-center justify-center transition outline-none focus:outline-none focus-visible:outline-none ${btnStyle}`}
                 >
                   {idx + 1}
                 </button>

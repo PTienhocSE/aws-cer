@@ -433,6 +433,25 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
   const answeredCount = Object.values(qStateMap).filter((s) => s.isSubmitted).length;
   const allDone = answeredCount === totalQuestions && totalQuestions > 0;
 
+  const correctCount = questionsData.questions.filter((q: any) => {
+    const s = qStateMap[q.id];
+    return (
+      s?.isSubmitted &&
+      s.submittedOptionIds.length === s.correctOptionIds.length &&
+      s.submittedOptionIds.every((id) => s.correctOptionIds.includes(id))
+    );
+  }).length;
+  const incorrectCount = answeredCount - correctCount;
+  const unansweredCount = totalQuestions - answeredCount;
+
+  // Auto-scroll active question into center view
+  useEffect(() => {
+    const el = document.getElementById(`practice-nav-q-${currentIndex}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [currentIndex]);
+
   const qState = qStateMap[currentQuestion.id] || {
     selectedOptionIds: [],
     submittedOptionIds: [],
@@ -479,36 +498,55 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="flex-1 overflow-x-auto pb-1 no-scrollbar">
-            <div className="flex gap-1.5 min-w-max">
+          <div className="flex-1 overflow-x-auto pb-1.5 no-scrollbar">
+            <div className="flex items-center gap-1.5 min-w-max py-1">
               {questionsData.questions.map((question: any, index: number) => {
                 const state = qStateMap[question.id];
+                const isCurrent = currentIndex === index;
+                const isSubmittedQuestion = !!state?.isSubmitted;
                 const isCorrect =
-                  state?.isSubmitted &&
+                  isSubmittedQuestion &&
                   state.submittedOptionIds.length === state.correctOptionIds.length &&
                   state.submittedOptionIds.every((optionId) => state.correctOptionIds.includes(optionId));
+                const hasSelectedDraft = !isSubmittedQuestion && (state?.selectedOptionIds?.length ?? 0) > 0;
+
+                // Dedicated, clean, beautiful styling per state — zero browser focus outline
+                let btnStyle = '';
+                if (isCurrent) {
+                  if (isSubmittedQuestion) {
+                    btnStyle = isCorrect
+                      ? 'bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-400 ring-offset-2 ring-offset-white shadow-sm font-black scale-105 z-10'
+                      : 'bg-rose-600 text-white border-rose-600 ring-2 ring-rose-400 ring-offset-2 ring-offset-white shadow-sm font-black scale-105 z-10';
+                  } else {
+                    btnStyle = 'bg-amber-400 text-slate-950 border-amber-500 ring-2 ring-amber-400 ring-offset-2 ring-offset-white shadow-sm font-black scale-105 z-10';
+                  }
+                } else {
+                  if (isSubmittedQuestion) {
+                    btnStyle = isCorrect
+                      ? 'bg-emerald-50 border-emerald-300 text-emerald-700 hover:bg-emerald-100 font-bold'
+                      : 'bg-rose-50 border-rose-300 text-rose-700 hover:bg-rose-100 font-bold';
+                  } else if (hasSelectedDraft) {
+                    btnStyle = 'bg-amber-50 border-amber-300 text-amber-800 hover:bg-amber-100 font-bold';
+                  } else {
+                    btnStyle = 'bg-white border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 font-medium';
+                  }
+                }
+
                 return (
                   <button
                     key={question.id}
+                    id={`practice-nav-q-${index}`}
                     onClick={() => setCurrentIndex(index)}
                     title={
-                      state?.isSubmitted
+                      isSubmittedQuestion
                         ? isCorrect
                           ? `Câu ${index + 1}: Đúng`
                           : `Câu ${index + 1}: Sai`
+                        : hasSelectedDraft
+                        ? `Câu ${index + 1}: Đang chọn đáp án`
                         : `Câu ${index + 1}: Chưa làm`
                     }
-                    className={`w-8 h-8 rounded-lg text-[11px] font-black border transition shrink-0 ${
-                      currentIndex === index
-                        ? 'ring-2 ring-amber-400 ring-offset-1'
-                        : ''
-                    } ${
-                      state?.isSubmitted
-                        ? isCorrect
-                          ? 'bg-emerald-50 border-emerald-300 text-emerald-700'
-                          : 'bg-red-50 border-red-300 text-red-700'
-                        : 'bg-white border-slate-200 text-slate-500 hover:border-amber-300'
-                    }`}
+                    className={`w-9 h-9 rounded-xl text-xs border transition-all shrink-0 flex items-center justify-center outline-none focus:outline-none focus-visible:outline-none ${btnStyle}`}
                   >
                     {index + 1}
                   </button>
@@ -527,10 +565,34 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
             </button>
           )}
         </div>
-        <div className="flex flex-wrap gap-3 text-[10px] font-bold text-slate-500">
-          <span className="flex items-center"><i className="w-2.5 h-2.5 rounded bg-emerald-100 border border-emerald-300 mr-1" /> Đúng</span>
-          <span className="flex items-center"><i className="w-2.5 h-2.5 rounded bg-red-100 border border-red-300 mr-1" /> Sai</span>
-          <span className="flex items-center"><i className="w-2.5 h-2.5 rounded bg-white border border-slate-300 mr-1" /> Chưa làm</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 pt-0.5 text-xs">
+          <div className="flex flex-wrap items-center gap-2.5 font-semibold text-slate-600">
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
+              <span className="w-2 h-2 rounded-full bg-emerald-500" />
+              Đúng: {correctCount}
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-rose-50 text-rose-700 border border-rose-200 text-[11px] font-bold">
+              <span className="w-2 h-2 rounded-full bg-rose-500" />
+              Sai: {incorrectCount}
+            </span>
+            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-lg bg-slate-100 text-slate-600 border border-slate-200 text-[11px] font-bold">
+              <span className="w-2 h-2 rounded-full bg-slate-400" />
+              Chưa làm: {unansweredCount}
+            </span>
+          </div>
+
+          {unansweredCount > 0 && (
+            <button
+              onClick={() => {
+                const firstUnanswered = questionsData.questions.findIndex((q: any) => !qStateMap[q.id]?.isSubmitted);
+                if (firstUnanswered !== -1) setCurrentIndex(firstUnanswered);
+              }}
+              className="text-xs font-bold text-amber-600 hover:text-amber-700 hover:underline flex items-center gap-1 transition"
+            >
+              <span>Nhảy tới câu chưa làm</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
       </div>
 

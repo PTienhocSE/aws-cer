@@ -38,19 +38,30 @@ import toast from 'react-hot-toast';
 import { enableGuestMode } from '@/lib/guest';
 
 async function fetchQuestionBanks() {
-  const res = await fetch('/api/question-banks');
+  const res = await fetch('/api/question-banks', {
+    headers: { 'x-guest-mode': '1' },
+    credentials: 'include',
+  });
   if (!res.ok) throw new Error('Failed to fetch question banks');
   return res.json();
 }
 
-async function fetchOverview() {
-  const res = await fetch('/api/progress/overview');
+async function fetchOverview(bankId?: string | null) {
+  const url = bankId ? `/api/progress/overview?questionBankId=${encodeURIComponent(bankId)}` : '/api/progress/overview';
+  const res = await fetch(url, {
+    headers: { 'x-guest-mode': '1' },
+    credentials: 'include',
+  });
   if (!res.ok) return null;
   return res.json();
 }
 
-async function fetchDomains() {
-  const res = await fetch('/api/progress/domains');
+async function fetchDomains(bankId?: string | null) {
+  const url = bankId ? `/api/progress/domains?questionBankId=${encodeURIComponent(bankId)}` : '/api/progress/domains';
+  const res = await fetch(url, {
+    headers: { 'x-guest-mode': '1' },
+    credentials: 'include',
+  });
   if (!res.ok) return null;
   return res.json();
 }
@@ -68,14 +79,16 @@ export default function HomePage() {
   });
 
   const { data: overview } = useQuery({
-    queryKey: ['progressOverview'],
-    queryFn: fetchOverview,
+    queryKey: ['progressOverview', user?.activeQuestionBankId],
+    queryFn: () => fetchOverview(user?.activeQuestionBankId),
     enabled: !!user,
   });
 
+  const currentBankId = overview?.activeQuestionBankId || user?.activeQuestionBankId;
+
   const { data: domainsData } = useQuery({
-    queryKey: ['progressDomains'],
-    queryFn: fetchDomains,
+    queryKey: ['progressDomains', currentBankId],
+    queryFn: () => fetchDomains(currentBankId),
     enabled: !!user,
   });
 
@@ -83,7 +96,8 @@ export default function HomePage() {
     mutationFn: async (bankId: string) => {
       const res = await fetch('/api/me/active-question-bank', {
         method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'x-guest-mode': '1' },
+        credentials: 'include',
         body: JSON.stringify({ questionBankId: bankId }),
       });
       if (!res.ok) throw new Error('Switch bank failed');
@@ -105,8 +119,9 @@ export default function HomePage() {
     try {
       const res = await fetch('/api/practice-sessions', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mode, domainId, limit: 15 }),
+        headers: { 'Content-Type': 'application/json', 'x-guest-mode': '1' },
+        credentials: 'include',
+        body: JSON.stringify({ mode, domainId, questionBankId: currentBankId, limit: 15 }),
       });
       const data = await res.json();
       if (data.sessionId) {
@@ -123,7 +138,11 @@ export default function HomePage() {
     }
     setResettingDomainId(domainId);
     try {
-      const res = await fetch(`/api/practice-sessions/domain/${domainId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/practice-sessions/domain/${domainId}`, {
+        method: 'DELETE',
+        headers: { 'x-guest-mode': '1' },
+        credentials: 'include',
+      });
       if (!res.ok) throw new Error('Reset domain failed');
       await queryClient.invalidateQueries({ queryKey: ['progressDomains'] });
       toast.success('Đã reset Domain. Bạn có thể học lại từ câu đầu.');
@@ -443,7 +462,7 @@ export default function HomePage() {
                       <div className="space-y-1 min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-[11px] font-extrabold px-2.5 py-0.5 bg-slate-900 text-amber-400 rounded-md shrink-0">
-                            {d.code}
+                            {d.code?.replace(/_/g, ' ').replace(/\s*(DUMP|UDEMY|390Q)$/i, '') || d.code}
                           </span>
                           <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug">
                             {d.name}

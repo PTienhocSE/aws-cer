@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getOptionalAuthUser } from '@/lib/auth';
+import { getAuthUserOrDemo } from '@/lib/auth';
 import { calculateStreak } from '@/lib/streak';
 
 export async function GET(req: NextRequest) {
   try {
-    const authUser = await getOptionalAuthUser(req);
+    const authUser = await getAuthUserOrDemo(req);
     if (!authUser) {
       return NextResponse.json(null);
     }
 
     const userId = authUser.userId;
-    let bankId = authUser.activeQuestionBankId;
+    const requestedBankId = req.nextUrl.searchParams.get('questionBankId');
+    let bankId = requestedBankId || authUser.activeQuestionBankId;
 
     if (!bankId) {
       // Find user's first enrolled bank or any published bank

@@ -8,11 +8,11 @@ export async function POST(req: NextRequest) {
     const authUser = await getAuthUserOrDemo(req);
     if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
     const userId = authUser.userId;
-    const bankId = authUser.activeQuestionBankId;
+    const body = await req.json();
+    const bankId = body.questionBankId || authUser.activeQuestionBankId;
     if (!bankId) {
       return NextResponse.json({ error: 'Chưa chọn ngân hàng câu hỏi' }, { status: 400 });
     }
-    const body = await req.json();
     const { mode = 'CUSTOM', domainId, status, limit = 15 } = body;
     const safeLimit = Math.min(100, Math.max(1, Number(limit) || 15));
 
