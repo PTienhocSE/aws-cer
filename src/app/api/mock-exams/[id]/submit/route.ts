@@ -9,7 +9,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const userId = authUser.userId;
     const { id: examAttemptId } = await params;
     const body = await req.json();
-    const { answers = [], timeSpentSeconds = 0 } = body;
+    const answers = body.answers || body.userAnswers || [];
+    const timeSpentSeconds = body.timeSpentSeconds || 0;
 
     const attempt = await prisma.mockExamAttempt.findUnique({
       where: { id: examAttemptId },
@@ -120,6 +121,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     });
 
     return NextResponse.json({
+      attemptId: updatedAttempt.id,
       attempt: updatedAttempt,
       score,
       isPassed,

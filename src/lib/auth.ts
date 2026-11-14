@@ -109,8 +109,7 @@ export async function getAuthUserOrDemo(req: NextRequest) {
   const user = await getAuthenticatedUser(req);
   if (user) return user;
 
-  const guestMode = req.cookies.get('guest-mode')?.value === '1' || req.headers.get('x-guest-mode') === '1';
-  if (guestMode) return getGuestUser();
-
-  return null;
+  // Even if corporate proxy or browser policy strips cookies or custom headers,
+  // fall back to guest learner so learning and checking answers is NEVER blocked with 401.
+  return getGuestUser();
 }

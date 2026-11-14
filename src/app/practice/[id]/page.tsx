@@ -21,13 +21,19 @@ import HighlightableText from '@/components/HighlightableText';
 import MarkdownExplanation from '@/components/MarkdownExplanation';
 
 async function fetchPracticeSession(id: string) {
-  const res = await fetch(`/api/practice-sessions/${id}`);
+  const res = await fetch(`/api/practice-sessions/${id}`, {
+    headers: { 'x-guest-mode': '1' },
+    credentials: 'include',
+  });
   if (!res.ok) throw new Error('Failed to fetch session');
   return res.json();
 }
 
 async function fetchSessionQuestions(id: string) {
-  const res = await fetch(`/api/practice-sessions/${id}/questions`);
+  const res = await fetch(`/api/practice-sessions/${id}/questions`, {
+    headers: { 'x-guest-mode': '1' },
+    credentials: 'include',
+  });
   if (!res.ok) throw new Error('Failed to fetch questions');
   return res.json();
 }
@@ -62,19 +68,35 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
 
   const currentQuestion = questionsData?.questions?.[currentIndex];
 
-  // Initialize: set already-answered questions from DB, jump to first unanswered
+  // Initialize: set already-answered questions from DB or localStorage, jump to first unanswered
   useEffect(() => {
     if (!questionsData?.questions || initialized) return;
+
+    let localAnswers: Record<string, any> = {};
+    try {
+      localAnswers = JSON.parse(localStorage.getItem(`aws_cer_session_${sessionId}_answers`) || '{}');
+    } catch {}
 
     const initMap: Record<string, QuestionState> = {};
     let firstUnanswered = 0;
 
     questionsData.questions.forEach((q: any, idx: number) => {
-      if (q.isAnswered) {
-        const correctIds = q.options
-          .filter((o: any) => o.isCorrect)
-          .map((o: any) => o.id);
-        const submittedIds = q.userSelectedOptionIds?.length > 0 ? q.userSelectedOptionIds : correctIds;
+      const local = localAnswers[q.id];
+      const isAnswered = q.isAnswered || !!local;
+
+      if (isAnswered) {
+        const correctIds =
+          q.correctOptionIds && q.correctOptionIds.length > 0
+            ? q.correctOptionIds
+            : q.options.filter((o: any) => o.isCorrect).map((o: any) => o.id);
+
+        const submittedIds =
+          local?.selectedOptionIds?.length > 0
+            ? local.selectedOptionIds
+            : q.userSelectedOptionIds?.length > 0
+            ? q.userSelectedOptionIds
+            : correctIds;
+
         initMap[q.id] = {
           selectedOptionIds: submittedIds,
           submittedOptionIds: submittedIds,
@@ -95,11 +117,13 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
     });
 
     // Jump to first unanswered question
-    const firstUnansweredIdx = questionsData.questions.findIndex((q: any) => !q.isAnswered);
+    const firstUnansweredIdx = questionsData.questions.findIndex(
+      (q: any) => !q.isAnswered && !localAnswers[q.id]
+    );
     setCurrentIndex(firstUnansweredIdx >= 0 ? firstUnansweredIdx : 0);
     setQStateMap(initMap);
     setInitialized(true);
-  }, [questionsData, initialized]);
+  }, [questionsData, initialized, sessionId]);
 
   // Note content per question
   useEffect(() => {
@@ -204,49 +228,43 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
       selectedOptionIds: string[];
       confidenceLevel?: number;
     }) => {
-      const res = await fetch(`/api/questions/${questionId}/answers`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ selectedOptionIds, confidenceLevel, sessionId }),
-      });
-      if (!res.ok) throw new Error('Submit answer failed');
-      return res.json();
+      try {
+        const res = await fetch(`/api/questions/${questionId}/answers`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-guest-mode': '1',
+          },
+          credentials: 'include',
+          body: JSON.stringify({ selectedOptionIds, confidenceLevel, sessionId }),
+        });
+        if (!res.ok) {
+          console.warn(`Server responded with ${res.status}. Tiến độ đã được lưu cục bộ.`);
+          return { offline: true };
+        }
+        return res.json();
+      } catch (err) {
+        console.warn('Network sync failed (company proxy/offline). Đã lưu offline.', err);
+        return { offline: true };
+      }
     },
     onSuccess: (data, variables) => {
-      const { questionId, selectedOptionIds } = variables;
-      setQStateMap((prev) => ({
-        ...prev,
-        [questionId]: {
-          ...prev[questionId],
-          submittedOptionIds: selectedOptionIds,
-          correctOptionIds: data.correctOptionIds || [],
-          isSubmitted: true,
-          explanation: data.explanation || null,
-        },
-      }));
-      // Also update the questions cache so options show correctly
-      if (data?.correctOptionIds) {
-        queryClient.setQueryData(['practiceQuestions', sessionId], (old: any) => {
-          if (!old) return old;
-          return {
-            ...old,
-            questions: old.questions.map((q: any) =>
-              q.id === questionId
-                ? {
-                    ...q,
-                    isAnswered: true,
-                    wasCorrect: data.isCorrect,
-                    userSelectedOptionIds: selectedOptionIds,
-                    options: q.options.map((opt: any) => ({
-                      ...opt,
-                      isCorrect: data.correctOptionIds.includes(opt.id),
-                    })),
-                  }
-                : q
-            ),
-          };
-        });
+      if (data && !data.offline) {
+        const { questionId } = variables;
+        if (data.explanation || data.correctOptionIds) {
+          setQStateMap((prev) => ({
+            ...prev,
+            [questionId]: {
+              ...prev[questionId],
+              correctOptionIds: data.correctOptionIds || prev[questionId]?.correctOptionIds || [],
+              explanation: data.explanation || prev[questionId]?.explanation || null,
+            },
+          }));
+        }
       }
+    },
+    onError: (err) => {
+      console.warn('Không thể đồng bộ lên server, vẫn lưu cục bộ:', err);
     },
   });
 
@@ -273,14 +291,76 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
     });
   };
 
-  const handleCheckAnswer = (confidenceLevel: number) => {
+  const handleCheckAnswer = (confidenceLevel: number = 3) => {
     if (!currentQuestion) return;
     const qState = qStateMap[currentQuestion.id];
     if (!qState || qState.selectedOptionIds.length === 0 || qState.isSubmitted) return;
 
+    const selectedOptionIds = qState.selectedOptionIds;
+
+    // 1. Xác định đáp án đúng ngay trên Client (Không chờ mạng/proxy server)
+    const correctIds: string[] =
+      currentQuestion.correctOptionIds && currentQuestion.correctOptionIds.length > 0
+        ? currentQuestion.correctOptionIds
+        : currentQuestion.options?.filter((o: any) => o.isCorrect).map((o: any) => o.id) || [];
+
+    const isCorrect =
+      correctIds.length > 0
+        ? correctIds.length === selectedOptionIds.length &&
+          correctIds.every((id: string) => selectedOptionIds.includes(id))
+        : true;
+
+    // 2. CẬP NHẬT GIAO DIỆN NGAY LẬP TỨC (Optimistic Update)
+    setQStateMap((prev) => ({
+      ...prev,
+      [currentQuestion.id]: {
+        ...prev[currentQuestion.id],
+        submittedOptionIds: selectedOptionIds,
+        correctOptionIds: correctIds,
+        isSubmitted: true,
+        explanation: currentQuestion.explanation || null,
+      },
+    }));
+
+    // Cập nhật cache để hiển thị highlight xanh/đỏ chuẩn
+    queryClient.setQueryData(['practiceQuestions', sessionId], (old: any) => {
+      if (!old) return old;
+      return {
+        ...old,
+        questions: old.questions.map((q: any) =>
+          q.id === currentQuestion.id
+            ? {
+                ...q,
+                isAnswered: true,
+                wasCorrect: isCorrect,
+                userSelectedOptionIds: selectedOptionIds,
+                options: q.options.map((opt: any) => ({
+                  ...opt,
+                  isCorrect: correctIds.includes(opt.id),
+                })),
+              }
+            : q
+        ),
+      };
+    });
+
+    // 3. Lưu tiến độ vào localStorage để không bao giờ mất dù proxy công ty ngắt
+    try {
+      const localKey = `aws_cer_session_${sessionId}_answers`;
+      const saved = JSON.parse(localStorage.getItem(localKey) || '{}');
+      saved[currentQuestion.id] = {
+        selectedOptionIds,
+        isCorrect,
+        confidenceLevel,
+        answeredAt: new Date().toISOString(),
+      };
+      localStorage.setItem(localKey, JSON.stringify(saved));
+    } catch {}
+
+    // 4. Đồng bộ nền lên server
     submitAnswerMutation.mutate({
       questionId: currentQuestion.id,
-      selectedOptionIds: qState.selectedOptionIds,
+      selectedOptionIds,
       confidenceLevel,
     });
   };
@@ -595,14 +675,28 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
 
             {/* Confidence buttons OR explanation */}
             {!isSubmitted ? (
-              <div className="pt-4 border-t border-slate-100 space-y-3">
-                <div className="text-xs font-extrabold text-slate-500 text-center">
-                  Chọn đáp án rồi đánh giá độ tự tin để hệ thống tính lịch ôn tập SRS:
+              <div className="pt-4 border-t border-slate-100 space-y-3.5">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                  <button
+                    disabled={qState.selectedOptionIds.length === 0}
+                    onClick={() => handleCheckAnswer(3)}
+                    className="px-6 py-2.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs sm:text-sm rounded-xl transition shadow-md flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
+                  >
+                    <CheckCircle className="w-4 h-4 mr-2 text-slate-950" />
+                    <span>Xem đáp án &amp; Kiểm tra ngay</span>
+                  </button>
+                  <div className="text-[11px] font-bold text-slate-400 text-center sm:text-right">
+                    (Hoặc bấm 1 trong 4 mức độ tự tin bên dưới để tính lịch SRS)
+                  </div>
+                </div>
+
+                <div className="text-xs font-extrabold text-slate-500 text-center sm:text-left pt-1">
+                  Đánh giá độ tự tin (Spaced Repetition System):
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {confidenceButtons.map((btn) => {
                     const Icon = btn.icon;
-                    const disabled = qState.selectedOptionIds.length === 0 || submitAnswerMutation.isPending;
+                    const disabled = qState.selectedOptionIds.length === 0;
                     return (
                       <button
                         key={btn.level}
@@ -611,7 +705,7 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
                         className={`p-3 rounded-xl border font-bold text-xs flex items-center justify-center space-x-1.5 transition ${
                           disabled
                             ? 'opacity-40 cursor-not-allowed bg-slate-100 text-slate-400 border-slate-200'
-                            : 'bg-white hover:bg-amber-50 hover:border-amber-400 text-slate-800 shadow-2xs'
+                            : 'bg-white hover:bg-amber-50 hover:border-amber-400 text-slate-800 shadow-2xs cursor-pointer'
                         }`}
                       >
                         <Icon className="w-4 h-4 text-amber-500 shrink-0" />
@@ -628,7 +722,7 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
                   <div className="p-5 rounded-2xl bg-slate-900 text-white space-y-3">
                     <div className="flex items-center space-x-2 text-amber-400 font-extrabold text-sm">
                       <Sparkles className="w-4 h-4" />
-                      <span>Giải thích chi tiết & Mẹo thi</span>
+                      <span>Giải thích chi tiết &amp; Mẹo thi</span>
                     </div>
                     <MarkdownExplanation
                       content={qState.explanation || currentQuestion.explanation || 'Chưa có phần giải thích.'}
@@ -642,7 +736,7 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
                   <button
                     onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
                     disabled={currentIndex === 0}
-                    className="px-4 py-2.5 bg-white border border-slate-200 font-bold text-xs rounded-xl disabled:opacity-40 flex items-center transition hover:bg-slate-50"
+                    className="px-4 py-2.5 bg-white border border-slate-200 font-bold text-xs rounded-xl disabled:opacity-40 flex items-center transition hover:bg-slate-50 cursor-pointer"
                   >
                     <ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Câu trước
                   </button>
@@ -652,7 +746,7 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
                       if (currentIndex < totalQuestions - 1) setCurrentIndex((i) => i + 1);
                       else router.push('/');
                     }}
-                    className="px-6 py-2.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black text-xs sm:text-sm rounded-xl transition shadow-md flex items-center whitespace-nowrap"
+                    className="px-6 py-2.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 text-slate-950 font-black text-xs sm:text-sm rounded-xl transition shadow-md flex items-center whitespace-nowrap cursor-pointer hover:from-amber-500 hover:to-amber-600"
                   >
                     <span>{currentIndex < totalQuestions - 1 ? 'Câu tiếp theo' : 'Hoàn thành'}</span>
                     <ArrowRight className="w-4 h-4 ml-1.5" />
@@ -668,7 +762,7 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
               <button
                 onClick={() => setCurrentIndex((i) => Math.max(0, i - 1))}
                 disabled={currentIndex === 0}
-                className="px-4 py-2 bg-white border border-slate-200 font-bold text-xs rounded-xl disabled:opacity-40 flex items-center hover:bg-slate-50 transition"
+                className="px-4 py-2 bg-white border border-slate-200 font-bold text-xs rounded-xl disabled:opacity-40 flex items-center hover:bg-slate-50 transition cursor-pointer"
               >
                 <ArrowLeft className="w-3.5 h-3.5 mr-1.5" /> Câu trước
               </button>
@@ -677,9 +771,10 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
                   if (currentIndex < totalQuestions - 1) setCurrentIndex((i) => i + 1);
                 }}
                 disabled={currentIndex >= totalQuestions - 1}
-                className="px-4 py-2 bg-white border border-slate-200 font-bold text-xs rounded-xl disabled:opacity-40 flex items-center hover:bg-slate-50 transition"
+                className="px-5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl disabled:opacity-40 flex items-center transition cursor-pointer"
               >
-                Bỏ qua <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
+                <span>Bỏ qua / Câu tiếp theo</span>
+                <ArrowRight className="w-3.5 h-3.5 ml-1.5" />
               </button>
             </div>
           )}

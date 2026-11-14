@@ -9,8 +9,9 @@ export async function GET(req: NextRequest) {
     if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
     const userId = authUser.userId;
 
-    // Ensure activeBankId is never undefined (Prisma ignores undefined in where filter)
-    let activeBankId = authUser.activeQuestionBankId;
+    // Support questionBankId query param, fallback to activeQuestionBankId or first published bank
+    const requestedBankId = req.nextUrl.searchParams.get('questionBankId');
+    let activeBankId = requestedBankId || authUser.activeQuestionBankId;
     if (!activeBankId) {
       const defaultBank = await prisma.questionBank.findFirst({ where: { status: 'PUBLISHED' } });
       activeBankId = defaultBank?.id || 'aws-saa-c03-v1';

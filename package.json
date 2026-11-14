@@ -15,6 +15,7 @@
     "finalize:saa-c03-udemy": "node scripts/finalize-saa-c03-udemy.cjs",
     "import:saa-c03-390q": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" scripts/import-saa-c03-390q.ts",
     "import:saa-c03-udemy": "ts-node --compiler-options \"{\\\"module\\\":\\\"CommonJS\\\"}\" scripts/import-saa-c03-udemy.ts",
+    "import:saa-c03-dump": "node scripts/import-saa-c03-dump.cjs",
     "test": "node test/run-tests.cjs",
     "import:questions": "ts-node --project tsconfig.json -e \"const {runAll}=require('./scripts/import-question-bank.ts');runAll()\""
   },

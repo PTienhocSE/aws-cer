@@ -83,6 +83,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
 
     const questions = rawQuestions.map((q) => {
       const answered = answeredMap.get(q.id);
+      const correctOptionIds = q.options.filter((opt) => opt.isCorrect).map((opt) => opt.id);
       return {
         id: q.id,
         content: q.questionText,
@@ -95,11 +96,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
         isAnswered: !!answered,
         wasCorrect: answered?.isCorrect ?? null,
         userSelectedOptionIds: answered?.selectedOptionIds ? JSON.parse(answered.selectedOptionIds) : [],
+        correctOptionIds,
         options: q.options.map((opt, idx) => ({
           id: opt.id,
           key: String.fromCharCode(65 + idx), // A, B, C, D...
           content: opt.text,
-          isCorrect: answered ? opt.isCorrect : false, // Only reveal after answering
+          isCorrect: opt.isCorrect,
         })),
       };
     });

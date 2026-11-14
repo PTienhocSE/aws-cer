@@ -25,7 +25,10 @@ export default function MockExamRunnerPage() {
   const { data: examData, isLoading } = useQuery({
     queryKey: ['mockExam', examAttemptId],
     queryFn: async () => {
-      const res = await fetch(`/api/mock-exams/${examAttemptId}`);
+      const res = await fetch(`/api/mock-exams/${examAttemptId}`, {
+        headers: { 'x-guest-mode': '1' },
+        credentials: 'include',
+      });
       if (!res.ok) throw new Error('Failed to fetch mock exam');
       return res.json();
     },
@@ -120,12 +123,20 @@ export default function MockExamRunnerPage() {
 
       const res = await fetch(`/api/mock-exams/${examAttemptId}/submit`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ userAnswers }),
+        headers: {
+          'Content-Type': 'application/json',
+          'x-guest-mode': '1',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          answers: userAnswers,
+          userAnswers,
+          timeSpentSeconds: attempt ? Math.max(0, attempt.timeLimitMinutes * 60 - (timeLeftSeconds || 0)) : 0,
+        }),
       });
 
       const data = await res.json();
-      if (data.attemptId) {
+      if (data.attemptId || data.attempt?.id) {
         router.push(`/exam/${examAttemptId}/result`);
       }
     } catch (e) {
