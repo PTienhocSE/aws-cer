@@ -7,7 +7,10 @@ export async function GET(req: NextRequest) {
     const authUser = await getAuthUserOrDemo(req);
     if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
     const userId = authUser.userId;
-    let activeBankId = authUser.activeQuestionBankId;
+    const { searchParams } = new URL(req.url);
+
+    const requestedBankId = searchParams.get('questionBankId');
+    let activeBankId = requestedBankId || authUser.activeQuestionBankId;
 
     if (!activeBankId) {
       // Find user's first enrolled bank or any published bank
@@ -23,7 +26,6 @@ export async function GET(req: NextRequest) {
       }
     }
 
-    const { searchParams } = new URL(req.url);
     const domainId = searchParams.get('domainId');
     const difficulty = searchParams.get('difficulty');
     const status = searchParams.get('status') || 'ALL';
@@ -42,8 +44,8 @@ export async function GET(req: NextRequest) {
 
     if (search) {
       where.OR = [
-        { questionText: { contains: search } },
-        { explanationText: { contains: search } },
+        { questionText: { contains: search, mode: 'insensitive' } },
+        { explanationText: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -51,15 +53,19 @@ export async function GET(req: NextRequest) {
       where.bookmarks = { some: { userId } };
     } else if (status === 'INCORRECT') {
       where.progresses = { some: { userId, lastAnswerCorrect: false } };
+    } else if (status === 'CORRECT') {
+      where.progresses = { some: { userId, lastAnswerCorrect: true } };
     } else if (status === 'MASTERED') {
       where.progresses = { some: { userId, masteryStatus: 'MASTERED' } };
     } else if (status === 'UNANSWERED') {
       where.progresses = { none: { userId } };
     } else if (status === 'ANSWERED') {
       where.progresses = { some: { userId } };
+    } else if (status === 'HAS_NOTE') {
+      where.notes = { some: { userId } };
     }
 
-    const [total, questions] = await Promise.all([
+    const [total, questions, statsTotalAnswered, statsCorrect, statsIncorrect, statsBookmarked] = await Promise.all([
       prisma.question.count({ where }),
       prisma.question.findMany({
         where,
@@ -73,13 +79,38 @@ export async function GET(req: NextRequest) {
           type: true,
           difficulty: true,
           questionText: true,
+          explanationText: true,
           options: { select: { id: true, text: true, isCorrect: true } },
           domain: { select: { id: true, code: true, name: true } },
           bookmarks: { where: { userId }, select: { id: true } },
           notes: { where: { userId }, select: { content: true } },
-          progresses: { where: { userId }, select: { masteryStatus: true, lastAnswerCorrect: true } },
+          highlights: { where: { userId }, select: { id: true, selectedText: true, color: true } },
+          progresses: {
+            where: { userId },
+            select: {
+              masteryStatus: true,
+              lastAnswerCorrect: true,
+              attempts: true,
+              correctAttempts: true,
+              incorrectAttempts: true,
+              confidenceLevel: true,
+              lastReviewedAt: true,
+            },
+          },
         },
-        orderBy: { createdAt: 'desc' },
+        orderBy: [{ rawId: 'asc' }, { createdAt: 'desc' }],
+      }),
+      prisma.userQuestionProgress.count({
+        where: { userId, ...(activeBankId ? { questionBankId: activeBankId } : {}) },
+      }),
+      prisma.userQuestionProgress.count({
+        where: { userId, lastAnswerCorrect: true, ...(activeBankId ? { questionBankId: activeBankId } : {}) },
+      }),
+      prisma.userQuestionProgress.count({
+        where: { userId, lastAnswerCorrect: false, ...(activeBankId ? { questionBankId: activeBankId } : {}) },
+      }),
+      prisma.questionBookmark.count({
+        where: { userId, ...(activeBankId ? { questionBankId: activeBankId } : {}) },
       }),
     ]);
 
@@ -93,11 +124,14 @@ export async function GET(req: NextRequest) {
         rawId: q.rawId,
         questionBankId: q.questionBankId,
         domainId: q.domainId,
+        domainCode: q.domain.code,
         domainName: q.domain.name,
         type: q.type.toLowerCase(),
         difficulty: q.difficulty,
         question: q.questionText,
+        explanation: q.explanationText,
         options: q.options,
+        highlights: q.highlights || [],
         isBookmarked,
         userNote,
         userProgress,
@@ -109,6 +143,12 @@ export async function GET(req: NextRequest) {
       total,
       page,
       totalPages: Math.ceil(total / limit),
+      stats: {
+        answered: statsTotalAnswered,
+        correct: statsCorrect,
+        incorrect: statsIncorrect,
+        bookmarked: statsBookmarked,
+      },
     });
   } catch (error) {
     console.error('Questions GET error:', error);

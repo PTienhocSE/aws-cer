@@ -166,6 +166,18 @@ export default function Navbar() {
                   <span>Thi thử</span>
                 </Link>
 
+                <Link
+                  href="/review"
+                  className={`flex items-center px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
+                    pathname.startsWith('/review')
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
+                  }`}
+                >
+                  <RotateCcw className={`w-4 h-4 mr-1.5 ${pathname.startsWith('/review') ? 'text-amber-400' : 'text-slate-400'}`} />
+                  <span>Ôn tập & Xem lại</span>
+                </Link>
+
                 {/* More Tools Dropdown */}
                 <div className="relative">
                   <button
@@ -208,7 +220,13 @@ export default function Navbar() {
                         <Award className="w-4 h-4 mr-2 text-amber-500" /> Đã Bookmark
                       </Link>
                       <Link
-                        href="/review/incorrect"
+                        href="/review?status=ANSWERED"
+                        className="flex items-center px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+                      >
+                        <RotateCcw className="w-4 h-4 mr-2 text-amber-500" /> Xem lại câu đã làm
+                      </Link>
+                      <Link
+                        href="/review?status=INCORRECT"
                         className="flex items-center px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
                       >
                         <CheckSquare className="w-4 h-4 mr-2 text-red-500" /> Các câu làm sai

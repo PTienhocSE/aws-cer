@@ -359,9 +359,12 @@ export default function HomePage() {
             <div className="text-xl sm:text-3xl font-black text-slate-900">
               {stats.totalAnswered} <span className="text-xs text-slate-400 font-medium">/ {stats.totalQuestions}</span>
             </div>
-            <div className="text-[10px] sm:text-[11px] text-slate-500 font-bold">
-              Đạt {percentOverall}% ngân hàng
-            </div>
+            <Link
+              href="/review?status=ANSWERED"
+              className="text-[10px] sm:text-[11px] text-blue-600 font-extrabold hover:underline flex items-center"
+            >
+              Xem lại câu đã làm <ArrowRight className="w-3 h-3 ml-0.5" />
+            </Link>
           </div>
 
           <div className="card-saas p-4 sm:p-5 space-y-2 border-l-4 border-l-emerald-500">
@@ -372,7 +375,12 @@ export default function HomePage() {
               </div>
             </div>
             <div className="text-xl sm:text-3xl font-black text-slate-900">{stats.accuracyRate}%</div>
-            <div className="text-[10px] sm:text-[11px] text-emerald-700 font-extrabold">Mục tiêu thi &ge; 72%</div>
+            <Link
+              href="/review?status=INCORRECT"
+              className="text-[10px] sm:text-[11px] text-rose-600 font-extrabold hover:underline flex items-center"
+            >
+              Luyện lại câu sai <ArrowRight className="w-3 h-3 ml-0.5" />
+            </Link>
           </div>
 
           <div className="card-saas p-4 sm:p-5 space-y-2 border-l-4 border-l-amber-500">
@@ -573,6 +581,19 @@ export default function HomePage() {
                 <TrendingUp className="w-4 h-4 mr-1.5 text-amber-500" /> Chế độ luyện tập nhanh
               </h2>
               <div className="space-y-3">
+                <Link
+                  href="/review"
+                  className="w-full text-left p-4 rounded-2xl border border-amber-200 bg-amber-50/50 hover:border-amber-400 hover:bg-amber-100/60 transition flex items-center justify-between group shadow-2xs"
+                >
+                  <div>
+                    <div className="text-xs font-black text-slate-900 flex items-center">
+                      <RotateCcw className="w-4 h-4 mr-1.5 text-amber-600" /> Xem lại câu đã làm & Luyện lại
+                    </div>
+                    <div className="text-[11px] text-slate-500 font-medium mt-0.5">Lọc câu đúng/sai, xem giải thích & làm lại</div>
+                  </div>
+                  <ArrowRight className="w-4 h-4 text-amber-600 group-hover:translate-x-1 transition-transform shrink-0 ml-2" />
+                </Link>
+
                 <Link
                   href="/highlights"
                   className="w-full text-left p-4 rounded-2xl border border-pink-200 bg-pink-50/40 hover:border-pink-400 hover:bg-pink-50/80 transition flex items-center justify-between group shadow-2xs"

@@ -124,23 +124,47 @@ export async function POST(req: NextRequest) {
     }
 
     const questionWhere: any = { questionBankId: bankId };
+    if (domainId) {
+      questionWhere.domainId = domainId;
+    }
     if (status === 'INCORRECT') {
       questionWhere.progresses = { some: { userId, lastAnswerCorrect: false } };
+    } else if (status === 'CORRECT') {
+      questionWhere.progresses = { some: { userId, lastAnswerCorrect: true } };
+    } else if (status === 'ANSWERED') {
+      questionWhere.progresses = { some: { userId } };
     } else if (status === 'BOOKMARKED') {
       questionWhere.bookmarks = { some: { userId } };
     } else if (status === 'UNANSWERED') {
       questionWhere.progresses = { none: { userId } };
     }
 
-    const candidates = await prisma.question.findMany({
-      where: questionWhere,
-      select: { id: true },
-    });
-    const questionIds = shuffleAndTake(
-      candidates.map((question) => question.id),
-      safeLimit
-    );
+    let questionIds: string[] = [];
+    if (Array.isArray(body.questionIds) && body.questionIds.length > 0) {
+      questionIds = body.questionIds.slice(0, safeLimit);
+    } else {
+      const candidates = await prisma.question.findMany({
+        where: questionWhere,
+        select: { id: true },
+      });
+      if (candidates.length === 0) {
+        return NextResponse.json(
+          { error: 'Không tìm thấy câu hỏi nào phù hợp với bộ lọc này để luyện tập.' },
+          { status: 404 }
+        );
+      }
+      questionIds = shuffleAndTake(
+        candidates.map((question) => question.id),
+        safeLimit
+      );
+    }
+
     const sourceType = status || 'ALL';
+    let sessionTitle = `Phiên luyện tập ${mode}`;
+    if (status === 'INCORRECT') sessionTitle = 'Luyện tập lại các câu làm SAI';
+    else if (status === 'CORRECT') sessionTitle = 'Luyện củng cố các câu làm ĐÚNG';
+    else if (status === 'ANSWERED') sessionTitle = 'Luyện tập lại các câu đã làm';
+    else if (status === 'BOOKMARKED') sessionTitle = 'Luyện tập các câu đã Đánh dấu ⭐';
 
     const session = await prisma.practiceSession.create({
       data: {
@@ -149,7 +173,7 @@ export async function POST(req: NextRequest) {
         mode,
         sourceType,
         questionIds: JSON.stringify(questionIds),
-        title: `Phiên luyện tập ${mode}`,
+        title: sessionTitle,
       },
     });
 
