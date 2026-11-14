@@ -386,6 +386,14 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleKeyDown]);
 
+  // Auto-scroll active question into center view
+  useEffect(() => {
+    const el = document.getElementById(`practice-nav-q-${currentIndex}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+    }
+  }, [currentIndex]);
+
   const handleReset = async () => {
     if (!window.confirm('Xóa đáp án trong phiên này và học lại từ câu đầu? Lịch sử SRS tổng thể vẫn được giữ.')) {
       return;
@@ -443,14 +451,6 @@ export default function PracticeSessionPage({ params }: { params: Promise<{ id: 
   }).length;
   const incorrectCount = answeredCount - correctCount;
   const unansweredCount = totalQuestions - answeredCount;
-
-  // Auto-scroll active question into center view
-  useEffect(() => {
-    const el = document.getElementById(`practice-nav-q-${currentIndex}`);
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-    }
-  }, [currentIndex]);
 
   const qState = qStateMap[currentQuestion.id] || {
     selectedOptionIds: [],
