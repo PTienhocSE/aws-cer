@@ -23,6 +23,7 @@ import {
   X,
   Zap,
   Layers,
+  FileSpreadsheet,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -108,13 +109,13 @@ export default function Navbar() {
                     onClick={() => setBankDropdownOpen(!bankDropdownOpen)}
                     onBlur={() => setTimeout(() => setBankDropdownOpen(false), 200)}
                     className={`flex items-center px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                      pathname.startsWith('/questions') || pathname.startsWith('/question-banks') || pathname.startsWith('/docs')
+                      pathname.startsWith('/questions') || pathname.startsWith('/question-banks') || pathname.startsWith('/docs') || pathname.startsWith('/cheat-seat-saa')
                         ? 'bg-slate-900 text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                     }`}
                   >
                     <BookOpen className={`w-4 h-4 mr-1.5 ${
-                      pathname.startsWith('/questions') || pathname.startsWith('/question-banks') || pathname.startsWith('/docs') ? 'text-amber-400' : 'text-slate-400'
+                      pathname.startsWith('/questions') || pathname.startsWith('/question-banks') || pathname.startsWith('/docs') || pathname.startsWith('/cheat-seat-saa') ? 'text-amber-400' : 'text-slate-400'
                     }`} />
                     <span>Ngân hàng</span>
                     <ChevronDown className="w-3.5 h-3.5 ml-1 text-slate-400" />
@@ -150,6 +151,19 @@ export default function Navbar() {
                         <div>
                           <div>Ngân hàng tài liệu SAA-C03</div>
                           <div className="text-[10px] font-medium text-slate-400 mt-0.5">Tài liệu lý thuyết & kiến trúc AWS</div>
+                        </div>
+                      </Link>
+                      <Link
+                        href="/cheat-seat-saa"
+                        className="flex items-center px-3 py-2.5 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition border-t border-slate-100 mt-1"
+                      >
+                        <FileSpreadsheet className="w-4 h-4 mr-2 text-emerald-600 shrink-0" />
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span>Cheat Sheet SAA-C03</span>
+                            <span className="px-1.5 py-0.2 bg-amber-100 text-amber-800 text-[9px] font-bold rounded-full">244 mục</span>
+                          </div>
+                          <div className="text-[10px] font-medium text-slate-400 mt-0.5">Mô phỏng bảng chia 16 tabs tra cứu</div>
                         </div>
                       </Link>
                     </div>
@@ -259,6 +273,15 @@ export default function Navbar() {
                   }`}
                 >
                   Tài liệu SAA-C03
+                </Link>
+                <Link
+                  href="/cheat-seat-saa"
+                  className={`hover:text-slate-900 transition flex items-center gap-1 ${
+                    pathname.startsWith('/cheat-seat-saa') ? 'text-slate-900 font-extrabold' : ''
+                  }`}
+                >
+                  <FileSpreadsheet className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Cheat Sheet SAA</span>
                 </Link>
                 <Link href="/question-banks" className="hover:text-slate-900 transition">
                   Bộ câu hỏi
@@ -404,6 +427,15 @@ export default function Navbar() {
               >
                 <FileText className="w-4.5 h-4.5 text-indigo-500 shrink-0" />
                 <span>Tài liệu SAA-C03</span>
+              </Link>
+
+              <Link
+                href="/cheat-seat-saa"
+                onClick={() => setMobileToolsOpen(false)}
+                className="p-3.5 rounded-2xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center space-x-2.5 active:scale-95 transition"
+              >
+                <FileSpreadsheet className="w-4.5 h-4.5 text-amber-500 shrink-0" />
+                <span>Cheat Sheet SAA-C03</span>
               </Link>
             </div>
           </div>

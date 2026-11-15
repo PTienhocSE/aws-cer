@@ -14,6 +14,8 @@ export function middleware(request: NextRequest) {
     pathname.startsWith('/practice') ||
     pathname.startsWith('/exam') ||
     pathname.startsWith('/docs') ||
+    pathname.startsWith('/cheat-seat-saa') ||
+    pathname.startsWith('/cheat-sheet-saa') ||
     pathname.startsWith('/api/') ||
     pathname.startsWith('/_next') ||
     pathname.includes('.');
