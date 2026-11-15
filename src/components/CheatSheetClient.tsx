@@ -38,6 +38,8 @@ import {
   ExternalLink,
   HelpCircle,
   FileSpreadsheet,
+  Tag,
+  Key,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -65,6 +67,28 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Terminal,
   Zap,
 };
+
+// Popular exam keywords for quick 1-click filtering
+const POPULAR_KEYWORDS = [
+  'least operational overhead',
+  'unpredictable traffic',
+  'sub-ms',
+  'port 22',
+  'WORM',
+  'decouple',
+  'fan-out',
+  'real-time',
+  'human approval',
+  'cross-region',
+  'without rewriting code',
+  'spot',
+  'stateless',
+  'spiky',
+  'POSIX',
+  'SMB',
+  'Parquet',
+  'microsecond',
+];
 
 // Color definitions for tabs
 const COLOR_CONFIG: Record<
@@ -202,7 +226,8 @@ const COLOR_CONFIG: Record<
 
 export default function CheatSheetClient() {
   const [activeTab, setActiveTab] = useState<string>('compute');
-  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [serviceQuery, setServiceQuery] = useState<string>('');
+  const [keywordQuery, setKeywordQuery] = useState<string>('');
   const [viewMode, setViewMode] = useState<'table' | 'cards'>('table');
   const [filterMode, setFilterMode] = useState<'all' | 'bookmarks' | 'quickpick'>('all');
   const [bookmarkedIds, setBookmarkedIds] = useState<string[]>([]);
@@ -255,7 +280,7 @@ export default function CheatSheetClient() {
     return CHEATSHEET_CATEGORIES.find((c) => c.id === activeTab) || CHEATSHEET_CATEGORIES[0];
   }, [activeTab]);
 
-  // Filter items
+  // Filter items based on both serviceQuery and keywordQuery
   const filteredItems = useMemo(() => {
     let items: CheatSheetItem[] = [];
 
@@ -272,20 +297,57 @@ export default function CheatSheetClient() {
       items = items.filter((item) => item.isQuickPick);
     }
 
-    if (!searchQuery.trim()) {
-      return items;
+    const sQ = serviceQuery.toLowerCase().trim();
+    const kQ = keywordQuery.toLowerCase().trim();
+
+    // Filter by service name if provided
+    if (sQ) {
+      items = items.filter(
+        (item) =>
+          item.name.toLowerCase().includes(sQ) ||
+          item.categoryTitle.toLowerCase().includes(sQ)
+      );
     }
 
-    const q = searchQuery.toLowerCase().trim();
-    return items.filter(
-      (item) =>
-        item.name.toLowerCase().includes(q) ||
-        item.purpose.toLowerCase().includes(q) ||
-        item.scenario.toLowerCase().includes(q) ||
-        item.note.toLowerCase().includes(q) ||
-        item.categoryTitle.toLowerCase().includes(q)
-    );
-  }, [activeTab, filterMode, searchQuery, bookmarkedIds]);
+    // Filter by keyword / scenario / notes / purpose if provided
+    if (kQ) {
+      items = items.filter(
+        (item) =>
+          item.scenario.toLowerCase().includes(kQ) ||
+          item.note.toLowerCase().includes(kQ) ||
+          item.purpose.toLowerCase().includes(kQ) ||
+          item.name.toLowerCase().includes(kQ)
+      );
+    }
+
+    return items;
+  }, [activeTab, filterMode, serviceQuery, keywordQuery, bookmarkedIds]);
+
+  // Calculate global match count when searching within a specific tab
+  const globalMatchCount = useMemo(() => {
+    const sQ = serviceQuery.toLowerCase().trim();
+    const kQ = keywordQuery.toLowerCase().trim();
+    if (!sQ && !kQ) return 0;
+
+    let allItems = CHEATSHEET_CATEGORIES.flatMap((c) => c.items);
+    if (sQ) {
+      allItems = allItems.filter(
+        (item) =>
+          item.name.toLowerCase().includes(sQ) ||
+          item.categoryTitle.toLowerCase().includes(sQ)
+      );
+    }
+    if (kQ) {
+      allItems = allItems.filter(
+        (item) =>
+          item.scenario.toLowerCase().includes(kQ) ||
+          item.note.toLowerCase().includes(kQ) ||
+          item.purpose.toLowerCase().includes(kQ) ||
+          item.name.toLowerCase().includes(kQ)
+      );
+    }
+    return allItems.length;
+  }, [serviceQuery, keywordQuery]);
 
   // Tab scroll helpers
   const scrollTabs = (direction: 'left' | 'right') => {
@@ -320,28 +382,37 @@ export default function CheatSheetClient() {
     toast.success('Đã xuất file CSV thành công!');
   };
 
-  // Highlight search text helper
-  const highlightMatch = (text: string, query: string) => {
-    if (!query.trim()) return text;
-    const escapedQuery = query.trim().replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&');
-    const parts = text.split(new RegExp(`(${escapedQuery})`, 'gi'));
+  // Highlight search text helper (for both service and keyword)
+  const highlightMatch = (text: string) => {
+    const queries = [serviceQuery, keywordQuery]
+      .map((q) => q.trim())
+      .filter((q) => q.length > 0);
+
+    if (queries.length === 0) return text;
+
+    const escaped = queries.map((q) => q.replace(/[-[\]{}()*+?.,\\^$|#\s]/g, '\\$&'));
+    const regex = new RegExp(`(${escaped.join('|')})`, 'gi');
+    const parts = text.split(regex);
+
     return (
       <>
-        {parts.map((part, i) =>
-          part.toLowerCase() === query.toLowerCase() ? (
-            <mark key={i} className="bg-amber-200 text-amber-950 font-bold px-0.5 rounded">
-              {part}
-            </mark>
-          ) : (
-            part
-          )
-        )}
+        {parts.map((part, i) => {
+          const isMatched = queries.some((q) => q.toLowerCase() === part.toLowerCase());
+          if (isMatched) {
+            return (
+              <mark key={i} className="bg-amber-200 text-amber-950 font-bold px-0.5 rounded shadow-2xs">
+                {part}
+              </mark>
+            );
+          }
+          return part;
+        })}
       </>
     );
   };
 
   // Render scenario blocks with distinct icons
-  const renderFormattedScenario = (text: string, query: string) => {
+  const renderFormattedScenario = (text: string) => {
     const lines = text.split('\n');
 
     return (
@@ -357,7 +428,7 @@ export default function CheatSheetClient() {
                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 mt-0.5 shrink-0" />
                 <div>
                   <span className="font-bold text-emerald-700 mr-1">Chọn khi:</span>
-                  <span>{highlightMatch(body, query)}</span>
+                  <span>{highlightMatch(body)}</span>
                 </div>
               </div>
             );
@@ -370,7 +441,7 @@ export default function CheatSheetClient() {
                 <XCircle className="w-3.5 h-3.5 text-rose-600 mt-0.5 shrink-0" />
                 <div>
                   <span className="font-bold text-rose-700 mr-1">KHÔNG chọn khi:</span>
-                  <span>{highlightMatch(body, query)}</span>
+                  <span>{highlightMatch(body)}</span>
                 </div>
               </div>
             );
@@ -383,7 +454,7 @@ export default function CheatSheetClient() {
                 <Info className="w-3.5 h-3.5 text-indigo-600 mt-0.5 shrink-0" />
                 <div>
                   <span className="font-bold text-indigo-700 mr-1">Phân biệt:</span>
-                  <span>{highlightMatch(body, query)}</span>
+                  <span>{highlightMatch(body)}</span>
                 </div>
               </div>
             );
@@ -396,7 +467,7 @@ export default function CheatSheetClient() {
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-600 mt-0.5 shrink-0" />
                 <div>
                   <span className="font-bold text-amber-800 mr-1">Lưu ý:</span>
-                  <span>{highlightMatch(body, query)}</span>
+                  <span>{highlightMatch(body)}</span>
                 </div>
               </div>
             );
@@ -405,7 +476,7 @@ export default function CheatSheetClient() {
           return (
             <div key={idx} className="flex items-start gap-1.5 py-0.5">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-400 mt-1.5 shrink-0" />
-              <span>{highlightMatch(trimmed, query)}</span>
+              <span>{highlightMatch(trimmed)}</span>
             </div>
           );
         })}
@@ -414,7 +485,7 @@ export default function CheatSheetClient() {
   };
 
   // Render note bullet points with arrow pills
-  const renderFormattedNote = (text: string, query: string) => {
+  const renderFormattedNote = (text: string) => {
     const lines = text.split('\n');
 
     return (
@@ -431,9 +502,9 @@ export default function CheatSheetClient() {
 
           if (isKeywordLine) {
             return (
-              <div key={idx} className="inline-flex items-center gap-1.5 px-2 py-0.5 my-0.5 rounded-md bg-amber-100/80 border border-amber-200 text-amber-900 font-sans font-semibold text-[11px]">
-                <Lightbulb className="w-3 h-3 text-amber-600 shrink-0" />
-                <span>{highlightMatch(trimmed, query)}</span>
+              <div key={idx} className="inline-flex items-center gap-1.5 px-2 py-0.5 my-0.5 rounded-md bg-amber-100/90 border border-amber-300 text-amber-950 font-sans font-bold text-[11px] shadow-2xs">
+                <Tag className="w-3 h-3 text-amber-700 shrink-0" />
+                <span>{highlightMatch(trimmed)}</span>
               </div>
             );
           }
@@ -450,11 +521,11 @@ export default function CheatSheetClient() {
                         pIdx === 0
                           ? 'bg-slate-100 font-bold text-slate-900 border border-slate-200'
                           : pIdx === parts.length - 1
-                          ? 'bg-amber-50 text-amber-900 font-medium border border-amber-200'
+                          ? 'bg-amber-50 text-amber-900 font-semibold border border-amber-200'
                           : 'bg-slate-50 text-slate-700'
                       }`}
                     >
-                      {highlightMatch(p, query)}
+                      {highlightMatch(p)}
                     </span>
                     {pIdx < parts.length - 1 && (
                       <span className="text-slate-400 font-bold text-[10px]">➜</span>
@@ -468,13 +539,15 @@ export default function CheatSheetClient() {
           return (
             <div key={idx} className="flex items-start gap-1.5 py-0.5 font-sans">
               <span className="w-1.5 h-1.5 rounded-full bg-slate-300 mt-1.5 shrink-0" />
-              <span>{highlightMatch(trimmed, query)}</span>
+              <span>{highlightMatch(trimmed)}</span>
             </div>
           );
         })}
       </div>
     );
   };
+
+  const hasActiveSearch = !!(serviceQuery.trim() || keywordQuery.trim());
 
   return (
     <div className="min-h-screen bg-slate-50/50 pb-20">
@@ -519,98 +592,149 @@ export default function CheatSheetClient() {
           </div>
 
           {/* Search & Action Controls Bar */}
-          <div className="mt-8 bg-slate-800/90 border border-slate-700/80 rounded-2xl p-3 sm:p-4 shadow-xl backdrop-blur-md flex flex-col lg:flex-row items-center justify-between gap-4">
-            {/* Search Input */}
-            <div className="relative w-full lg:w-96">
-              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Tìm tên dịch vụ, scenario, keyword (VD: S3, latency, Spot)..."
-                className="w-full pl-10 pr-9 py-2 bg-slate-900 border border-slate-700 rounded-xl text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition"
-              />
-              {searchQuery && (
+          <div className="mt-8 bg-slate-800/95 border border-slate-700/80 rounded-2xl p-3.5 sm:p-5 shadow-xl backdrop-blur-md">
+            {/* Row 1: Dual Search Inputs (Service + Keyword) and View Controls */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-3 items-center">
+              {/* Input 1: Tìm theo Tên Service */}
+              <div className="relative lg:col-span-4">
+                <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <input
+                  type="text"
+                  value={serviceQuery}
+                  onChange={(e) => setServiceQuery(e.target.value)}
+                  placeholder="🔍 Tìm tên dịch vụ (EC2, S3, Aurora, SQS...)"
+                  className="w-full pl-10 pr-9 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition shadow-inner"
+                />
+                {serviceQuery && (
+                  <button
+                    onClick={() => setServiceQuery('')}
+                    title="Xóa tìm tên dịch vụ"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* Input 2: Tìm theo Từ khóa đề thi (Keyword) */}
+              <div className="relative lg:col-span-5">
+                <Tag className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-amber-400" />
+                <input
+                  type="text"
+                  value={keywordQuery}
+                  onChange={(e) => setKeywordQuery(e.target.value)}
+                  placeholder="🏷️ Tìm từ khóa đề thi (VD: least operational, sub-ms, WORM, port 22...)"
+                  className="w-full pl-10 pr-9 py-2.5 bg-slate-900 border border-amber-500/50 rounded-xl text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition shadow-inner"
+                />
+                {keywordQuery && (
+                  <button
+                    onClick={() => setKeywordQuery('')}
+                    title="Xóa tìm từ khóa"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
+
+              {/* View Mode Toggle & CSV Export */}
+              <div className="flex items-center gap-2 lg:col-span-3 justify-start md:justify-end">
+                <div className="bg-slate-900 p-1 rounded-xl border border-slate-700 flex items-center">
+                  <button
+                    onClick={() => setViewMode('table')}
+                    title="Chế độ bảng chi tiết (Spreadsheet View)"
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition ${
+                      viewMode === 'table' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <TableIcon className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Bảng tính</span>
+                  </button>
+                  <button
+                    onClick={() => setViewMode('cards')}
+                    title="Chế độ thẻ bài học (Card Grid View)"
+                    className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition ${
+                      viewMode === 'cards' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-400 hover:text-white'
+                    }`}
+                  >
+                    <LayoutGrid className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">Thẻ học</span>
+                  </button>
+                </div>
+
                 <button
-                  onClick={() => setSearchQuery('')}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white"
+                  onClick={handleExportCSV}
+                  title="Xuất bảng này ra file CSV Excel"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold border border-slate-600 transition shrink-0"
                 >
-                  <X className="w-4 h-4" />
+                  <Download className="w-3.5 h-3.5 text-emerald-400" />
+                  <span className="hidden sm:inline">Xuất CSV</span>
                 </button>
-              )}
+              </div>
             </div>
 
-            {/* Quick Filters */}
-            <div className="flex items-center flex-wrap gap-2 w-full lg:w-auto">
-              <button
-                onClick={() => setFilterMode('all')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-                  filterMode === 'all'
-                    ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
-                    : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
-                }`}
-              >
-                <span>Tất cả</span>
-              </button>
-
-              <button
-                onClick={() => setFilterMode('bookmarks')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-                  filterMode === 'bookmarks'
-                    ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
-                    : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
-                }`}
-              >
-                <Bookmark className="w-3.5 h-3.5 text-amber-400" />
-                <span>Đã lưu ({bookmarkedIds.length})</span>
-              </button>
-
-              <button
-                onClick={() => setFilterMode('quickpick')}
-                className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
-                  filterMode === 'quickpick'
-                    ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
-                    : 'bg-slate-700 text-slate-200 hover:bg-slate-600'
-                }`}
-              >
-                <Zap className="w-3.5 h-3.5 text-amber-400" />
-                <span>Bảng chọn nhanh SAA</span>
-              </button>
-            </div>
-
-            {/* View Mode Toggle & CSV Export */}
-            <div className="flex items-center gap-2 shrink-0 w-full lg:w-auto justify-end">
-              <div className="bg-slate-900 p-1 rounded-xl border border-slate-700 flex items-center">
+            {/* Row 2: Filter Tabs & Hot Exam Keywords */}
+            <div className="mt-3.5 pt-3 border-t border-slate-700/60 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-3">
+              {/* Filter Chips */}
+              <div className="flex items-center flex-wrap gap-2">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Lọc:</span>
                 <button
-                  onClick={() => setViewMode('table')}
-                  title="Chế độ bảng chi tiết (Spreadsheet View)"
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition ${
-                    viewMode === 'table' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-400 hover:text-white'
+                  onClick={() => setFilterMode('all')}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                    filterMode === 'all'
+                      ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
+                      : 'bg-slate-700/90 text-slate-200 hover:bg-slate-600'
                   }`}
                 >
-                  <TableIcon className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Bảng chi tiết</span>
+                  <span>Tất cả</span>
                 </button>
+
                 <button
-                  onClick={() => setViewMode('cards')}
-                  title="Chế độ thẻ bài học (Card Grid View)"
-                  className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition ${
-                    viewMode === 'cards' ? 'bg-amber-500 text-slate-950 shadow-xs' : 'text-slate-400 hover:text-white'
+                  onClick={() => setFilterMode('bookmarks')}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                    filterMode === 'bookmarks'
+                      ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
+                      : 'bg-slate-700/90 text-slate-200 hover:bg-slate-600'
                   }`}
                 >
-                  <LayoutGrid className="w-3.5 h-3.5" />
-                  <span className="hidden sm:inline">Thẻ học tập</span>
+                  <Bookmark className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Đã lưu ({bookmarkedIds.length})</span>
+                </button>
+
+                <button
+                  onClick={() => setFilterMode('quickpick')}
+                  className={`px-3 py-1 rounded-xl text-xs font-bold transition flex items-center gap-1.5 ${
+                    filterMode === 'quickpick'
+                      ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm'
+                      : 'bg-slate-700/90 text-slate-200 hover:bg-slate-600'
+                  }`}
+                >
+                  <Zap className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Bảng chọn nhanh</span>
                 </button>
               </div>
 
-              <button
-                onClick={handleExportCSV}
-                title="Xuất bảng này ra file CSV Excel"
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold border border-slate-600 transition"
-              >
-                <Download className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="hidden sm:inline">Xuất CSV</span>
-              </button>
+              {/* Hot Keyword Quick Suggestion Pills */}
+              <div className="flex items-center flex-wrap gap-1.5 text-xs">
+                <span className="text-[11px] font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1 shrink-0">
+                  <Sparkles className="w-3 h-3 text-amber-400" /> Gợi ý Keyword:
+                </span>
+                <div className="flex items-center flex-wrap gap-1">
+                  {POPULAR_KEYWORDS.map((kw) => (
+                    <button
+                      key={kw}
+                      onClick={() => setKeywordQuery(keywordQuery.toLowerCase() === kw.toLowerCase() ? '' : kw)}
+                      className={`px-2 py-0.5 rounded-lg text-[11px] font-medium transition ${
+                        keywordQuery.toLowerCase() === kw.toLowerCase()
+                          ? 'bg-amber-400 text-slate-950 font-extrabold shadow-xs'
+                          : 'bg-slate-700/60 text-slate-300 hover:bg-slate-700 hover:text-white border border-slate-600/50'
+                      }`}
+                    >
+                      {kw}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -730,18 +854,52 @@ export default function CheatSheetClient() {
           </div>
         )}
 
-        {/* Result Counter & Search Status */}
-        {searchQuery && (
-          <div className="mb-4 flex items-center justify-between px-3 py-2 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
-            <div className="flex items-center gap-2">
-              <Search className="w-4 h-4 text-amber-600" />
+        {/* Result Counter & Active Search Filter Status */}
+        {hasActiveSearch && (
+          <div className="mb-4 flex flex-col sm:flex-row sm:items-center justify-between gap-2 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-900">
+            <div className="flex items-center flex-wrap gap-2">
+              <Search className="w-4 h-4 text-amber-600 shrink-0" />
               <span>
-                Tìm thấy <strong>{filteredItems.length}</strong> kết quả phù hợp với từ khóa &quot;<strong>{searchQuery}</strong>&quot;
+                Tìm thấy <strong>{filteredItems.length}</strong> kết quả
+                {activeTab !== 'all' && globalMatchCount > filteredItems.length && (
+                  <span className="ml-1 text-slate-600">
+                    (Có <strong>{globalMatchCount}</strong> kết quả trên toàn bộ bảng -{' '}
+                    <button
+                      onClick={() => setActiveTab('all')}
+                      className="text-amber-800 font-bold underline hover:text-amber-950"
+                    >
+                      Xem tất cả
+                    </button>
+                    )
+                  </span>
+                )}
               </span>
+
+              {/* Badges for active search terms */}
+              {serviceQuery && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-950 font-bold">
+                  Dịch vụ: &quot;{serviceQuery}&quot;
+                  <button onClick={() => setServiceQuery('')} className="hover:text-red-700 ml-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
+              {keywordQuery && (
+                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-200/80 text-amber-950 font-bold">
+                  Keyword: &quot;{keywordQuery}&quot;
+                  <button onClick={() => setKeywordQuery('')} className="hover:text-red-700 ml-0.5">
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              )}
             </div>
+
             <button
-              onClick={() => setSearchQuery('')}
-              className="text-amber-700 hover:text-amber-950 font-bold underline text-xs"
+              onClick={() => {
+                setServiceQuery('');
+                setKeywordQuery('');
+              }}
+              className="text-amber-800 hover:text-amber-950 font-bold underline text-xs shrink-0 self-end sm:self-center"
             >
               Xóa tìm kiếm
             </button>
@@ -760,7 +918,8 @@ export default function CheatSheetClient() {
             </p>
             <button
               onClick={() => {
-                setSearchQuery('');
+                setServiceQuery('');
+                setKeywordQuery('');
                 setFilterMode('all');
                 setActiveTab('all');
               }}
@@ -825,7 +984,7 @@ export default function CheatSheetClient() {
                         {/* Service Name */}
                         <td className="py-3 px-4 align-top border-r border-slate-100">
                           <div className="font-extrabold text-slate-900 text-xs sm:text-[13px] leading-snug">
-                            {highlightMatch(item.name, searchQuery)}
+                            {highlightMatch(item.name)}
                           </div>
                           {isQuickPick && (
                             <span className="inline-flex items-center gap-1 mt-1.5 px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white shadow-xs">
@@ -836,17 +995,17 @@ export default function CheatSheetClient() {
 
                         {/* Purpose */}
                         <td className="py-3 px-4 align-top border-r border-slate-100 text-slate-700 leading-relaxed font-medium">
-                          {highlightMatch(item.purpose, searchQuery)}
+                          {highlightMatch(item.purpose)}
                         </td>
 
                         {/* Scenario */}
                         <td className="py-3 px-5 align-top border-r border-slate-100">
-                          {renderFormattedScenario(item.scenario, searchQuery)}
+                          {renderFormattedScenario(item.scenario)}
                         </td>
 
                         {/* Note & Keywords */}
                         <td className="py-3 px-5 align-top">
-                          {renderFormattedNote(item.note, searchQuery)}
+                          {renderFormattedNote(item.note)}
                         </td>
 
                         {/* Actions (Bookmark + Copy) */}
@@ -922,7 +1081,7 @@ export default function CheatSheetClient() {
                           )}
                         </div>
                         <h3 className="text-base font-extrabold text-slate-900 leading-snug">
-                          {highlightMatch(item.name, searchQuery)}
+                          {highlightMatch(item.name)}
                         </h3>
                       </div>
 
@@ -953,7 +1112,7 @@ export default function CheatSheetClient() {
 
                     {/* Purpose Description */}
                     <p className="mt-2 text-xs text-slate-600 font-medium leading-relaxed">
-                      {highlightMatch(item.purpose, searchQuery)}
+                      {highlightMatch(item.purpose)}
                     </p>
                   </div>
 
@@ -963,7 +1122,7 @@ export default function CheatSheetClient() {
                       <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
                       <span>Kịch bản đề thi (Scenario)</span>
                     </div>
-                    {renderFormattedScenario(item.scenario, searchQuery)}
+                    {renderFormattedScenario(item.scenario)}
                   </div>
 
                   {/* Card Footer: Notes & Formulas */}
@@ -972,7 +1131,7 @@ export default function CheatSheetClient() {
                       <Lightbulb className="w-3.5 h-3.5 text-amber-600" />
                       <span>Ghi chú & Mẹo SAA</span>
                     </div>
-                    {renderFormattedNote(item.note, searchQuery)}
+                    {renderFormattedNote(item.note)}
                   </div>
                 </div>
               );
