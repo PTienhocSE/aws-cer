@@ -24,8 +24,11 @@ import {
   Zap,
   Layers,
   FileSpreadsheet,
+  Upload,
+  Download,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import PracticeSyncModal from '@/components/PracticeSyncModal';
 
 async function fetchOverview() {
   const res = await fetch('/api/progress/overview');
@@ -40,6 +43,8 @@ export default function Navbar() {
   const [moreDropdownOpen, setMoreDropdownOpen] = useState(false);
   const [bankDropdownOpen, setBankDropdownOpen] = useState(false);
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const [syncDefaultTab, setSyncDefaultTab] = useState<'export' | 'import'>('import');
 
   const { data: overview } = useQuery({
     queryKey: ['progressOverview'],
@@ -253,6 +258,26 @@ export default function Navbar() {
                       >
                         <CheckSquare className="w-4 h-4 mr-2 text-red-500" /> Các câu làm sai
                       </Link>
+
+                      <button
+                        onClick={() => {
+                          setMoreDropdownOpen(false);
+                          setSyncDefaultTab('import');
+                          setSyncModalOpen(true);
+                        }}
+                        className="w-full flex items-center px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-amber-50/80 rounded-xl transition text-left cursor-pointer border-t border-slate-100 mt-1"
+                      >
+                        <Upload className="w-4 h-4 mr-2 text-amber-600 shrink-0" />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-1.5">
+                            <span>Nạp / Xuất Metadata</span>
+                            <span className="px-1.5 py-0.2 bg-amber-100 text-amber-900 text-[9px] font-black rounded-full">Máy cty</span>
+                          </div>
+                          <div className="text-[10px] font-medium text-slate-400 mt-0.5">
+                            Đồng bộ câu hỏi từ máy công ty
+                          </div>
+                        </div>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -286,6 +311,17 @@ export default function Navbar() {
                 <Link href="/question-banks" className="hover:text-slate-900 transition">
                   Bộ câu hỏi
                 </Link>
+                <button
+                  onClick={() => {
+                    setSyncDefaultTab('export');
+                    setSyncModalOpen(true);
+                  }}
+                  className="hover:text-amber-600 transition flex items-center gap-1 text-slate-600 font-bold cursor-pointer"
+                  title="Xuất metadata kết quả đã làm trên máy này"
+                >
+                  <Download className="w-3.5 h-3.5 text-amber-500" />
+                  <span>Xuất Metadata</span>
+                </button>
                 <Link href="/#features" className="hover:text-slate-900 transition">
                   Tính năng
                 </Link>
@@ -437,6 +473,24 @@ export default function Navbar() {
                 <FileSpreadsheet className="w-4.5 h-4.5 text-amber-500 shrink-0" />
                 <span>Cheat Sheet SAA-C03</span>
               </Link>
+
+              <button
+                onClick={() => {
+                  setMobileToolsOpen(false);
+                  setSyncDefaultTab('import');
+                  setSyncModalOpen(true);
+                }}
+                className="p-3.5 rounded-2xl bg-amber-50/80 text-amber-950 border border-amber-300 flex items-center space-x-2.5 active:scale-95 transition col-span-2 text-left cursor-pointer shadow-xs"
+              >
+                <Upload className="w-4.5 h-4.5 text-amber-600 shrink-0" />
+                <div className="flex-1">
+                  <div className="font-black text-xs flex items-center gap-1.5">
+                    <span>Nạp / Xuất Metadata</span>
+                    <span className="px-1.5 py-0.2 bg-amber-200 text-amber-950 text-[9px] font-black rounded-full">Máy cty</span>
+                  </div>
+                  <div className="text-[10px] text-amber-700 font-medium">Đồng bộ câu hỏi làm offline vào tài khoản</div>
+                </div>
+              </button>
             </div>
           </div>
         </div>
@@ -498,6 +552,12 @@ export default function Navbar() {
           </button>
         </nav>
       )}
+
+      <PracticeSyncModal
+        isOpen={syncModalOpen}
+        onClose={() => setSyncModalOpen(false)}
+        defaultTab={syncDefaultTab}
+      />
     </>
   );
 }

@@ -24,8 +24,11 @@ import {
   LogOut,
   RotateCcw,
   Compass,
+  Download,
+  Upload,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
+import PracticeSyncModal from '@/components/PracticeSyncModal';
 
 async function fetchOverview() {
   const res = await fetch('/api/progress/overview');
@@ -45,6 +48,8 @@ export default function ProfilePage() {
   const { user, setUser, logout } = useAuthStore();
   const [isEditing, setIsEditing] = useState(false);
   const [nameInput, setNameInput] = useState(user?.name || '');
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const [syncDefaultTab, setSyncDefaultTab] = useState<'export' | 'import'>('import');
 
   const { data: overview } = useQuery({
     queryKey: ['progressOverview'],
@@ -342,6 +347,55 @@ export default function ProfilePage() {
           )}
         </div>
       </div>
+
+      {/* 4. Offline & Work Device Sync Card */}
+      <div className="card-saas p-5 sm:p-6 space-y-4 border-l-4 border-l-amber-500">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-3">
+          <div>
+            <h2 className="text-sm sm:text-base font-black text-slate-900 flex items-center">
+              <Sparkles className="w-5 h-5 mr-2 text-amber-500 shrink-0" />
+              <span>Đồng bộ tiến độ học từ laptop công ty (Metadata Sync)</span>
+            </h2>
+            <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
+              Nạp dữ liệu khi làm ở trình duyệt công ty không đăng nhập để tính điểm, lưu phiên và tăng lịch SRS
+            </p>
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-600 leading-relaxed">
+          Bạn làm bài ở laptop công ty bị chặn mạng không thể đăng nhập? Chỉ cần bấm <b>&quot;Xuất Metadata&quot;</b> ở máy công ty (file JSON siêu nhẹ), sau đó vào đây bấm <b>&quot;Nạp file Metadata vào tài khoản&quot;</b>. Các câu trùng lặp vẫn được tính thêm lượt học và tính lại lịch ôn tập Spaced Repetition.
+        </p>
+
+        <div className="flex flex-wrap items-center gap-3 pt-1">
+          <button
+            onClick={() => {
+              setSyncDefaultTab('import');
+              setSyncModalOpen(true);
+            }}
+            className="px-4 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs rounded-xl shadow-md transition flex items-center gap-2 cursor-pointer"
+          >
+            <Upload className="w-4 h-4 text-slate-950" />
+            <span>Nạp file Metadata vào tài khoản</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setSyncDefaultTab('export');
+              setSyncModalOpen(true);
+            }}
+            className="px-4 py-2.5 bg-white border border-slate-200 hover:border-slate-300 text-slate-700 font-bold text-xs rounded-xl transition flex items-center gap-2 cursor-pointer"
+          >
+            <Download className="w-4 h-4 text-slate-500" />
+            <span>Xuất dữ liệu từ máy này</span>
+          </button>
+        </div>
+      </div>
+
+      <PracticeSyncModal
+        isOpen={syncModalOpen}
+        onClose={() => setSyncModalOpen(false)}
+        defaultTab={syncDefaultTab}
+      />
     </div>
   );
 }

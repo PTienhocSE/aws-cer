@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
       domainId,
       totalQuestions = 65,
       timeLimitMinutes = 130,
+      shuffle, // Optional boolean flag from client
     } = body;
 
     // Determine target bank
@@ -36,9 +37,11 @@ export async function POST(req: NextRequest) {
       whereClause.domainId = domainId;
     }
 
+    // Always sort by rawId ascending to maintain original test question order 1..65
     const candidateQuestions = await prisma.question.findMany({
       where: whereClause,
-      select: { id: true },
+      select: { id: true, rawId: true },
+      orderBy: { rawId: 'asc' },
     });
 
     if (candidateQuestions.length === 0) {
@@ -48,9 +51,17 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Shuffle and pick desired quantity
     const targetCount = Math.min(candidateQuestions.length, Number(totalQuestions) || 65);
-    const selectedQuestions = shuffleAndTake(candidateQuestions, targetCount);
+
+    // Rule:
+    // If shuffle is explicitly false -> DO NOT SHUFFLE (keep original order 1..65).
+    // If the bank has 65 or fewer questions and shuffle is not explicitly requested true -> DO NOT SHUFFLE!
+    // If bank has hundreds of questions (e.g. SAA_dump or 390-question bank) and shuffle !== false -> Shuffle and take.
+    const shouldShuffle = typeof shuffle === 'boolean' ? shuffle : candidateQuestions.length > 65;
+
+    const selectedQuestions = shouldShuffle
+      ? shuffleAndTake(candidateQuestions, targetCount)
+      : candidateQuestions.slice(0, targetCount);
 
     const examAttempt = await prisma.mockExamAttempt.create({
       data: {
@@ -71,6 +82,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({
       examAttemptId: examAttempt.id,
       totalQuestions: selectedQuestions.length,
+      shuffled: shouldShuffle,
       message: 'Khởi tạo bài thi thành công',
     });
   } catch (error) {

@@ -14,6 +14,9 @@ try {
   console.log('\nRunning Practice Selection & Domain Resume Tests...');
   execSync('npx ts-node --compiler-options "{\\"module\\":\\"commonjs\\"}" test/practice-selection.test.ts', { stdio: 'inherit' });
 
+  console.log('\nRunning Practice Metadata Offline Sync Tests...');
+  execSync('npx ts-node --compiler-options "{\\"module\\":\\"commonjs\\"}" test/practice-sync.test.ts', { stdio: 'inherit' });
+
   console.log('\n✅ ALL PLATFORM UNIT TESTS PASSED SUCCESSFULLY!');
 } catch (error) {
   console.error('\n❌ TEST FAILURE:', error.message);

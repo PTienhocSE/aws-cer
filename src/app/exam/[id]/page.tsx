@@ -10,61 +10,120 @@ import {
   Clock,
   Flag,
   Send,
+  ShieldCheck,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 export default function MockExamRunnerPage() {
   const { id: examAttemptId } = useParams<{ id: string }>();
   const router = useRouter();
+
+  const isLocal = examAttemptId?.startsWith('local-');
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [answersMap, setAnswersMap] = useState<Record<string, { selectedOptionIds: string[]; isFlagged: boolean }>>({});
   const [timeLeftSeconds, setTimeLeftSeconds] = useState<number | null>(null);
   const [showSubmitConfirm, setShowSubmitConfirm] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [localAttempt, setLocalAttempt] = useState<any>(null);
 
-  const { data: examData, isLoading } = useQuery({
+  // Load local attempt if isLocal or fallback
+  useEffect(() => {
+    if (isLocal && examAttemptId) {
+      try {
+        const raw = localStorage.getItem(`aws_cer_mock_exam_${examAttemptId}`);
+        if (raw) setLocalAttempt(JSON.parse(raw));
+      } catch (e) {
+        console.error('Failed to load local attempt:', e);
+      }
+    }
+  }, [isLocal, examAttemptId]);
+
+  // Load server attempt
+  const { data: examData, isLoading: isServerLoading } = useQuery({
     queryKey: ['mockExam', examAttemptId],
     queryFn: async () => {
-      const res = await fetch(`/api/mock-exams/${examAttemptId}`, {
-        headers: { 'x-guest-mode': '1' },
-        credentials: 'include',
-      });
-      if (!res.ok) throw new Error('Failed to fetch mock exam');
-      return res.json();
+      if (isLocal) return null;
+      try {
+        const res = await fetch(`/api/mock-exams/${examAttemptId}`, {
+          headers: { 'x-guest-mode': '1' },
+          credentials: 'include',
+        });
+        if (!res.ok) {
+          // If server returns error, check local storage backup
+          const cached = localStorage.getItem(`aws_cer_mock_exam_${examAttemptId}`);
+          if (cached) return { attempt: JSON.parse(cached) };
+          throw new Error('Failed to fetch mock exam');
+        }
+        const data = await res.json();
+        if (data.attempt) {
+          // Backup attempt structure locally in case proxy interrupts later
+          localStorage.setItem(`aws_cer_mock_exam_${examAttemptId}`, JSON.stringify(data.attempt));
+        }
+        return data;
+      } catch (err) {
+        const cached = localStorage.getItem(`aws_cer_mock_exam_${examAttemptId}`);
+        if (cached) return { attempt: JSON.parse(cached) };
+        throw err;
+      }
     },
+    enabled: !isLocal && !!examAttemptId,
   });
 
-  const attempt = examData?.attempt;
+  const attempt = isLocal ? localAttempt : examData?.attempt;
 
-  // Initialize timer and answer map
+  // Initialize timer and answer map (with LocalStorage restoration)
   useEffect(() => {
-    if (attempt) {
-      const initialMap: Record<string, { selectedOptionIds: string[]; isFlagged: boolean }> = {};
-      attempt.answers.forEach((ans: any) => {
-        // selectedOptionIds is stored as JSON string in DB e.g. "[]" or "[\"id1\"]"
+    if (!attempt || !examAttemptId) return;
+
+    // Check if user has previously saved answers in localStorage for this exam
+    let cachedAnswers: Record<string, { selectedOptionIds: string[]; isFlagged: boolean }> = {};
+    try {
+      const raw = localStorage.getItem(`aws_cer_mock_exam_answers_${examAttemptId}`);
+      if (raw) cachedAnswers = JSON.parse(raw);
+    } catch {}
+
+    const initialMap: Record<string, { selectedOptionIds: string[]; isFlagged: boolean }> = {};
+    attempt.answers.forEach((ans: any) => {
+      const qId = ans.questionId || ans.question?.id;
+      if (cachedAnswers[qId]) {
+        initialMap[qId] = cachedAnswers[qId];
+      } else {
         let parsedIds: string[] = [];
         try {
           const raw = ans.selectedOptionIds;
-          parsedIds = typeof raw === 'string' ? JSON.parse(raw) : (raw || []);
+          parsedIds = typeof raw === 'string' ? JSON.parse(raw) : raw || [];
         } catch {
           parsedIds = [];
         }
-        initialMap[ans.questionId] = {
+        initialMap[qId] = {
           selectedOptionIds: parsedIds,
           isFlagged: ans.isFlagged || false,
         };
-      });
-      setAnswersMap(initialMap);
+      }
+    });
 
-      if (timeLeftSeconds === null) {
-        const totalSecs = attempt.timeLimitMinutes * 60;
+    setAnswersMap(initialMap);
+
+    // Initialize countdown timer
+    if (timeLeftSeconds === null) {
+      let savedTimer: number | null = null;
+      try {
+        const rawTimer = localStorage.getItem(`aws_cer_mock_exam_timer_${examAttemptId}`);
+        if (rawTimer) savedTimer = parseInt(rawTimer, 10);
+      } catch {}
+
+      if (savedTimer !== null && !isNaN(savedTimer) && savedTimer > 0) {
+        setTimeLeftSeconds(savedTimer);
+      } else {
+        const totalSecs = (attempt.timeLimitMinutes || 130) * 60;
         const elapsedSecs = Math.floor((Date.now() - new Date(attempt.startedAt).getTime()) / 1000);
         setTimeLeftSeconds(Math.max(totalSecs - elapsedSecs, 0));
       }
     }
-  }, [attempt]);
+  }, [attempt, examAttemptId]);
 
-  // Countdown timer effect
+  // Countdown timer effect + persistence to localStorage
   useEffect(() => {
     if (timeLeftSeconds === null || timeLeftSeconds <= 0) return;
 
@@ -72,16 +131,23 @@ export default function MockExamRunnerPage() {
       setTimeLeftSeconds((prev) => {
         if (prev === null || prev <= 1) {
           clearInterval(timer);
-          handleSubmitExam(); // Auto submit when time runs out!
+          handleSubmitExam();
           return 0;
         }
-        return prev - 1;
+        const next = prev - 1;
+        if (examAttemptId && next % 5 === 0) {
+          try {
+            localStorage.setItem(`aws_cer_mock_exam_timer_${examAttemptId}`, String(next));
+          } catch {}
+        }
+        return next;
       });
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeftSeconds]);
+  }, [timeLeftSeconds, examAttemptId]);
 
+  // Handle Option Toggle with continuous auto-save
   const handleOptionToggle = (questionId: string, optionId: string, type: string) => {
     setAnswersMap((prev) => {
       const current = prev[questionId] || { selectedOptionIds: [], isFlagged: false };
@@ -95,23 +161,98 @@ export default function MockExamRunnerPage() {
           : [...current.selectedOptionIds, optionId];
       }
 
-      return {
+      const updated = {
         ...prev,
         [questionId]: { ...current, selectedOptionIds: newOptions },
       };
+
+      // Continuous LocalStorage Auto-Save
+      if (examAttemptId) {
+        try {
+          localStorage.setItem(`aws_cer_mock_exam_answers_${examAttemptId}`, JSON.stringify(updated));
+        } catch {}
+      }
+
+      return updated;
     });
   };
 
+  // Handle Flag Toggle with continuous auto-save
   const handleFlagToggle = (questionId: string) => {
     setAnswersMap((prev) => {
       const current = prev[questionId] || { selectedOptionIds: [], isFlagged: false };
-      return {
+      const updated = {
         ...prev,
         [questionId]: { ...current, isFlagged: !current.isFlagged },
       };
+
+      if (examAttemptId) {
+        try {
+          localStorage.setItem(`aws_cer_mock_exam_answers_${examAttemptId}`, JSON.stringify(updated));
+        } catch {}
+      }
+
+      return updated;
     });
   };
 
+  // Complete and evaluate exam locally (Safe Mode / Offline / Corporate Proxy Fallback)
+  const handleLocalEvaluation = (userAnswers: any[], timeSpentSeconds: number) => {
+    let correctCount = 0;
+    const evaluatedAnswers = attempt.answers.map((ans: any) => {
+      const q = ans.question;
+      const qId = q.id;
+      const userState = answersMap[qId] || { selectedOptionIds: [], isFlagged: false };
+
+      const correctOptionIds = q.options
+        .filter((o: any) => o.isCorrect)
+        .map((o: any) => o.id);
+
+      const isCorrect =
+        userState.selectedOptionIds.length === correctOptionIds.length &&
+        userState.selectedOptionIds.every((id: string) => correctOptionIds.includes(id));
+
+      if (isCorrect) correctCount++;
+
+      return {
+        ...ans,
+        selectedOptionIds: JSON.stringify(userState.selectedOptionIds),
+        isFlagged: userState.isFlagged,
+        isCorrect,
+        question: {
+          ...q,
+          options: q.options,
+        },
+      };
+    });
+
+    const totalQuestions = attempt.answers.length;
+    const accuracy = totalQuestions > 0 ? correctCount / totalQuestions : 0;
+    const score = Math.round(100 + accuracy * 900);
+    const isPassed = score >= 720;
+
+    const resultData = {
+      attempt: {
+        id: examAttemptId,
+        score,
+        isPassed,
+        totalQuestions,
+        isCompleted: true,
+        submittedAt: new Date().toISOString(),
+        timeSpentSeconds,
+        answers: evaluatedAnswers,
+      },
+    };
+
+    try {
+      localStorage.setItem(`aws_cer_mock_exam_result_${examAttemptId}`, JSON.stringify(resultData));
+    } catch {}
+
+    toast.success('Đã nộp bài thành công!');
+    router.push(`/exam/${examAttemptId}/result`);
+  };
+
+  // Submit Mock Exam
   const handleSubmitExam = async () => {
     setIsSubmitting(true);
     try {
@@ -121,33 +262,60 @@ export default function MockExamRunnerPage() {
         isFlagged: data.isFlagged,
       }));
 
-      const res = await fetch(`/api/mock-exams/${examAttemptId}/submit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'x-guest-mode': '1',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          answers: userAnswers,
-          userAnswers,
-          timeSpentSeconds: attempt ? Math.max(0, attempt.timeLimitMinutes * 60 - (timeLeftSeconds || 0)) : 0,
-        }),
-      });
+      const timeSpentSeconds = attempt
+        ? Math.max(0, (attempt.timeLimitMinutes || 130) * 60 - (timeLeftSeconds || 0))
+        : 0;
 
-      const data = await res.json();
-      if (data.attemptId || data.attempt?.id) {
-        router.push(`/exam/${examAttemptId}/result`);
+      // If local safe exam: evaluate locally immediately
+      if (isLocal || !attempt?.id) {
+        handleLocalEvaluation(userAnswers, timeSpentSeconds);
+        return;
       }
+
+      // If server attempt, try server submit
+      try {
+        const res = await fetch(`/api/mock-exams/${examAttemptId}/submit`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-guest-mode': '1',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            answers: userAnswers,
+            userAnswers,
+            timeSpentSeconds,
+          }),
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.attemptId || data.attempt?.id) {
+            router.push(`/exam/${examAttemptId}/result`);
+            return;
+          }
+        }
+      } catch (netErr) {
+        console.warn('Server submission failed due to corporate proxy/network. Evaluating locally...', netErr);
+      }
+
+      // If server submission failed or timed out, gracefully evaluate locally so user NEVER loses their exam!
+      handleLocalEvaluation(userAnswers, timeSpentSeconds);
     } catch (e) {
-      console.error(e);
+      console.error('Submit error:', e);
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  const isLoading = isLocal ? !localAttempt : isServerLoading || !attempt;
+
   if (isLoading || !attempt) {
-    return <div className="py-20 text-center text-slate-500 font-semibold text-sm">Đang tải đề thi...</div>;
+    return (
+      <div className="py-20 text-center text-slate-500 font-semibold text-sm">
+        Đang tải đề thi thử...
+      </div>
+    );
   }
 
   const currentAnswer = attempt.answers[currentIndex];
@@ -168,10 +336,18 @@ export default function MockExamRunnerPage() {
       {/* Top Header bar with Countdown Timer & Submit Action */}
       <div className="bg-slate-900 text-white p-4 sm:p-5 rounded-2xl shadow-lg flex justify-between items-center">
         <div className="flex items-center space-x-3">
-          <span className="font-extrabold text-sm sm:text-base">Bài thi thử SAA-C03</span>
+          <span className="font-extrabold text-sm sm:text-base">
+            {attempt.bankName || 'Bài thi thử SAA-C03'}
+          </span>
           <span className="text-xs bg-white/10 px-2.5 py-1 rounded-md text-amber-300 font-bold">
             {answeredCount}/{attempt.answers.length} Đã làm
           </span>
+
+          {isLocal && (
+            <span className="hidden sm:inline-flex items-center text-[11px] font-bold text-emerald-400 bg-emerald-950/60 border border-emerald-500/40 px-2 py-0.5 rounded-md">
+              <ShieldCheck className="w-3.5 h-3.5 mr-1" /> Chế độ an toàn
+            </span>
+          )}
         </div>
 
         {/* Live Timer */}
@@ -183,7 +359,7 @@ export default function MockExamRunnerPage() {
 
           <button
             onClick={() => setShowSubmitConfirm(true)}
-            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-extrabold text-xs rounded-xl shadow transition flex items-center"
+            className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-slate-900 font-extrabold text-xs rounded-xl shadow transition flex items-center cursor-pointer"
           >
             <Send className="w-3.5 h-3.5 mr-1.5" /> Nộp bài thi
           </button>
@@ -195,17 +371,17 @@ export default function MockExamRunnerPage() {
         <div className="lg:col-span-3 card-saas p-6 sm:p-8 space-y-6">
           <div className="flex justify-between items-center border-b border-slate-100 pb-4">
             <div className="flex items-center space-x-2">
-              <span className="text-xs font-extrabold px-2 py-0.5 bg-slate-100 text-slate-700 rounded">
+              <span className="text-xs font-extrabold px-2.5 py-1 bg-slate-100 text-slate-800 rounded-lg">
                 Câu {currentIndex + 1} / {attempt.answers.length}
               </span>
-              <span className="text-xs font-bold px-2.5 py-1 bg-amber-50 text-amber-800 rounded border border-amber-200">
-                {currentQuestion.domain.name}
+              <span className="text-xs font-bold px-2.5 py-1 bg-amber-50 text-amber-800 rounded-lg border border-amber-200">
+                {currentQuestion.domain?.name || 'AWS Domain'}
               </span>
             </div>
 
             <button
               onClick={() => handleFlagToggle(currentQuestion.id)}
-              className={`flex items-center text-xs font-bold px-3 py-1.5 rounded-lg border transition ${
+              className={`flex items-center text-xs font-bold px-3 py-1.5 rounded-lg border transition cursor-pointer ${
                 currentAnswerState.isFlagged
                   ? 'bg-amber-50 border-amber-400 text-amber-700'
                   : 'bg-white border-slate-200 text-slate-500 hover:bg-slate-50'
@@ -216,27 +392,35 @@ export default function MockExamRunnerPage() {
             </button>
           </div>
 
-          <p className="text-base sm:text-lg font-bold text-slate-900 leading-relaxed">
+          <p className="text-base sm:text-lg font-bold text-slate-900 leading-relaxed whitespace-pre-line">
             {currentQuestion.questionText}
           </p>
 
           <div className="space-y-3">
             {currentQuestion.options.map((opt: any, index: number) => {
               const isSelected = currentAnswerState.selectedOptionIds.includes(opt.id);
+              const labelLetter = String.fromCharCode(65 + index);
+
               return (
                 <button
                   key={opt.id}
                   onClick={() => handleOptionToggle(currentQuestion.id, opt.id, currentQuestion.type)}
-                  className={`w-full text-left p-4 rounded-xl border-2 transition flex items-start space-x-3 text-sm ${
+                  className={`w-full text-left p-4 rounded-xl border-2 transition flex items-start space-x-3 text-sm cursor-pointer ${
                     isSelected
-                      ? 'border-amber-500 bg-amber-50/60 text-slate-950 font-bold shadow-sm'
+                      ? 'border-amber-500 bg-amber-50/60 text-slate-950 font-bold shadow-xs'
                       : 'border-slate-200 bg-white hover:border-slate-300 text-slate-800'
                   }`}
                 >
-                  <span className="w-6 h-6 rounded-lg bg-slate-100 flex items-center justify-center font-extrabold text-slate-600 text-xs shrink-0 mt-0.5">
-                    {index + 1}
+                  <span
+                    className={`w-6 h-6 rounded-lg flex items-center justify-center font-extrabold text-xs shrink-0 mt-0.5 ${
+                      isSelected
+                        ? 'bg-amber-500 text-slate-950'
+                        : 'bg-slate-100 text-slate-600'
+                    }`}
+                  >
+                    {labelLetter}
                   </span>
-                  <span className="flex-1">{opt.text}</span>
+                  <span className="flex-1 leading-relaxed">{opt.text}</span>
                 </button>
               );
             })}
@@ -247,7 +431,7 @@ export default function MockExamRunnerPage() {
             <button
               disabled={currentIndex === 0}
               onClick={() => setCurrentIndex((i) => i - 1)}
-              className="px-4 py-2.5 bg-white border border-slate-200 font-bold text-xs rounded-xl disabled:opacity-40 flex items-center"
+              className="px-4 py-2.5 bg-white border border-slate-200 font-bold text-xs rounded-xl disabled:opacity-40 flex items-center cursor-pointer hover:bg-slate-50 transition"
             >
               <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Câu trước
             </button>
@@ -255,7 +439,7 @@ export default function MockExamRunnerPage() {
             <button
               disabled={currentIndex >= attempt.answers.length - 1}
               onClick={() => setCurrentIndex((i) => i + 1)}
-              className="px-5 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl disabled:opacity-40 flex items-center shadow"
+              className="px-5 py-2.5 bg-slate-900 text-white font-bold text-xs rounded-xl disabled:opacity-40 flex items-center shadow cursor-pointer hover:bg-slate-800 transition"
             >
               Câu sau <ArrowRight className="w-3.5 h-3.5 ml-1" />
             </button>
@@ -264,10 +448,17 @@ export default function MockExamRunnerPage() {
 
         {/* Question Palette Sidebar */}
         <div className="card-saas p-5 space-y-4">
-          <h2 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">Danh sách câu hỏi</h2>
-          <div className="grid grid-cols-5 gap-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-xs font-extrabold text-slate-900 uppercase tracking-wider">
+              Bảng câu hỏi ({attempt.answers.length})
+            </h2>
+            <span className="text-[11px] text-slate-400 font-semibold">Tự động lưu</span>
+          </div>
+
+          <div className="grid grid-cols-5 gap-2 max-h-[460px] overflow-y-auto pr-1">
             {attempt.answers.map((ans: any, idx: number) => {
-              const state = answersMap[ans.question.id] || { selectedOptionIds: [], isFlagged: false };
+              const qId = ans.questionId || ans.question?.id;
+              const state = answersMap[qId] || { selectedOptionIds: [], isFlagged: false };
               const isAnswered = state.selectedOptionIds.length > 0;
               const isCurrent = idx === currentIndex;
 
@@ -278,9 +469,9 @@ export default function MockExamRunnerPage() {
 
               return (
                 <button
-                  key={ans.id}
+                  key={ans.id || idx}
                   onClick={() => setCurrentIndex(idx)}
-                  className={`h-9 rounded-lg border text-xs flex items-center justify-center transition outline-none focus:outline-none focus-visible:outline-none ${btnStyle}`}
+                  className={`h-9 rounded-lg border text-xs flex items-center justify-center transition cursor-pointer ${btnStyle}`}
                 >
                   {idx + 1}
                 </button>
@@ -321,14 +512,14 @@ export default function MockExamRunnerPage() {
             <div className="flex space-x-3 pt-2">
               <button
                 onClick={() => setShowSubmitConfirm(false)}
-                className="flex-1 py-2.5 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50"
+                className="flex-1 py-2.5 border border-slate-200 text-slate-700 font-bold text-xs rounded-xl hover:bg-slate-50 cursor-pointer"
               >
                 Tiếp tục làm bài
               </button>
               <button
                 onClick={handleSubmitExam}
                 disabled={isSubmitting}
-                className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-900 font-extrabold text-xs rounded-xl shadow"
+                className="flex-1 py-2.5 bg-amber-500 hover:bg-amber-600 text-slate-900 font-extrabold text-xs rounded-xl shadow cursor-pointer"
               >
                 {isSubmitting ? 'Đang chấm điểm...' : 'Nộp bài ngay'}
               </button>

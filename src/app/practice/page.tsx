@@ -21,9 +21,12 @@ import {
   Layers,
   ArrowLeft,
   CheckSquare,
+  Download,
+  Upload,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/store/authStore';
+import PracticeSyncModal from '@/components/PracticeSyncModal';
 
 async function fetchPracticeSessions(bankId?: string | null) {
   const url = bankId ? `/api/practice-sessions?questionBankId=${encodeURIComponent(bankId)}` : '/api/practice-sessions';
@@ -51,6 +54,8 @@ export default function PracticeSessionsListPage() {
   const [filterTab, setFilterTab] = useState<'ALL' | 'COMPLETED' | 'IN_PROGRESS'>('ALL');
   const [isCreatingNew, setIsCreatingNew] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [syncModalOpen, setSyncModalOpen] = useState(false);
+  const [syncDefaultTab, setSyncDefaultTab] = useState<'export' | 'import'>('export');
 
   const { data: overview } = useQuery({
     queryKey: ['progressOverview', user?.activeQuestionBankId],
@@ -155,14 +160,40 @@ export default function PracticeSessionsListPage() {
           </p>
         </div>
 
-        <button
-          onClick={handleStartNewSession}
-          disabled={isCreatingNew}
-          className="w-full md:w-auto px-5 py-3 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-md shadow-amber-500/25 transition active:scale-95 flex items-center justify-center space-x-2 shrink-0 disabled:opacity-50 cursor-pointer"
-        >
-          <Plus className="w-4 h-4 text-slate-950" />
-          <span>{isCreatingNew ? 'Đang tạo...' : 'Luyện tập phiên mới (15 câu)'}</span>
-        </button>
+        <div className="flex flex-wrap items-center gap-2.5 w-full md:w-auto">
+          <button
+            onClick={() => {
+              setSyncDefaultTab('export');
+              setSyncModalOpen(true);
+            }}
+            title="Xuất metadata các câu đã làm khi làm ở máy công ty / trình duyệt không đăng nhập"
+            className="flex-1 md:flex-none px-3.5 py-2.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-950 font-extrabold text-xs rounded-2xl transition flex items-center justify-center space-x-1.5 cursor-pointer shadow-2xs"
+          >
+            <Download className="w-4 h-4 text-amber-700" />
+            <span>Xuất Metadata Offline</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setSyncDefaultTab('import');
+              setSyncModalOpen(true);
+            }}
+            title="Nạp file metadata từ laptop công ty vào tài khoản cá nhân"
+            className="flex-1 md:flex-none px-3.5 py-2.5 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 font-extrabold text-xs rounded-2xl transition flex items-center justify-center space-x-1.5 cursor-pointer shadow-2xs"
+          >
+            <Upload className="w-4 h-4 text-slate-500" />
+            <span>Nạp vào tài khoản</span>
+          </button>
+
+          <button
+            onClick={handleStartNewSession}
+            disabled={isCreatingNew}
+            className="w-full md:w-auto px-5 py-2.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs sm:text-sm rounded-2xl shadow-md shadow-amber-500/25 transition active:scale-95 flex items-center justify-center space-x-2 shrink-0 disabled:opacity-50 cursor-pointer"
+          >
+            <Plus className="w-4 h-4 text-slate-950" />
+            <span>{isCreatingNew ? 'Đang tạo...' : 'Luyện tập phiên mới'}</span>
+          </button>
+        </div>
       </div>
 
       {/* Metrics Row */}
@@ -402,6 +433,12 @@ export default function PracticeSessionsListPage() {
           })}
         </div>
       )}
+
+      <PracticeSyncModal
+        isOpen={syncModalOpen}
+        onClose={() => setSyncModalOpen(false)}
+        defaultTab={syncDefaultTab}
+      />
     </div>
   );
 }

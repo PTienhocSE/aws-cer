@@ -470,7 +470,7 @@ export default function HomePage() {
                       <div className="space-y-1 min-w-0 flex-1">
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="text-[11px] font-extrabold px-2.5 py-0.5 bg-slate-900 text-amber-400 rounded-md shrink-0">
-                            {d.code?.replace(/_/g, ' ').replace(/\s*(DUMP|UDEMY|390Q)$/i, '') || d.code}
+                            {d.code?.replace(/_/g, ' ').replace(/\s*(DUMP|UDEMY|390Q|DOJO)$/i, '') || d.code}
                           </span>
                           <h3 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-snug">
                             {d.name}
