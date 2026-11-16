@@ -64,3 +64,36 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: 'Lỗi tải bài thi' }, { status: 500 });
   }
 }
+
+export async function DELETE(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const authUser = await getAuthUserOrDemo(req);
+    if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+    const { id } = await params;
+
+    const attempt = await prisma.mockExamAttempt.findUnique({
+      where: { id },
+      select: { id: true, userId: true },
+    });
+
+    if (!attempt) {
+      return NextResponse.json({ error: 'Không tìm thấy bài thi' }, { status: 404 });
+    }
+
+    const isGuestOrDemo =
+      authUser.role === 'GUEST' ||
+      authUser.email === 'guest@awscer.local' ||
+      req.headers.get('x-guest-mode') === '1' ||
+      attempt.userId === 'guest-learner';
+
+    if (attempt.userId !== authUser.userId && !isGuestOrDemo) {
+      return NextResponse.json({ error: 'Không có quyền xóa bài thi này' }, { status: 403 });
+    }
+
+    await prisma.mockExamAttempt.delete({ where: { id } });
+    return NextResponse.json({ success: true, message: 'Đã xóa bài thi thử' });
+  } catch (error) {
+    console.error('Delete mock exam error:', error);
+    return NextResponse.json({ error: 'Lỗi khi xóa bài thi thử' }, { status: 500 });
+  }
+}

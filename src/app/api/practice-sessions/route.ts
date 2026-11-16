@@ -297,7 +297,7 @@ export async function POST(req: NextRequest) {
     if (status === 'INCORRECT') sessionTitle = 'Luyện tập lại các câu làm SAI';
     else if (status === 'CORRECT') sessionTitle = 'Luyện củng cố các câu làm ĐÚNG';
     else if (status === 'ANSWERED') sessionTitle = 'Luyện tập lại các câu đã làm';
-    else if (status === 'BOOKMARKED') sessionTitle = 'Luyện tập các câu đã Đánh dấu ⭐';
+    else if (status === 'BOOKMARKED') sessionTitle = 'Luyện tập các câu đã Đánh dấu (Bookmark)';
 
     const session = await prisma.practiceSession.create({
       data: {

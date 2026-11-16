@@ -32,6 +32,7 @@ import {
   Activity,
   Compass,
   Plus,
+  Trash2,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import toast from 'react-hot-toast';
@@ -112,6 +113,40 @@ export default function HomePage() {
         toast.success('Đã chuyển môn học thành công!');
         setCourseDropdownOpen(false);
       }
+    },
+  });
+
+  const unenrollBankMutation = useMutation({
+    mutationFn: async (bankId: string) => {
+      try {
+        const res = await fetch(`/api/question-banks/${bankId}/enroll`, {
+          method: 'DELETE',
+          headers: { 'x-guest-mode': '1' },
+          credentials: 'include',
+        });
+        if (res.ok) return res.json();
+      } catch {}
+
+      const fallbackRes = await fetch(`/api/question-banks/${bankId}/unenroll`, {
+        method: 'POST',
+        headers: { 'x-guest-mode': '1' },
+        credentials: 'include',
+      });
+      return fallbackRes.json();
+    },
+    onSuccess: (data) => {
+      if (data?.success) {
+        if (user && data.activeQuestionBankId !== undefined) {
+          setUser({ ...user, activeQuestionBankId: data.activeQuestionBankId });
+        }
+        queryClient.invalidateQueries({ queryKey: ['progressOverview'] });
+        queryClient.invalidateQueries({ queryKey: ['progressDomains'] });
+        queryClient.invalidateQueries({ queryKey: ['landingQuestionBanks'] });
+        toast.success(data.message || 'Đã hủy đăng ký môn học thành công!');
+      }
+    },
+    onError: () => {
+      toast.error('Lỗi khi hủy đăng ký môn học. Vui lòng thử lại!');
     },
   });
 
@@ -260,16 +295,19 @@ export default function HomePage() {
                           const isSelected = b.id === activeBankId;
 
                           return (
-                            <button
+                            <div
                               key={b.id}
-                              onMouseDown={() => switchActiveBankMutation.mutate(b.id)}
-                              className={`w-full text-left p-2.5 rounded-xl transition flex items-center justify-between gap-3 group ${
+                              className={`w-full p-2.5 rounded-xl transition flex items-center justify-between gap-2 group ${
                                 isSelected
                                   ? 'bg-amber-500/20 text-amber-300 border border-amber-500/40'
                                   : 'hover:bg-slate-800 text-slate-200'
                               }`}
                             >
-                              <div className="space-y-0.5 min-w-0 flex-1">
+                              <button
+                                type="button"
+                                onMouseDown={() => switchActiveBankMutation.mutate(b.id)}
+                                className="space-y-0.5 min-w-0 flex-1 text-left cursor-pointer"
+                              >
                                 <div className="flex items-center space-x-2">
                                   <span className="text-[10px] font-extrabold px-2 py-0.5 bg-amber-400/20 text-amber-300 rounded whitespace-nowrap shrink-0 border border-amber-400/30">
                                     {b.certification.code}
@@ -281,10 +319,25 @@ export default function HomePage() {
                                 <div className="text-[10px] text-slate-400 whitespace-nowrap">
                                   {b.totalQuestions} câu hỏi • {b.domainsCount} Domains
                                 </div>
-                              </div>
+                              </button>
 
-                              {isSelected && <Check className="w-4 h-4 text-amber-400 shrink-0" />}
-                            </button>
+                              <div className="flex items-center space-x-1.5 shrink-0">
+                                {isSelected && <Check className="w-4 h-4 text-amber-400 shrink-0" />}
+                                <button
+                                  type="button"
+                                  onMouseDown={(e) => {
+                                    e.stopPropagation();
+                                    if (window.confirm(`Bạn có chắc muốn hủy đăng ký môn "${b.name}"?`)) {
+                                      unenrollBankMutation.mutate(b.id);
+                                    }
+                                  }}
+                                  title="Hủy đăng ký môn học này"
+                                  className="p-1 text-slate-500 hover:text-rose-400 hover:bg-slate-700/60 rounded transition cursor-pointer"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            </div>
                           );
                         })
                       )}

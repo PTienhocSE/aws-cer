@@ -456,7 +456,7 @@ function PracticeSessionContent({ params }: { params: Promise<{ id: string }> })
             ),
           };
         });
-        toast.success(!currentBookmarked ? 'Đã đánh dấu câu hỏi ⭐' : 'Đã bỏ đánh dấu.');
+        toast.success(!currentBookmarked ? 'Đã đánh dấu câu hỏi' : 'Đã bỏ đánh dấu.');
       }
     } catch {
       toast.error('Không thể lưu trạng thái đánh dấu.');
@@ -721,7 +721,7 @@ function PracticeSessionContent({ params }: { params: Promise<{ id: string }> })
                     {/* Bookmark Toggle Button */}
                     <button
                       onClick={() => handleToggleBookmark(q.id, q.isBookmarked)}
-                      title={q.isBookmarked ? 'Bỏ đánh dấu' : 'Đánh dấu câu hỏi ⭐'}
+                      title={q.isBookmarked ? 'Bỏ đánh dấu' : 'Đánh dấu câu hỏi'}
                       className={`p-1.5 rounded-lg border transition cursor-pointer ${
                         q.isBookmarked
                           ? 'bg-amber-50 border-amber-300 text-amber-600'
@@ -1103,7 +1103,11 @@ function PracticeSessionContent({ params }: { params: Promise<{ id: string }> })
               </label>
               <div className="text-[11px] font-bold shrink-0">
                 {noteStatus === 'saving' && <span className="text-amber-600">Đang lưu...</span>}
-                {noteStatus === 'saved' && <span className="text-emerald-600">Đã lưu ✓</span>}
+                {noteStatus === 'saved' && (
+                  <span className="text-emerald-600 inline-flex items-center gap-0.5">
+                    Đã lưu <Check className="w-3 h-3 text-emerald-600" />
+                  </span>
+                )}
                 {noteStatus === 'error' && <span className="text-red-600">Lỗi lưu!</span>}
               </div>
             </div>
@@ -1131,8 +1135,8 @@ function PracticeSessionContent({ params }: { params: Promise<{ id: string }> })
                   {currentQuestion.type === 'single_choice' ? 'Chọn 1 đáp án' : 'Chọn nhiều đáp án'}
                 </span>
                 {isSubmitted && (
-                  <span className="text-[11px] font-extrabold px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg whitespace-nowrap">
-                    ✓ Đã làm
+                  <span className="text-[11px] font-extrabold px-2.5 py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg whitespace-nowrap inline-flex items-center gap-1">
+                    <CheckCircle2 className="w-3 h-3 text-emerald-600" /> Đã làm
                   </span>
                 )}
               </div>

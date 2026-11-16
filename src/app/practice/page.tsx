@@ -403,8 +403,14 @@ export default function PracticeSessionsListPage() {
                     <span className="text-slate-700 font-black">
                       {s.answeredCount > 0 ? (
                         <>
-                          <span className="text-emerald-700 mr-2">✓ {s.correctCount} đúng</span>
-                          <span className="text-rose-600 mr-2">✗ {s.incorrectCount} sai</span>
+                          <span className="text-emerald-700 mr-2 inline-flex items-center gap-0.5">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 inline" />
+                            {s.correctCount} đúng
+                          </span>
+                          <span className="text-rose-600 mr-2 inline-flex items-center gap-0.5">
+                            <XCircle className="w-3.5 h-3.5 text-rose-600 inline" />
+                            {s.incorrectCount} sai
+                          </span>
                           <span className="text-slate-900">({s.accuracyRate}%)</span>
                         </>
                       ) : (

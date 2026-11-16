@@ -10,11 +10,11 @@ interface Props {
 
 const formatInline = (str: string, isDark: boolean) => {
   let formatted = str;
-  const boldClass = isDark ? 'font-extrabold text-white' : 'font-extrabold text-slate-900';
-  const emClass = isDark ? 'font-semibold text-amber-300 not-italic' : 'font-semibold text-amber-700 not-italic';
+  const boldClass = isDark ? 'font-extrabold text-white' : 'font-extrabold text-slate-950';
+  const emClass = isDark ? 'font-semibold text-amber-300 not-italic' : 'font-bold text-amber-800 not-italic';
   const codeClass = isDark
     ? 'bg-slate-700 text-amber-300 font-mono text-[11px] px-1.5 py-0.5 rounded border border-slate-600'
-    : 'bg-slate-100 text-slate-900 font-mono text-[11px] px-1.5 py-0.5 rounded border border-slate-200';
+    : 'bg-slate-100 text-slate-900 font-mono text-[11px] px-1.5 py-0.5 rounded border border-slate-300 font-semibold';
 
   // Bold: **text**
   formatted = formatted.replace(/\*\*(.*?)\*\*/g, `<strong class="${boldClass}">$1</strong>`);
@@ -25,15 +25,15 @@ const formatInline = (str: string, isDark: boolean) => {
   return formatted;
 };
 
-export default function MarkdownExplanation({ content, theme = 'dark' }: Props) {
+export default function MarkdownExplanation({ content, theme = 'light' }: Props) {
   if (!content) return null;
 
   const isDark = theme === 'dark';
-  const textClass = isDark ? 'text-slate-200' : 'text-slate-700';
+  const textClass = isDark ? 'text-slate-200' : 'text-slate-800 font-medium';
   const bulletClass = isDark ? 'text-amber-400' : 'text-amber-600';
   const headingClass = isDark
     ? 'text-amber-300 font-extrabold text-xs uppercase tracking-wider mt-3 mb-1'
-    : 'text-slate-800 font-extrabold text-xs uppercase tracking-wider mt-3 mb-1';
+    : 'text-slate-900 font-black text-xs uppercase tracking-wider mt-3 mb-1';
 
   // Clean the content: strip ### headings, collapse blank lines
   const cleaned = content

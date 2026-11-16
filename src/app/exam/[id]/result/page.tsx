@@ -8,13 +8,17 @@ import MarkdownExplanation from '@/components/MarkdownExplanation';
 import {
   Award,
   CheckCircle2,
+  ChevronDown,
+  ChevronUp,
   Clock,
   Filter,
   Flag,
   Play,
   RotateCcw,
   ShieldCheck,
+  Sparkles,
   Target,
+  Trophy,
   XCircle,
 } from 'lucide-react';
 
@@ -25,6 +29,7 @@ export default function MockExamResultPage() {
   const isLocal = examAttemptId?.startsWith('local-');
   const [localResult, setLocalResult] = useState<any>(null);
   const [filterMode, setFilterMode] = useState<'ALL' | 'INCORRECT' | 'CORRECT' | 'FLAGGED'>('ALL');
+  const [collapsedIds, setCollapsedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     if (examAttemptId) {
@@ -123,6 +128,31 @@ export default function MockExamResultPage() {
     return true;
   });
 
+  const isAllCollapsed = useMemo(() => {
+    if (filteredAnswers.length === 0) return false;
+    return filteredAnswers.every((ans: any) => {
+      const qId = ans.id || ans.question?.id;
+      return collapsedIds.has(qId);
+    });
+  }, [filteredAnswers, collapsedIds]);
+
+  const toggleCollapseAll = () => {
+    if (isAllCollapsed) {
+      setCollapsedIds(new Set());
+    } else {
+      setCollapsedIds(new Set(filteredAnswers.map((ans: any) => ans.id || ans.question?.id)));
+    }
+  };
+
+  const toggleQuestion = (qId: string) => {
+    setCollapsedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(qId)) next.delete(qId);
+      else next.add(qId);
+      return next;
+    });
+  };
+
   const handlePracticeIncorrect = async () => {
     try {
       const res = await fetch('/api/practice-sessions', {
@@ -159,8 +189,13 @@ export default function MockExamResultPage() {
           <div className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-white/10 text-white border border-white/15">
             <Award className="w-3.5 h-3.5 mr-1 text-amber-400" /> KẾT QUẢ THI THỬ SAA-C03
           </div>
-          <h1 className="text-3xl font-extrabold tracking-tight">
-            {isPassed ? 'Chúc mừng! Bạn đã ĐẠT kỳ thi 🎉' : 'Chưa đạt - Hãy tiếp tục luyện tập! 💪'}
+          <h1 className="text-3xl font-extrabold tracking-tight flex items-center justify-center md:justify-start gap-2">
+            <span>{isPassed ? 'Chúc mừng! Bạn đã ĐẠT kỳ thi' : 'Chưa đạt - Hãy tiếp tục luyện tập!'}</span>
+            {isPassed ? (
+              <Trophy className="w-8 h-8 text-amber-400 inline shrink-0" />
+            ) : (
+              <Target className="w-8 h-8 text-rose-400 inline shrink-0" />
+            )}
           </h1>
           <p className="text-slate-300 text-xs sm:text-sm max-w-xl leading-relaxed">
             {isPassed
@@ -221,7 +256,7 @@ export default function MockExamResultPage() {
 
       {/* Review Questions Section with Filters */}
       <div className="card-saas p-6 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-4">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 pb-4">
           <div className="space-y-1">
             <h2 className="text-base font-extrabold text-slate-900">Chi tiết đáp án &amp; Giải thích</h2>
             <p className="text-xs text-slate-500">
@@ -229,11 +264,28 @@ export default function MockExamResultPage() {
             </p>
           </div>
 
-          {/* Filter Pills */}
-          <div className="flex flex-wrap items-center gap-1.5">
+          {/* Action Tools & Filter Pills: strictly 1 row, aligned right, no wrapping */}
+          <div className="flex items-center gap-1.5 flex-nowrap shrink-0 lg:ml-auto overflow-x-auto max-w-full pb-1 lg:pb-0">
+            <button
+              onClick={toggleCollapseAll}
+              className="px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center whitespace-nowrap shrink-0 border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 shadow-2xs"
+              title={isAllCollapsed ? 'Mở rộng tất cả câu hỏi' : 'Thu gọn tất cả câu hỏi'}
+            >
+              {isAllCollapsed ? (
+                <>
+                  <ChevronDown className="w-3.5 h-3.5 mr-1 text-slate-600" />
+                  <span>Mở rộng tất cả</span>
+                </>
+              ) : (
+                <>
+                  <ChevronUp className="w-3.5 h-3.5 mr-1 text-slate-600" />
+                  <span>Thu gọn tất cả</span>
+                </>
+              )}
+            </button>
             <button
               onClick={() => setFilterMode('ALL')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer whitespace-nowrap shrink-0 ${
                 filterMode === 'ALL'
                   ? 'bg-slate-900 text-white'
                   : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
@@ -243,7 +295,7 @@ export default function MockExamResultPage() {
             </button>
             <button
               onClick={() => setFilterMode('INCORRECT')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center whitespace-nowrap shrink-0 ${
                 filterMode === 'INCORRECT'
                   ? 'bg-red-600 text-white'
                   : 'bg-red-50 text-red-700 hover:bg-red-100'
@@ -253,7 +305,7 @@ export default function MockExamResultPage() {
             </button>
             <button
               onClick={() => setFilterMode('CORRECT')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center ${
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center whitespace-nowrap shrink-0 ${
                 filterMode === 'CORRECT'
                   ? 'bg-emerald-600 text-white'
                   : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
@@ -264,7 +316,7 @@ export default function MockExamResultPage() {
             {flaggedCount > 0 && (
               <button
                 onClick={() => setFilterMode('FLAGGED')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center whitespace-nowrap shrink-0 ${
                   filterMode === 'FLAGGED'
                     ? 'bg-amber-500 text-slate-950'
                     : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
@@ -277,7 +329,7 @@ export default function MockExamResultPage() {
         </div>
 
         {/* Questions List */}
-        <div className="space-y-6">
+        <div className="space-y-4">
           {filteredAnswers.map((ans: any, idx: number) => {
             const q = ans.question;
             let userSelectedIds: string[] = [];
@@ -291,11 +343,13 @@ export default function MockExamResultPage() {
             const isCorrect = ans.isCorrect === true;
             const originalIndex = attempt.answers.findIndex((a: any) => (a.questionId || a.question?.id) === q.id);
             const questionNumber = originalIndex >= 0 ? originalIndex + 1 : idx + 1;
+            const qId = ans.id || ans.question?.id || String(idx);
+            const isCollapsed = collapsedIds.has(qId);
 
             return (
               <div
                 key={ans.id || idx}
-                className={`p-5 rounded-2xl border space-y-4 ${
+                className={`p-5 rounded-2xl border transition-all ${
                   isCorrect
                     ? 'border-emerald-200 bg-emerald-50/20'
                     : userSelectedIds.length === 0
@@ -303,9 +357,12 @@ export default function MockExamResultPage() {
                     : 'border-red-200 bg-red-50/20'
                 }`}
               >
-                {/* Question Header */}
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                  <div className="flex items-center space-x-2">
+                {/* Question Header (Clickable to collapse/expand) */}
+                <div
+                  onClick={() => toggleQuestion(qId)}
+                  className="flex items-center justify-between gap-2 border-b border-slate-100 pb-3 cursor-pointer select-none group"
+                >
+                  <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                     <span
                       className={`text-xs font-extrabold px-2.5 py-1 rounded-lg ${
                         isCorrect
@@ -320,16 +377,16 @@ export default function MockExamResultPage() {
                     <span className="text-xs font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">
                       {q.domain?.name || 'AWS Domain'}
                     </span>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
                     {ans.isFlagged && (
                       <span className="text-[11px] font-bold px-2 py-0.5 bg-amber-100 text-amber-800 rounded flex items-center">
-                        <Flag className="w-3 h-3 mr-1 fill-amber-500" /> Đã cắm cờ
+                        <Flag className="w-3 h-3 mr-1 fill-amber-500 text-amber-500" /> Đã cắm cờ
                       </span>
                     )}
+                  </div>
+
+                  <div className="flex items-center space-x-2 shrink-0">
                     <span
-                      className={`text-xs font-bold px-2.5 py-0.5 rounded-full flex items-center ${
+                      className={`text-xs font-bold px-2.5 py-1 rounded-full flex items-center ${
                         isCorrect
                           ? 'bg-emerald-100 text-emerald-800'
                           : userSelectedIds.length === 0
@@ -349,64 +406,87 @@ export default function MockExamResultPage() {
                         </>
                       )}
                     </span>
+                    <button
+                      type="button"
+                      aria-label={isCollapsed ? 'Mở rộng câu hỏi' : 'Thu gọn câu hỏi'}
+                      className="w-7 h-7 rounded-lg bg-black/5 group-hover:bg-black/10 flex items-center justify-center transition text-slate-600"
+                    >
+                      {isCollapsed ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
+                    </button>
                   </div>
                 </div>
 
-                {/* Question Text */}
-                <p className="text-sm sm:text-base font-bold text-slate-900 leading-relaxed whitespace-pre-line">
-                  {q.questionText}
-                </p>
+                {/* Collapsible Content */}
+                {isCollapsed ? (
+                  <p
+                    onClick={() => toggleQuestion(qId)}
+                    className="text-xs text-slate-600 font-medium truncate pt-3 cursor-pointer hover:text-slate-900 transition"
+                  >
+                    {q.questionText}
+                  </p>
+                ) : (
+                  <div className="space-y-4 pt-3">
+                    {/* Question Text */}
+                    <p className="text-sm sm:text-base font-bold text-slate-900 leading-relaxed whitespace-pre-line">
+                      {q.questionText}
+                    </p>
 
-                {/* Options Comparison */}
-                <div className="space-y-2">
-                  {q.options?.map((opt: any, optIdx: number) => {
-                    const isSelected = userSelectedIds.includes(opt.id);
-                    const isRightOption = opt.isCorrect;
-                    const optLetter = String.fromCharCode(65 + optIdx);
+                    {/* Options Comparison */}
+                    <div className="space-y-2">
+                      {q.options?.map((opt: any, optIdx: number) => {
+                        const isSelected = userSelectedIds.includes(opt.id);
+                        const isRightOption = opt.isCorrect;
+                        const optLetter = String.fromCharCode(65 + optIdx);
 
-                    let optBg = 'bg-white border-slate-200 text-slate-700';
-                    if (isRightOption && isSelected) {
-                      optBg = 'bg-emerald-50 border-emerald-400 text-emerald-950 font-bold';
-                    } else if (isRightOption && !isSelected) {
-                      optBg = 'bg-emerald-50/60 border-emerald-300 text-emerald-900 font-semibold border-dashed';
-                    } else if (isSelected && !isRightOption) {
-                      optBg = 'bg-red-50 border-red-300 text-red-900';
-                    }
+                        let optBg = 'bg-white border-slate-200 text-slate-700';
+                        if (isRightOption && isSelected) {
+                          optBg = 'bg-emerald-50 border-emerald-400 text-emerald-950 font-bold';
+                        } else if (isRightOption && !isSelected) {
+                          optBg = 'bg-emerald-50/60 border-emerald-300 text-emerald-900 font-semibold border-dashed';
+                        } else if (isSelected && !isRightOption) {
+                          optBg = 'bg-red-50 border-red-300 text-red-900';
+                        }
 
-                    return (
-                      <div
-                        key={opt.id}
-                        className={`p-3 rounded-xl border text-xs sm:text-sm flex items-start space-x-2.5 ${optBg}`}
-                      >
-                        <span className="w-5 h-5 rounded flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 bg-black/5">
-                          {optLetter}
-                        </span>
-                        <div className="flex-1 leading-relaxed">{opt.text}</div>
+                        return (
+                          <div
+                            key={opt.id}
+                            className={`p-3 rounded-xl border text-xs sm:text-sm flex items-start space-x-2.5 ${optBg}`}
+                          >
+                            <span className="w-5 h-5 rounded flex items-center justify-center font-bold text-xs shrink-0 mt-0.5 bg-black/5">
+                              {optLetter}
+                            </span>
+                            <div className="flex-1 leading-relaxed">{opt.text}</div>
 
-                        {isSelected && isRightOption && (
-                          <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded shrink-0">
-                            Bạn chọn đúng
-                          </span>
-                        )}
-                        {isSelected && !isRightOption && (
-                          <span className="text-[10px] font-black uppercase text-red-700 bg-red-100 px-2 py-0.5 rounded shrink-0">
-                            Bạn đã chọn
-                          </span>
-                        )}
-                        {!isSelected && isRightOption && (
-                          <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded shrink-0">
-                            Đáp án đúng
-                          </span>
-                        )}
+                            {isSelected && isRightOption && (
+                              <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded shrink-0">
+                                Bạn chọn đúng
+                              </span>
+                            )}
+                            {isSelected && !isRightOption && (
+                              <span className="text-[10px] font-black uppercase text-red-700 bg-red-100 px-2 py-0.5 rounded shrink-0">
+                                Bạn đã chọn
+                              </span>
+                            )}
+                            {!isSelected && isRightOption && (
+                              <span className="text-[10px] font-black uppercase text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded shrink-0">
+                                Đáp án đúng
+                              </span>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+
+                    {/* Explanation Box */}
+                    {q.explanationText && (
+                      <div className="mt-4 p-4 rounded-xl bg-slate-50/90 border border-slate-200">
+                        <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-amber-800 mb-2">
+                          <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                          <span>Giải thích chi tiết (Song ngữ Anh - Việt)</span>
+                        </div>
+                        <MarkdownExplanation content={q.explanationText} theme="light" />
                       </div>
-                    );
-                  })}
-                </div>
-
-                {/* Explanation */}
-                {q.explanationText && (
-                  <div className="pt-2">
-                    <MarkdownExplanation content={q.explanationText} />
+                    )}
                   </div>
                 )}
               </div>

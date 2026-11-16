@@ -3,6 +3,86 @@ import { prisma } from '@/lib/prisma';
 import { getAuthUserOrDemo } from '@/lib/auth';
 import { shuffleAndTake } from '@/lib/practice-selection';
 
+export async function GET(req: NextRequest) {
+  try {
+    const authUser = await getAuthUserOrDemo(req);
+    if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+    const userId = authUser.userId;
+
+    const { searchParams } = new URL(req.url);
+    const requestedBankId = searchParams.get('questionBankId');
+    const bankId = requestedBankId || authUser.activeQuestionBankId;
+
+    const where: any = { userId };
+    if (bankId) {
+      where.questionBankId = bankId;
+    }
+
+    const attempts = await prisma.mockExamAttempt.findMany({
+      where,
+      orderBy: { startedAt: 'desc' },
+      include: {
+        questionBank: {
+          select: { id: true, name: true, version: true },
+        },
+        answers: {
+          select: { id: true, isCorrect: true, isFlagged: true, selectedOptionIds: true },
+        },
+      },
+      take: 60,
+    });
+
+    const formatted = attempts.map((a) => {
+      const totalQuestions = a.totalQuestions || a.answers.length;
+      let correctCount = 0;
+      let incorrectCount = 0;
+      let unansweredCount = 0;
+
+      a.answers.forEach((ans) => {
+        let parsedSelected: string[] = [];
+        try {
+          const raw = ans.selectedOptionIds;
+          parsedSelected = typeof raw === 'string' ? JSON.parse(raw) : raw || [];
+        } catch {
+          parsedSelected = [];
+        }
+
+        if (parsedSelected.length === 0) {
+          unansweredCount++;
+        } else if (ans.isCorrect === true) {
+          correctCount++;
+        } else {
+          incorrectCount++;
+        }
+      });
+
+      const accuracyRate = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
+
+      return {
+        id: a.id,
+        questionBank: a.questionBank,
+        totalQuestions,
+        score: a.score,
+        isPassed: a.isPassed,
+        isCompleted: a.isCompleted,
+        startedAt: a.startedAt,
+        submittedAt: a.submittedAt,
+        timeSpentSeconds: a.timeSpentSeconds,
+        timeLimitMinutes: a.timeLimitMinutes,
+        correctCount,
+        incorrectCount,
+        unansweredCount,
+        accuracyRate,
+      };
+    });
+
+    return NextResponse.json({ attempts: formatted });
+  } catch (error) {
+    console.error('Get mock exam attempts error:', error);
+    return NextResponse.json({ error: 'Lỗi tải danh sách bài thi thử' }, { status: 500 });
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const authUser = await getAuthUserOrDemo(req);

@@ -289,8 +289,9 @@ export default function ProfilePage() {
           {enrolledBanks.length === 0 ? (
             <div className="p-6 text-center text-xs text-slate-400 space-y-2">
               <p>Bạn chưa đăng ký bộ đề chứng chỉ nào.</p>
-              <Link href="/question-banks" className="text-amber-600 font-bold hover:underline">
-                Khám phá ngân hàng bộ đề ngay ➔
+              <Link href="/question-banks" className="text-amber-600 font-bold hover:underline inline-flex items-center gap-1">
+                <span>Khám phá ngân hàng bộ đề ngay</span>
+                <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </div>
           ) : (

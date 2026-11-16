@@ -15,8 +15,8 @@ export interface DocCategory {
 export const AWS_DOC_TREE: DocCategory[] = [
   {
     id: 'intro',
-    title: '📌 Giới thiệu',
-    icon: '📌',
+    title: 'Giới thiệu',
+    icon: 'FileText',
     items: [
       { slug: 'README', title: 'Hướng dẫn sử dụng (README)', filename: '00-huong-dan-su-dung.md', categoryTitle: 'Giới thiệu' },
       { slug: '00-tong-quan-overview', title: 'Tổng quan SAA-C03', filename: '00-tong-quan-overview.md', categoryTitle: 'Giới thiệu' },
@@ -25,8 +25,8 @@ export const AWS_DOC_TREE: DocCategory[] = [
   },
   {
     id: 'services',
-    title: '☁️ Dịch vụ AWS',
-    icon: '☁️',
+    title: 'Dịch vụ AWS',
+    icon: 'Cloud',
     items: [
       { slug: '01-compute-services', title: '01 · Compute Services', filename: '01-compute-services.md', categoryTitle: 'Dịch vụ AWS' },
       { slug: '02-storage-services', title: '02 · Storage Services', filename: '02-storage-services.md', categoryTitle: 'Dịch vụ AWS' },
@@ -46,8 +46,8 @@ export const AWS_DOC_TREE: DocCategory[] = [
   },
   {
     id: 'architecture',
-    title: '🏗️ Kiến trúc',
-    icon: '🏗️',
+    title: 'Kiến trúc',
+    icon: 'Layers',
     items: [
       { slug: 'A-nen-tang-kien-truc', title: 'A · Nền tảng kiến trúc', filename: 'A-nen-tang-kien-truc.md', categoryTitle: 'Kiến trúc' },
       { slug: 'B-bao-mat-compliance', title: 'B · Bảo mật & Compliance', filename: 'B-bao-mat-compliance.md', categoryTitle: 'Kiến trúc' },
@@ -58,8 +58,8 @@ export const AWS_DOC_TREE: DocCategory[] = [
   },
   {
     id: 'exam-prep',
-    title: '🎯 Luyện thi',
-    icon: '🎯',
+    title: 'Luyện thi',
+    icon: 'Target',
     items: [
       { slug: 'K-kich-ban-thi', title: 'K · Kịch bản thi', filename: 'K-kich-ban-thi.md', categoryTitle: 'Luyện thi' },
       { slug: 'L-quyet-dinh-nhanh', title: 'L · Quyết định nhanh', filename: 'L-quyet-dinh-nhanh.md', categoryTitle: 'Luyện thi' },
@@ -76,8 +76,8 @@ export const AWS_DOC_TREE: DocCategory[] = [
 export const INTERVIEW_DOC_TREE: DocCategory[] = [
   {
     id: 'interview-intro',
-    title: '🎯 Phỏng vấn: Tổng quan & Nền tảng',
-    icon: '🎯',
+    title: 'Phỏng vấn: Tổng quan & Nền tảng',
+    icon: 'BookOpen',
     items: [
       { slug: 'interview-devops', title: 'Mục lục giáo trình phỏng vấn', filename: 'interview-devops/interview-devops.md', categoryTitle: 'Tổng quan & Nền tảng' },
       { slug: 'interview-devops-00-interview-strategy', title: '00 · Chiến lược phỏng vấn System & DevOps', filename: 'interview-devops/interview-devops-00-interview-strategy.md', categoryTitle: 'Tổng quan & Nền tảng' },
@@ -87,8 +87,8 @@ export const INTERVIEW_DOC_TREE: DocCategory[] = [
   },
   {
     id: 'interview-sysadmin',
-    title: '🐧 Phỏng vấn: Linux & Windows Admin',
-    icon: '🐧',
+    title: 'Phỏng vấn: Linux & Windows Admin',
+    icon: 'Terminal',
     items: [
       { slug: 'interview-devops-03-linux-administration', title: '03 · Linux Administration', filename: 'interview-devops/interview-devops-03-linux-administration.md', categoryTitle: 'Linux & Windows Admin' },
       { slug: 'interview-devops-04-linux-troubleshooting', title: '04 · Linux Troubleshooting', filename: 'interview-devops/interview-devops-04-linux-troubleshooting.md', categoryTitle: 'Linux & Windows Admin' },
@@ -99,8 +99,8 @@ export const INTERVIEW_DOC_TREE: DocCategory[] = [
   },
   {
     id: 'interview-infra',
-    title: '🏗️ Phỏng vấn: Infra, Storage & HA/DR',
-    icon: '🏗️',
+    title: 'Phỏng vấn: Infra, Storage & HA/DR',
+    icon: 'Server',
     items: [
       { slug: 'interview-devops-08-vmware', title: '08 · VMware vSphere & Virtualization', filename: 'interview-devops/interview-devops-08-vmware.md', categoryTitle: 'Infra, Storage & HA/DR' },
       { slug: 'interview-devops-09-server-hardware-storage', title: '09 · Hardware & SAN Storage', filename: 'interview-devops/interview-devops-09-server-hardware-storage.md', categoryTitle: 'Infra, Storage & HA/DR' },
@@ -112,8 +112,8 @@ export const INTERVIEW_DOC_TREE: DocCategory[] = [
   },
   {
     id: 'interview-monitoring',
-    title: '📊 Phỏng vấn: Observability & Web/Mail',
-    icon: '📊',
+    title: 'Phỏng vấn: Observability & Web/Mail',
+    icon: 'BarChart',
     items: [
       { slug: 'interview-devops-14-monitoring-observability', title: '14 · Monitoring & Observability', filename: 'interview-devops/interview-devops-14-monitoring-observability.md', categoryTitle: 'Observability & Web/Mail' },
       { slug: 'interview-devops-15-prometheus', title: '15 · Prometheus Deep Dive', filename: 'interview-devops/interview-devops-15-prometheus.md', categoryTitle: 'Observability & Web/Mail' },
@@ -127,8 +127,8 @@ export const INTERVIEW_DOC_TREE: DocCategory[] = [
   },
   {
     id: 'interview-k8s',
-    title: '🐳 Phỏng vấn: Docker & Kubernetes',
-    icon: '🐳',
+    title: 'Phỏng vấn: Docker & Kubernetes',
+    icon: 'Box',
     items: [
       { slug: 'interview-devops-22-docker', title: '22 · Docker Engine & Containers', filename: 'interview-devops/interview-devops-22-docker.md', categoryTitle: 'Docker & Kubernetes' },
       { slug: 'interview-devops-23-kubernetes-fundamentals', title: '23 · Kubernetes Core Objects', filename: 'interview-devops/interview-devops-23-kubernetes-fundamentals.md', categoryTitle: 'Docker & Kubernetes' },
@@ -141,8 +141,8 @@ export const INTERVIEW_DOC_TREE: DocCategory[] = [
   },
   {
     id: 'interview-devops-cicd',
-    title: '🔄 Phỏng vấn: CI/CD, GitOps & Registry',
-    icon: '🔄',
+    title: 'Phỏng vấn: CI/CD, GitOps & Registry',
+    icon: 'RotateCcw',
     items: [
       { slug: 'interview-devops-29-amazon-eks', title: '29 · Amazon EKS Architecture', filename: 'interview-devops/interview-devops-29-amazon-eks.md', categoryTitle: 'CI/CD, GitOps & Registry' },
       { slug: 'interview-devops-30-karpenter', title: '30 · Karpenter Autoscaling', filename: 'interview-devops/interview-devops-30-karpenter.md', categoryTitle: 'CI/CD, GitOps & Registry' },
@@ -161,8 +161,8 @@ export const INTERVIEW_DOC_TREE: DocCategory[] = [
   },
   {
     id: 'interview-data-sec',
-    title: '💾 Phỏng vấn: Data, Security & Incident',
-    icon: '💾',
+    title: 'Phỏng vấn: Data, Security & Incident',
+    icon: 'Database',
     items: [
       { slug: 'interview-devops-42-kafka-msk', title: '42 · Apache Kafka & Amazon MSK', filename: 'interview-devops/interview-devops-42-kafka-msk.md', categoryTitle: 'Data, Security & Incident' },
       { slug: 'interview-devops-43-postgresql-database-ops', title: '43 · PostgreSQL Operations & HA', filename: 'interview-devops/interview-devops-43-postgresql-database-ops.md', categoryTitle: 'Data, Security & Incident' },
@@ -173,8 +173,8 @@ export const INTERVIEW_DOC_TREE: DocCategory[] = [
   },
   {
     id: 'interview-design-mock',
-    title: '🎤 Phỏng vấn: System Design & Q&A',
-    icon: '🎤',
+    title: 'Phỏng vấn: System Design & Q&A',
+    icon: 'Sparkles',
     items: [
       { slug: 'interview-devops-47-system-design', title: '47 · System Design Methodology', filename: 'interview-devops/interview-devops-47-system-design.md', categoryTitle: 'System Design & Q&A' },
       { slug: 'interview-devops-48-multi-dc-system-design', title: '48 · Multi-DC System Design', filename: 'interview-devops/interview-devops-48-multi-dc-system-design.md', categoryTitle: 'System Design & Q&A' },

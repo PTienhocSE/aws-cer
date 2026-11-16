@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Bookmark, X, Highlighter, Sparkles } from 'lucide-react';
+import { Bookmark, X, Highlighter, Sparkles, CheckCircle2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import HighlightableText from '@/components/HighlightableText';
 import MarkdownExplanation from '@/components/MarkdownExplanation';
@@ -153,8 +153,9 @@ export default function QuestionDetailModal({ questionId, onClose }: QuestionDet
                         <div className="flex-1">
                           <span>{opt.text}</span>
                           {isCorrect && (
-                            <span className="ml-2 text-xs text-emerald-700 font-extrabold">
-                              ✓ Đáp án đúng
+                            <span className="ml-2 text-xs text-emerald-700 font-extrabold inline-flex items-center gap-1">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 inline" />
+                              <span>Đáp án đúng</span>
                             </span>
                           )}
                         </div>
@@ -182,7 +183,7 @@ export default function QuestionDetailModal({ questionId, onClose }: QuestionDet
         {/* Modal Footer */}
         <div className="px-5 py-3 border-t border-slate-100 bg-slate-50/90 text-right">
           <span className="text-[11px] text-slate-400 font-medium italic">
-            Mẹo: Bạn có thể tô màu bôi đen từ khóa và ghi chú lưu tự động vào DB. Bấm biểu tượng ✕ góc trên để đóng.
+            Mẹo: Bạn có thể tô màu bôi đen từ khóa và ghi chú lưu tự động vào DB. Bấm biểu tượng đóng góc trên để thoát.
           </span>
         </div>
       </div>

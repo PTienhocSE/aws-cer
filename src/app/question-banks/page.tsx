@@ -12,7 +12,9 @@ import {
   Layers,
   Play,
   Sparkles,
+  Trash2,
   Trophy,
+  XCircle,
   Zap,
 } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
@@ -115,6 +117,50 @@ export default function QuestionBanksPage() {
       }
     },
   });
+
+  const unenrollMutation = useMutation({
+    mutationFn: async (bankId: string) => {
+      try {
+        const res = await fetch(`/api/question-banks/${bankId}/enroll`, {
+          method: 'DELETE',
+          headers: { 'x-guest-mode': '1' },
+          credentials: 'include',
+        });
+        if (res.ok) return res.json();
+      } catch {}
+
+      const fallbackRes = await fetch(`/api/question-banks/${bankId}/unenroll`, {
+        method: 'POST',
+        headers: { 'x-guest-mode': '1' },
+        credentials: 'include',
+      });
+      return fallbackRes.json();
+    },
+    onSuccess: (data) => {
+      if (data?.success) {
+        if (user && data.activeQuestionBankId !== undefined) {
+          setUser({ ...user, activeQuestionBankId: data.activeQuestionBankId });
+        }
+        queryClient.invalidateQueries({ queryKey: ['questionBanksCatalog'] });
+        queryClient.invalidateQueries({ queryKey: ['progressOverview'] });
+        toast.success(data.message || 'Đã hủy đăng ký bộ câu hỏi thành công!');
+      }
+    },
+    onError: () => {
+      toast.error('Lỗi khi hủy đăng ký bộ câu hỏi. Vui lòng thử lại!');
+    },
+  });
+
+  const handleUnenroll = (e: React.MouseEvent, bankId: string, bankName: string) => {
+    e.stopPropagation();
+    if (
+      window.confirm(
+        `Bạn có chắc chắn muốn hủy đăng ký bộ đề "${bankName}"? Tiến độ làm bài của bạn vẫn được lưu lại an toàn.`
+      )
+    ) {
+      unenrollMutation.mutate(bankId);
+    }
+  };
 
   const handleCardAction = (bankId: string, isEnrolled: boolean, isCurrentActive: boolean) => {
     if (!user) {
@@ -248,7 +294,7 @@ export default function QuestionBanksPage() {
           </p>
         </div>
 
-        <div className="pt-3 border-t border-slate-100 space-y-3">
+        <div className="pt-3 border-t border-slate-100 space-y-2.5">
           <div className="flex justify-between items-center text-[11px] text-slate-600 font-semibold">
             <span>
               <strong className="text-slate-900">{bank.totalQuestions}</strong> câu hỏi
@@ -262,7 +308,7 @@ export default function QuestionBanksPage() {
             {isCurrentActive ? (
               <button
                 onClick={() => router.push('/questions')}
-                className="py-2 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-[11px] font-extrabold rounded-xl flex items-center justify-center transition"
+                className="py-2 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-[11px] font-extrabold rounded-xl flex items-center justify-center transition cursor-pointer"
               >
                 <CheckCircle2 className="w-3.5 h-3.5 mr-1 text-emerald-600" /> Đang học
               </button>
@@ -270,7 +316,7 @@ export default function QuestionBanksPage() {
               <button
                 onClick={() => handleCardAction(bank.id, isEnrolled, isCurrentActive)}
                 disabled={switchActiveMutation.isPending}
-                className="py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-extrabold rounded-xl transition flex items-center justify-center"
+                className="py-2 px-3 bg-slate-900 hover:bg-slate-800 text-white text-[11px] font-extrabold rounded-xl transition flex items-center justify-center cursor-pointer"
               >
                 <Play className="w-3 h-3 mr-1 text-amber-400" /> Chuyển sang
               </button>
@@ -278,7 +324,7 @@ export default function QuestionBanksPage() {
               <button
                 onClick={() => handleCardAction(bank.id, isEnrolled, isCurrentActive)}
                 disabled={enrollMutation.isPending}
-                className="py-2 px-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-extrabold text-[11px] rounded-xl transition flex items-center justify-center shadow-2xs"
+                className="py-2 px-3 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-extrabold text-[11px] rounded-xl transition flex items-center justify-center shadow-2xs cursor-pointer"
               >
                 {user ? 'Đăng ký học' : 'Học ngay'}
               </button>
@@ -287,12 +333,26 @@ export default function QuestionBanksPage() {
             {/* Quick action to take Mock Exam for this specific 65-question test */}
             <button
               onClick={() => router.push(`/exam?bankId=${bank.id}`)}
-              className="py-2 px-3 bg-slate-100 hover:bg-amber-100 hover:border-amber-300 border border-slate-200 text-slate-800 hover:text-amber-900 font-extrabold text-[11px] rounded-xl transition flex items-center justify-center"
+              className="py-2 px-3 bg-slate-100 hover:bg-amber-100 hover:border-amber-300 border border-slate-200 text-slate-800 hover:text-amber-900 font-extrabold text-[11px] rounded-xl transition flex items-center justify-center cursor-pointer"
               title="Thi thử đề này với 65 câu giữ nguyên thứ tự"
             >
               <Award className="w-3.5 h-3.5 mr-1 text-amber-500" /> Thi thử đề này
             </button>
           </div>
+
+          {/* Unenroll Action */}
+          {(isEnrolled || isCurrentActive) && (
+            <div className="pt-1 flex justify-end">
+              <button
+                type="button"
+                onClick={(e) => handleUnenroll(e, bank.id, bank.name)}
+                disabled={unenrollMutation.isPending}
+                className="text-[11px] font-semibold text-rose-500 hover:text-rose-700 hover:underline flex items-center transition cursor-pointer"
+              >
+                <Trash2 className="w-3 h-3 mr-1 text-rose-400" /> Hủy đăng ký môn này
+              </button>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -343,22 +403,36 @@ export default function QuestionBanksPage() {
           {/* Master bank actions & expand toggle */}
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
             {bundle.master && (
-              <button
-                onClick={() => handleCardAction(bundle.master.id, bundle.master.isEnrolled, isMasterActive)}
-                className={`py-2.5 px-4 text-xs font-extrabold rounded-xl transition flex items-center shadow-xs ${
-                  isMasterActive
-                    ? 'bg-emerald-600 text-white'
-                    : 'bg-slate-900 hover:bg-slate-800 text-white'
-                }`}
-              >
-                <Sparkles className="w-3.5 h-3.5 mr-1.5 text-amber-400" />
-                {isMasterActive ? 'Đang học Bộ Max (390 câu)' : 'Học toàn bộ 390 câu (Max)'}
-              </button>
+              <div className="flex items-center space-x-1.5">
+                <button
+                  onClick={() => handleCardAction(bundle.master.id, bundle.master.isEnrolled, isMasterActive)}
+                  className={`py-2.5 px-4 text-xs font-extrabold rounded-xl transition flex items-center shadow-xs cursor-pointer ${
+                    isMasterActive
+                      ? 'bg-emerald-600 text-white'
+                      : 'bg-slate-900 hover:bg-slate-800 text-white'
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5 mr-1.5 text-amber-400" />
+                  {isMasterActive ? 'Đang học Bộ Max (390 câu)' : 'Học toàn bộ 390 câu (Max)'}
+                </button>
+
+                {bundle.master.isEnrolled && (
+                  <button
+                    type="button"
+                    onClick={(e) => handleUnenroll(e, bundle.master.id, bundle.master.name)}
+                    disabled={unenrollMutation.isPending}
+                    title="Hủy đăng ký Bộ 390 câu này"
+                    className="p-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 border border-rose-200 rounded-xl transition cursor-pointer"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
             )}
 
             <button
               onClick={() => toggleBundle(bundle.key)}
-              className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs rounded-xl transition flex items-center"
+              className="py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-800 font-extrabold text-xs rounded-xl transition flex items-center cursor-pointer"
             >
               <span>{isExpanded ? 'Thu gọn' : `Xem 6 đề (${bundle.tests.length})`}</span>
               {isExpanded ? (
@@ -413,7 +487,7 @@ export default function QuestionBanksPage() {
           <p className="text-xs text-slate-500 leading-relaxed">{bank.description}</p>
         </div>
 
-        <div className="pt-4 border-t border-slate-100 space-y-4">
+        <div className="pt-4 border-t border-slate-100 space-y-3">
           <div className="flex justify-between items-center text-xs text-slate-600 font-semibold">
             <span>
               <strong className="text-slate-900">{bank.totalQuestions}</strong> câu hỏi
@@ -427,7 +501,7 @@ export default function QuestionBanksPage() {
             {isCurrentActive ? (
               <button
                 onClick={() => router.push('/questions')}
-                className="w-full py-2.5 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-extrabold rounded-xl flex items-center justify-center transition shadow-2xs"
+                className="w-full py-2.5 px-3 bg-emerald-50 hover:bg-emerald-100 border border-emerald-300 text-emerald-800 text-xs font-extrabold rounded-xl flex items-center justify-center transition shadow-2xs cursor-pointer"
               >
                 <CheckCircle2 className="w-4 h-4 mr-1.5 text-emerald-600" /> Môn học đang học (Vào ngay)
               </button>
@@ -435,7 +509,7 @@ export default function QuestionBanksPage() {
               <button
                 onClick={() => handleCardAction(bank.id, isEnrolled, isCurrentActive)}
                 disabled={switchActiveMutation.isPending}
-                className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold rounded-xl transition shadow-xs flex items-center justify-center"
+                className="w-full py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold rounded-xl transition shadow-xs flex items-center justify-center cursor-pointer"
               >
                 <Play className="w-3.5 h-3.5 mr-1.5 text-amber-400" /> Chuyển sang môn này
               </button>
@@ -443,7 +517,7 @@ export default function QuestionBanksPage() {
               <button
                 onClick={() => handleCardAction(bank.id, isEnrolled, isCurrentActive)}
                 disabled={enrollMutation.isPending}
-                className="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-extrabold text-xs rounded-xl transition shadow-md shadow-amber-500/20 flex items-center justify-center"
+                className="w-full py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-extrabold text-xs rounded-xl transition shadow-md shadow-amber-500/20 flex items-center justify-center cursor-pointer"
               >
                 {user ? 'Đăng ký học ngay' : 'Học ngay không cần đăng nhập'}
               </button>
@@ -451,10 +525,23 @@ export default function QuestionBanksPage() {
 
             <button
               onClick={() => router.push(`/exam?bankId=${bank.id}`)}
-              className="w-full py-2 bg-slate-100 hover:bg-amber-100 border border-slate-200 hover:border-amber-300 text-slate-800 hover:text-amber-900 font-extrabold text-xs rounded-xl transition flex items-center justify-center"
+              className="w-full py-2 bg-slate-100 hover:bg-amber-100 border border-slate-200 hover:border-amber-300 text-slate-800 hover:text-amber-900 font-extrabold text-xs rounded-xl transition flex items-center justify-center cursor-pointer"
             >
               <Award className="w-3.5 h-3.5 mr-1.5 text-amber-500" /> Thi thử bộ câu hỏi này
             </button>
+
+            {(isEnrolled || isCurrentActive) && (
+              <div className="pt-1 flex justify-center">
+                <button
+                  type="button"
+                  onClick={(e) => handleUnenroll(e, bank.id, bank.name)}
+                  disabled={unenrollMutation.isPending}
+                  className="text-xs font-semibold text-rose-500 hover:text-rose-700 hover:underline flex items-center transition cursor-pointer"
+                >
+                  <Trash2 className="w-3.5 h-3.5 mr-1 text-rose-400" /> Hủy đăng ký bộ đề này
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

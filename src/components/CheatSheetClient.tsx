@@ -40,6 +40,9 @@ import {
   FileSpreadsheet,
   Tag,
   Key,
+  Star,
+  ArrowRight,
+  Globe,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import {
@@ -255,7 +258,7 @@ export default function CheatSheetClient() {
       toast.success(`Đã bỏ lưu "${name}"`);
     } else {
       next = [...bookmarkedIds, id];
-      toast.success(`Đã lưu "${name}" vào danh sách ôn tập ⭐`);
+      toast.success(`Đã lưu "${name}" vào danh sách ôn tập`);
     }
     setBookmarkedIds(next);
     try {
@@ -528,7 +531,7 @@ export default function CheatSheetClient() {
                       {highlightMatch(p)}
                     </span>
                     {pIdx < parts.length - 1 && (
-                      <span className="text-slate-400 font-bold text-[10px]">➜</span>
+                      <ArrowRight className="w-2.5 h-2.5 text-slate-400 inline mx-0.5" />
                     )}
                   </React.Fragment>
                 ))}
@@ -586,7 +589,10 @@ export default function CheatSheetClient() {
               </div>
               <div className="bg-white/5 border border-white/10 rounded-xl p-3 text-center backdrop-blur-xs">
                 <div className="text-2xl font-black text-rose-400">{bookmarkedIds.length}</div>
-                <div className="text-[11px] font-medium text-slate-300 uppercase tracking-wider">Đã bookmark ⭐</div>
+                <div className="flex items-center justify-center gap-1 text-[11px] font-medium text-slate-300 uppercase tracking-wider">
+                  <Star className="w-3 h-3 text-rose-400 fill-rose-400" />
+                  <span>Đã bookmark</span>
+                </div>
               </div>
             </div>
           </div>
@@ -602,7 +608,7 @@ export default function CheatSheetClient() {
                   type="text"
                   value={serviceQuery}
                   onChange={(e) => setServiceQuery(e.target.value)}
-                  placeholder="🔍 Tìm tên dịch vụ (EC2, S3, Aurora, SQS...)"
+                  placeholder="Tìm tên dịch vụ (EC2, S3, Aurora, SQS...)"
                   className="w-full pl-10 pr-9 py-2.5 bg-slate-900 border border-slate-700 rounded-xl text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition shadow-inner"
                 />
                 {serviceQuery && (
@@ -623,7 +629,7 @@ export default function CheatSheetClient() {
                   type="text"
                   value={keywordQuery}
                   onChange={(e) => setKeywordQuery(e.target.value)}
-                  placeholder="🏷️ Tìm từ khóa đề thi (VD: least operational, sub-ms, WORM, port 22...)"
+                  placeholder="Tìm từ khóa đề thi (VD: least operational, sub-ms, WORM, port 22...)"
                   className="w-full pl-10 pr-9 py-2.5 bg-slate-900 border border-amber-500/50 rounded-xl text-xs sm:text-sm text-white placeholder-slate-400 focus:outline-hidden focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition shadow-inner"
                 />
                 {keywordQuery && (
@@ -768,8 +774,8 @@ export default function CheatSheetClient() {
                     : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                 }`}
               >
-                <FileSpreadsheet className={`w-4 h-4 ${activeTab === 'all' ? 'text-amber-400' : 'text-slate-400'}`} />
-                <span>🌐 Tất cả chuyên đề</span>
+                <Globe className={`w-4 h-4 ${activeTab === 'all' ? 'text-amber-400' : 'text-slate-400'}`} />
+                <span>Tất cả chuyên đề</span>
                 <span
                   className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
                     activeTab === 'all' ? 'bg-amber-400 text-slate-950' : 'bg-slate-200 text-slate-700'
@@ -914,7 +920,7 @@ export default function CheatSheetClient() {
             </div>
             <h3 className="text-base font-bold text-slate-800">Không tìm thấy dịch vụ phù hợp</h3>
             <p className="text-xs text-slate-500 max-w-md mx-auto mt-1">
-              Thử tìm kiếm với từ khóa khác hoặc chuyển sang tab &quot;🌐 Tất cả chuyên đề&quot; để tìm trên toàn bộ 244 dịch vụ AWS.
+              Thử tìm kiếm với từ khóa khác hoặc chuyển sang tab &quot;Tất cả chuyên đề&quot; để tìm trên toàn bộ 244 dịch vụ AWS.
             </p>
             <button
               onClick={() => {

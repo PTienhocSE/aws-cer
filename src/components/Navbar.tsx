@@ -19,6 +19,7 @@ import {
   Menu,
   RotateCcw,
   Sparkles,
+  Star,
   User as UserIcon,
   X,
   Zap,
@@ -215,48 +216,41 @@ export default function Navbar() {
                   </button>
 
                   {moreDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-52 bg-white border border-slate-200 rounded-2xl shadow-xl p-1.5 z-50 animate-in fade-in zoom-in-95">
-                      <Link
-                        href="/practice"
-                        className="flex items-center px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
-                      >
-                        <Clock className="w-4 h-4 mr-2 text-blue-500" /> Lịch sử các phiên luyện tập
-                      </Link>
+                    <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 space-y-1">
                       <Link
                         href="/profile"
+                        onClick={() => setMoreDropdownOpen(false)}
                         className="flex items-center px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
                       >
-                        <UserIcon className="w-4 h-4 mr-2 text-amber-500" /> Trang cá nhân
+                        <UserIcon className="w-4 h-4 mr-2 text-amber-500 shrink-0" /> Trang cá nhân
                       </Link>
                       <Link
-                        href="/highlights"
+                        href="/review?tab=practice"
+                        onClick={() => setMoreDropdownOpen(false)}
                         className="flex items-center px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
                       >
-                        <Highlighter className="w-4 h-4 mr-2 text-pink-500" /> Đã Tô màu Highlight
+                        <Clock className="w-4 h-4 mr-2 text-blue-500 shrink-0" /> Lịch sử các phiên luyện tập
                       </Link>
                       <Link
                         href="/notes"
+                        onClick={() => setMoreDropdownOpen(false)}
                         className="flex items-center px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
                       >
-                        <FileText className="w-4 h-4 mr-2 text-indigo-500" /> Ghi chú cá nhân
+                        <FileText className="w-4 h-4 mr-2 text-indigo-500 shrink-0" /> Ghi chú cá nhân
                       </Link>
                       <Link
                         href="/bookmarks"
+                        onClick={() => setMoreDropdownOpen(false)}
                         className="flex items-center px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
                       >
-                        <Award className="w-4 h-4 mr-2 text-amber-500" /> Đã Bookmark
+                        <Star className="w-4 h-4 mr-2 text-amber-500 fill-amber-400 shrink-0" /> Đã Bookmark
                       </Link>
                       <Link
-                        href="/review?status=ANSWERED"
+                        href="/highlights"
+                        onClick={() => setMoreDropdownOpen(false)}
                         className="flex items-center px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
                       >
-                        <RotateCcw className="w-4 h-4 mr-2 text-amber-500" /> Xem lại câu đã làm
-                      </Link>
-                      <Link
-                        href="/review?status=INCORRECT"
-                        className="flex items-center px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
-                      >
-                        <CheckSquare className="w-4 h-4 mr-2 text-red-500" /> Các câu làm sai
+                        <Highlighter className="w-4 h-4 mr-2 text-pink-500 shrink-0" /> Đã Tô màu Highlight
                       </Link>
 
                       <button
@@ -265,16 +259,22 @@ export default function Navbar() {
                           setSyncDefaultTab('import');
                           setSyncModalOpen(true);
                         }}
-                        className="w-full flex items-center px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-amber-50/80 rounded-xl transition text-left cursor-pointer border-t border-slate-100 mt-1"
+                        className="w-full flex items-center p-2.5 hover:bg-amber-50/80 rounded-xl transition text-left cursor-pointer border-t border-slate-100 mt-1 group"
                       >
-                        <Upload className="w-4 h-4 mr-2 text-amber-600 shrink-0" />
-                        <div className="flex-1">
-                          <div className="flex items-center gap-1.5">
-                            <span>Nạp / Xuất Metadata</span>
-                            <span className="px-1.5 py-0.2 bg-amber-100 text-amber-900 text-[9px] font-black rounded-full">Máy cty</span>
+                        <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center mr-2.5 shrink-0 group-hover:bg-amber-200 transition">
+                          <Upload className="w-4 h-4 text-amber-700" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1.5">
+                            <span className="text-xs font-bold text-slate-800 group-hover:text-amber-900 truncate">
+                              Nạp / Xuất Metadata
+                            </span>
+                            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-md whitespace-nowrap shrink-0 border border-amber-200">
+                              Máy cty
+                            </span>
                           </div>
-                          <div className="text-[10px] font-medium text-slate-400 mt-0.5">
-                            Đồng bộ câu hỏi từ máy công ty
+                          <div className="text-[10px] font-medium text-slate-400 mt-0.5 truncate">
+                            Đồng bộ tiến độ học từ máy công ty
                           </div>
                         </div>
                       </button>
@@ -434,17 +434,8 @@ export default function Navbar() {
                 onClick={() => setMobileToolsOpen(false)}
                 className="p-3.5 rounded-2xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center space-x-2.5 active:scale-95 transition"
               >
-                <Award className="w-4.5 h-4.5 text-amber-600 shrink-0" />
+                <Star className="w-4.5 h-4.5 text-amber-500 fill-amber-400 shrink-0" />
                 <span>Đã Bookmark</span>
-              </Link>
-
-              <Link
-                href="/review/incorrect"
-                onClick={() => setMobileToolsOpen(false)}
-                className="p-3.5 rounded-2xl bg-red-50 text-red-700 border border-red-200 flex items-center space-x-2.5 active:scale-95 transition"
-              >
-                <CheckSquare className="w-4.5 h-4.5 text-red-600 shrink-0" />
-                <span>Các câu làm sai</span>
               </Link>
 
               <Link
@@ -471,7 +462,7 @@ export default function Navbar() {
                 className="p-3.5 rounded-2xl bg-amber-50 text-amber-800 border border-amber-200 flex items-center space-x-2.5 active:scale-95 transition"
               >
                 <FileSpreadsheet className="w-4.5 h-4.5 text-amber-500 shrink-0" />
-                <span>Cheat Sheet SAA-C03</span>
+                <span>Cheat Sheet SAA</span>
               </Link>
 
               <button
@@ -482,13 +473,19 @@ export default function Navbar() {
                 }}
                 className="p-3.5 rounded-2xl bg-amber-50/80 text-amber-950 border border-amber-300 flex items-center space-x-2.5 active:scale-95 transition col-span-2 text-left cursor-pointer shadow-xs"
               >
-                <Upload className="w-4.5 h-4.5 text-amber-600 shrink-0" />
-                <div className="flex-1">
-                  <div className="font-black text-xs flex items-center gap-1.5">
+                <div className="w-9 h-9 rounded-xl bg-amber-100 flex items-center justify-center shrink-0">
+                  <Upload className="w-4.5 h-4.5 text-amber-700" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-extrabold text-xs flex items-center justify-between gap-1.5">
                     <span>Nạp / Xuất Metadata</span>
-                    <span className="px-1.5 py-0.2 bg-amber-200 text-amber-950 text-[9px] font-black rounded-full">Máy cty</span>
+                    <span className="px-1.5 py-0.5 bg-amber-200 text-amber-950 text-[10px] font-bold rounded-md whitespace-nowrap shrink-0 border border-amber-300">
+                      Máy cty
+                    </span>
                   </div>
-                  <div className="text-[10px] text-amber-700 font-medium">Đồng bộ câu hỏi làm offline vào tài khoản</div>
+                  <div className="text-[10px] text-amber-700 font-medium mt-0.5 truncate">
+                    Đồng bộ dữ liệu học từ máy công ty
+                  </div>
                 </div>
               </button>
             </div>

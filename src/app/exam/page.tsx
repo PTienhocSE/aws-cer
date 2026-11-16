@@ -338,7 +338,7 @@ function MockExamConfigContent() {
               className="w-full p-3.5 bg-slate-50 border-2 border-slate-200 rounded-xl text-xs sm:text-sm font-bold text-slate-900 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 cursor-pointer transition shadow-2xs"
             >
               {groupedBanks.udemyTests.length > 0 && (
-                <optgroup label="⭐ SAA-C03 — Bộ 6 Đề thi Udemy (Chuẩn 65 câu/đề)">
+                <optgroup label="SAA-C03 — Bộ 6 Đề thi Udemy (Chuẩn 65 câu/đề)">
                   {groupedBanks.udemyTests.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name} (65 câu) • {b.version}
@@ -353,7 +353,7 @@ function MockExamConfigContent() {
               )}
 
               {groupedBanks.dojoTests.length > 0 && (
-                <optgroup label="⭐ SAA-C03 — Bộ 6 Đề thi Tutorials Dojo (Chuẩn 65 câu/đề)">
+                <optgroup label="SAA-C03 — Bộ 6 Đề thi Tutorials Dojo (Chuẩn 65 câu/đề)">
                   {groupedBanks.dojoTests.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name} (65 câu) • {b.version}
@@ -368,7 +368,7 @@ function MockExamConfigContent() {
               )}
 
               {groupedBanks.saaStandalone.length > 0 && (
-                <optgroup label="📚 SAA-C03 — Bộ đề thực chiến độc lập">
+                <optgroup label="SAA-C03 — Bộ đề thực chiến độc lập">
                   {groupedBanks.saaStandalone.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name} ({b.totalQuestions} câu)
@@ -378,7 +378,7 @@ function MockExamConfigContent() {
               )}
 
               {groupedBanks.others.length > 0 && (
-                <optgroup label="🌐 Chứng chỉ AWS khác">
+                <optgroup label="Chứng chỉ AWS khác">
                   {groupedBanks.others.map((b) => (
                     <option key={b.id} value={b.id}>
                       {b.name} ({b.totalQuestions} câu) — {b.certification?.code || 'AWS'}
