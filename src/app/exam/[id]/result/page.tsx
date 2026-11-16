@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -82,14 +82,15 @@ export default function MockExamResultPage() {
 
   const score = attempt.score ?? 720;
   const isPassed = attempt.isPassed ?? score >= 720;
-  const totalQuestions = attempt.answers?.length || attempt.totalQuestions || 65;
+  const answersList = attempt.answers || [];
+  const totalQuestions = answersList.length || attempt.totalQuestions || 65;
 
   let correctCount = 0;
   let incorrectCount = 0;
   let unansweredCount = 0;
   let flaggedCount = 0;
 
-  attempt.answers.forEach((ans: any) => {
+  answersList.forEach((ans: any) => {
     let parsedSelected: string[] = [];
     try {
       const raw = ans.selectedOptionIds;
@@ -112,7 +113,7 @@ export default function MockExamResultPage() {
   const accuracyPercent = totalQuestions > 0 ? Math.round((correctCount / totalQuestions) * 100) : 0;
 
   // Filter questions according to active tab
-  const filteredAnswers = attempt.answers.filter((ans: any) => {
+  const filteredAnswers = answersList.filter((ans: any) => {
     let parsedSelected: string[] = [];
     try {
       const raw = ans.selectedOptionIds;
@@ -133,13 +134,12 @@ export default function MockExamResultPage() {
     return true;
   });
 
-  const isAllCollapsed = useMemo(() => {
-    if (filteredAnswers.length === 0) return false;
-    return filteredAnswers.every((ans: any) => {
+  const isAllCollapsed =
+    filteredAnswers.length > 0 &&
+    filteredAnswers.every((ans: any) => {
       const qId = ans.id || ans.question?.id;
       return collapsedIds.has(qId);
     });
-  }, [filteredAnswers, collapsedIds]);
 
   const toggleCollapseAll = () => {
     if (isAllCollapsed) {
