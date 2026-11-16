@@ -11,11 +11,21 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
     const requestedBankId = searchParams.get('questionBankId');
-    const bankId = requestedBankId || authUser.activeQuestionBankId;
 
-    const where: any = { userId };
-    if (bankId) {
-      where.questionBankId = bankId;
+    const isGuestOrDemo =
+      authUser.role === 'GUEST' ||
+      authUser.email === 'guest@aws-cert.local' ||
+      authUser.email === 'guest@awscer.local' ||
+      authUser.email?.includes('guest') ||
+      req.headers.get('x-guest-mode') === '1' ||
+      userId === 'guest-learner';
+
+    const where: any = isGuestOrDemo
+      ? { OR: [{ userId }, { userId: 'guest-learner' }] }
+      : { userId };
+
+    if (requestedBankId && requestedBankId !== 'all') {
+      where.questionBankId = requestedBankId;
     }
 
     const sessions = await prisma.practiceSession.findMany({

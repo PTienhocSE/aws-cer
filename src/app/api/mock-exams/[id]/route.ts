@@ -34,7 +34,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     // Corporate network / guest mode resilience
     const isGuestOrDemo =
       authUser.role === 'GUEST' ||
+      authUser.email === 'guest@aws-cert.local' ||
       authUser.email === 'guest@awscer.local' ||
+      authUser.email?.includes('guest') ||
       req.headers.get('x-guest-mode') === '1' ||
       attempt.userId === 'guest-learner';
 
@@ -82,7 +84,9 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ i
 
     const isGuestOrDemo =
       authUser.role === 'GUEST' ||
+      authUser.email === 'guest@aws-cert.local' ||
       authUser.email === 'guest@awscer.local' ||
+      authUser.email?.includes('guest') ||
       req.headers.get('x-guest-mode') === '1' ||
       attempt.userId === 'guest-learner';
 

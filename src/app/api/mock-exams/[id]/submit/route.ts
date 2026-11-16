@@ -31,7 +31,9 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     const isGuestOrDemo =
       authUser.role === 'GUEST' ||
+      authUser.email === 'guest@aws-cert.local' ||
       authUser.email === 'guest@awscer.local' ||
+      authUser.email?.includes('guest') ||
       req.headers.get('x-guest-mode') === '1' ||
       attempt.userId === 'guest-learner';
 

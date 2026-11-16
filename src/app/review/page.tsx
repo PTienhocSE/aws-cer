@@ -15,6 +15,7 @@ import {
   ChevronUp,
   Clock,
   ExternalLink,
+  Eye,
   FileText,
   Filter,
   HelpCircle,
@@ -37,6 +38,7 @@ import { useAuthStore } from '@/store/authStore';
 import HighlightableText from '@/components/HighlightableText';
 import MarkdownExplanation from '@/components/MarkdownExplanation';
 import QuestionNoteBox from '@/components/QuestionNoteBox';
+import SessionReviewModal from '@/components/SessionReviewModal';
 
 async function fetchOverview() {
   const res = await fetch('/api/progress/overview', {
@@ -113,6 +115,14 @@ function ReviewContent() {
   const [activeNoteQuestionId, setActiveNoteQuestionId] = useState<string | null>(null);
   const [isStartingPractice, setIsStartingPractice] = useState<boolean>(false);
   const [localMockExams, setLocalMockExams] = useState<any[]>([]);
+  const [selectedSessionForModal, setSelectedSessionForModal] = useState<{
+    id: string;
+    type: 'practice' | 'exam';
+    title?: string;
+    isLocal?: boolean;
+    score?: number;
+    isPassed?: boolean;
+  } | null>(null);
 
   const { data: overview } = useQuery({
     queryKey: ['progressOverview', user?.activeQuestionBankId],
@@ -613,15 +623,27 @@ function ReviewContent() {
                         </div>
                       </div>
 
-                      <h3 className="text-sm font-extrabold text-slate-900 leading-snug">{s.title}</h3>
+                      <h3
+                        onClick={() =>
+                          setSelectedSessionForModal({
+                            id: s.id,
+                            type: 'practice',
+                            title: s.title || 'Phiên luyện tập',
+                          })
+                        }
+                        className="text-sm font-extrabold text-slate-900 leading-snug hover:text-amber-600 transition cursor-pointer"
+                        title="Bấm để xem lại các câu hỏi trong phiên này"
+                      >
+                        {s.title}
+                      </h3>
                       <div className="text-[11px] font-semibold text-slate-500">
                         {s.questionBank?.name || 'Ngân hàng SAA-C03'}
                       </div>
                     </div>
 
                     {/* Progress & Stats */}
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-3">
+                    <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2.5">
                         <div className="text-slate-600 font-bold">
                           <span className="text-emerald-600 font-black">{s.correctCount} đúng</span> /{' '}
                           <span className="text-rose-600 font-black">{s.incorrectCount} sai</span>
@@ -633,13 +655,40 @@ function ReviewContent() {
                         )}
                       </div>
 
-                      <Link
-                        href={`/practice/${s.id}`}
-                        className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-xl transition flex items-center gap-1 shadow-xs"
-                      >
-                        <span>{isDone ? 'Luyện lại' : 'Tiếp tục'}</span>
-                        <ArrowRight className="w-3.5 h-3.5" />
-                      </Link>
+                      <div className="flex items-center gap-1.5 flex-wrap w-full sm:w-auto justify-end">
+                        <button
+                          onClick={() =>
+                            setSelectedSessionForModal({
+                              id: s.id,
+                              type: 'practice',
+                              title: s.title || 'Phiên luyện tập',
+                            })
+                          }
+                          className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer"
+                          title="Xem nhanh các câu hỏi và đáp án trong phiên"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Xem nhanh</span>
+                        </button>
+
+                        <Link
+                          href={`/practice/${s.id}?mode=review`}
+                          className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs rounded-xl transition flex items-center gap-1 shadow-xs"
+                          title="Xem lại toàn bộ câu hỏi, giải thích và phân tích"
+                        >
+                          <FileText className="w-3.5 h-3.5" />
+                          <span>Xem lại phiên</span>
+                        </Link>
+
+                        <Link
+                          href={`/practice/${s.id}`}
+                          className="px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-xl transition flex items-center gap-1 shadow-xs"
+                          title={isDone ? 'Luyện lại phiên này từ đầu' : 'Làm tiếp các câu còn lại'}
+                        >
+                          <span>{isDone ? 'Luyện lại' : 'Làm tiếp'}</span>
+                          <ArrowRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </div>
                     </div>
                   </div>
                 );
@@ -769,7 +818,20 @@ function ReviewContent() {
 
                       <div className="flex items-baseline justify-between gap-2">
                         <div>
-                          <h3 className="text-sm font-extrabold text-slate-900 leading-snug">
+                          <h3
+                            onClick={() =>
+                              setSelectedSessionForModal({
+                                id: exam.id,
+                                type: 'exam',
+                                title: exam.questionBank?.name || 'Bài thi thử SAA-C03 (65 câu)',
+                                isLocal: exam.isLocal,
+                                score: exam.score,
+                                isPassed: exam.isPassed,
+                              })
+                            }
+                            className="text-sm font-extrabold text-slate-900 leading-snug hover:text-amber-600 transition cursor-pointer"
+                            title="Bấm để xem lại đề thi này"
+                          >
                             {exam.questionBank?.name || 'Bài thi thử SAA-C03 (65 câu)'}
                           </h3>
                           <div className="text-[11px] font-semibold text-slate-500 mt-0.5 flex items-center gap-2">
@@ -796,7 +858,7 @@ function ReviewContent() {
                     </div>
 
                     {/* Stats & Link */}
-                    <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs">
+                    <div className="pt-2 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                       <div className="flex items-center gap-2 text-slate-600 font-bold">
                         <span className="text-emerald-600 font-black">{exam.correctCount} đúng</span>
                         <span>/</span>
@@ -808,23 +870,43 @@ function ReviewContent() {
                         )}
                       </div>
 
-                      {isDone ? (
+                      <div className="flex items-center gap-1.5 flex-wrap w-full sm:w-auto justify-end">
+                        <button
+                          onClick={() =>
+                            setSelectedSessionForModal({
+                              id: exam.id,
+                              type: 'exam',
+                              title: exam.questionBank?.name || 'Bài thi thử SAA-C03 (65 câu)',
+                              isLocal: exam.isLocal,
+                              score: exam.score,
+                              isPassed: exam.isPassed,
+                            })
+                          }
+                          className="px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-extrabold text-xs rounded-xl transition flex items-center gap-1 cursor-pointer"
+                          title="Xem nhanh kết quả và giải thích bài thi"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>Xem nhanh</span>
+                        </button>
+
                         <Link
                           href={`/exam/${exam.id}/result`}
-                          className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-xl transition flex items-center gap-1 shadow-xs"
+                          className="px-3.5 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs rounded-xl transition flex items-center gap-1.5 shadow-xs"
                         >
                           <FileText className="w-3.5 h-3.5 text-amber-400" />
                           <span>Xem lại & Giải thích</span>
                         </Link>
-                      ) : (
-                        <Link
-                          href={`/exam/${exam.id}`}
-                          className="px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs rounded-xl transition flex items-center gap-1 shadow-xs"
-                        >
-                          <Play className="w-3.5 h-3.5 fill-slate-950" />
-                          <span>Làm tiếp</span>
-                        </Link>
-                      )}
+
+                        {!isDone && (
+                          <Link
+                            href={`/exam/${exam.id}`}
+                            className="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-slate-950 font-extrabold text-xs rounded-xl transition flex items-center gap-1 shadow-xs"
+                          >
+                            <Play className="w-3.5 h-3.5 fill-slate-950" />
+                            <span>Làm tiếp</span>
+                          </Link>
+                        )}
+                      </div>
                     </div>
                   </div>
                 );
@@ -1382,6 +1464,12 @@ function ReviewContent() {
       )}
         </div>
       )}
+      {/* Session Review Modal (Practice & Exam) */}
+      <SessionReviewModal
+        isOpen={!!selectedSessionForModal}
+        onClose={() => setSelectedSessionForModal(null)}
+        session={selectedSessionForModal}
+      />
     </div>
   );
 }

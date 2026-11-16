@@ -72,6 +72,13 @@ export default function MockExamRunnerPage() {
 
   const attempt = isLocal ? localAttempt : examData?.attempt;
 
+  // Auto-redirect if already submitted / completed
+  useEffect(() => {
+    if (attempt?.isCompleted && examAttemptId) {
+      router.replace(`/exam/${examAttemptId}/result`);
+    }
+  }, [attempt?.isCompleted, examAttemptId, router]);
+
   // Initialize timer and answer map (with LocalStorage restoration)
   useEffect(() => {
     if (!attempt || !examAttemptId) return;

@@ -35,7 +35,12 @@ export default function MockExamResultPage() {
     if (examAttemptId) {
       try {
         const raw = localStorage.getItem(`aws_cer_mock_exam_result_${examAttemptId}`);
-        if (raw) setLocalResult(JSON.parse(raw));
+        if (raw) {
+          setLocalResult(JSON.parse(raw));
+        } else {
+          const rawExam = localStorage.getItem(`aws_cer_mock_exam_${examAttemptId}`);
+          if (rawExam) setLocalResult({ attempt: JSON.parse(rawExam) });
+        }
       } catch {}
     }
   }, [examAttemptId]);
