@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PracticeSyncModal from '@/components/PracticeSyncModal';
+import ResetProgressModal from '@/components/ResetProgressModal';
 
 async function fetchOverview() {
   const res = await fetch('/api/progress/overview');
@@ -50,6 +51,7 @@ export default function ProfilePage() {
   const [nameInput, setNameInput] = useState(user?.name || '');
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [syncDefaultTab, setSyncDefaultTab] = useState<'export' | 'import'>('import');
+  const [resetModalOpen, setResetModalOpen] = useState(false);
 
   const { data: overview } = useQuery({
     queryKey: ['progressOverview'],
@@ -392,10 +394,46 @@ export default function ProfilePage() {
         </div>
       </div>
 
+      {/* 5. Clear Cache & Reset Progress Danger Zone */}
+      <div className="card-saas p-5 sm:p-6 space-y-4 border-l-4 border-l-rose-500">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 border-b border-slate-100 pb-3">
+          <div>
+            <h2 className="text-sm sm:text-base font-black text-slate-900 flex items-center">
+              <RotateCcw className="w-5 h-5 mr-2 text-rose-500 shrink-0" />
+              <span>Khôi phục bộ câu hỏi &amp; Xóa bộ nhớ tạm (Reset Learning Data)</span>
+            </h2>
+            <p className="text-[11px] sm:text-xs text-slate-500 mt-0.5">
+              Xóa sạch lịch sử trả lời, các phiên luyện tập và cache offline để bắt đầu ôn luyện lại từ câu số 1
+            </p>
+          </div>
+        </div>
+
+        <p className="text-xs text-slate-600 leading-relaxed">
+          Nếu bạn đã hoàn thành bộ đề hoặc muốn thi thử và luyện tập lại từ đầu như người mới, tính năng này sẽ đưa tất cả câu hỏi về trạng thái Chưa làm, đặt lại tiến độ về 0% và dọn dẹp bộ nhớ đệm trình duyệt.
+        </p>
+
+        <div className="pt-1">
+          <button
+            onClick={() => setResetModalOpen(true)}
+            className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold text-xs rounded-xl transition flex items-center gap-2 cursor-pointer shadow-xs active:scale-95"
+          >
+            <RotateCcw className="w-4 h-4 text-rose-600" />
+            <span>Xóa cache &amp; Khôi phục từ đầu bộ câu hỏi</span>
+          </button>
+        </div>
+      </div>
+
       <PracticeSyncModal
         isOpen={syncModalOpen}
         onClose={() => setSyncModalOpen(false)}
         defaultTab={syncDefaultTab}
+      />
+
+      <ResetProgressModal
+        isOpen={resetModalOpen}
+        onClose={() => setResetModalOpen(false)}
+        currentBankId={overview?.activeQuestionBankId || user?.activeQuestionBankId}
+        currentBankName={overview?.activeCertification?.name}
       />
     </div>
   );

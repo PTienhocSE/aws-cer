@@ -30,6 +30,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import PracticeSyncModal from '@/components/PracticeSyncModal';
+import ResetProgressModal from '@/components/ResetProgressModal';
 
 async function fetchOverview() {
   const res = await fetch('/api/progress/overview');
@@ -46,6 +47,7 @@ export default function Navbar() {
   const [mobileToolsOpen, setMobileToolsOpen] = useState(false);
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [syncDefaultTab, setSyncDefaultTab] = useState<'export' | 'import'>('import');
+  const [resetModalOpen, setResetModalOpen] = useState(false);
 
   const { data: overview } = useQuery({
     queryKey: ['progressOverview'],
@@ -278,6 +280,31 @@ export default function Navbar() {
                           </div>
                         </div>
                       </button>
+
+                      <button
+                        onClick={() => {
+                          setMoreDropdownOpen(false);
+                          setResetModalOpen(true);
+                        }}
+                        className="w-full flex items-center p-2.5 hover:bg-rose-50/80 rounded-xl transition text-left cursor-pointer border-t border-slate-100 group"
+                      >
+                        <div className="w-8 h-8 rounded-lg bg-rose-100 flex items-center justify-center mr-2.5 shrink-0 group-hover:bg-rose-200 transition">
+                          <RotateCcw className="w-4 h-4 text-rose-600" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1.5">
+                            <span className="text-xs font-bold text-slate-800 group-hover:text-rose-900 truncate">
+                              Xóa cache &amp; Khôi phục
+                            </span>
+                            <span className="px-1.5 py-0.5 bg-rose-100 text-rose-700 text-[10px] font-bold rounded-md whitespace-nowrap shrink-0 border border-rose-200">
+                              Làm lại
+                            </span>
+                          </div>
+                          <div className="text-[10px] font-medium text-slate-400 mt-0.5 truncate">
+                            Xóa lịch sử để ôn luyện lại từ câu 1
+                          </div>
+                        </div>
+                      </button>
                     </div>
                   )}
                 </div>
@@ -488,6 +515,29 @@ export default function Navbar() {
                   </div>
                 </div>
               </button>
+
+              <button
+                onClick={() => {
+                  setMobileToolsOpen(false);
+                  setResetModalOpen(true);
+                }}
+                className="p-3.5 rounded-2xl bg-rose-50 text-rose-950 border border-rose-200 flex items-center space-x-2.5 active:scale-95 transition col-span-2 text-left cursor-pointer"
+              >
+                <div className="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+                  <RotateCcw className="w-4.5 h-4.5 text-rose-600" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="font-extrabold text-xs text-rose-900 flex items-center justify-between gap-1.5">
+                    <span>Xóa cache &amp; Khôi phục</span>
+                    <span className="px-1.5 py-0.5 bg-rose-100 text-rose-700 text-[10px] font-bold rounded-md whitespace-nowrap shrink-0 border border-rose-200">
+                      Làm lại
+                    </span>
+                  </div>
+                  <div className="text-[10px] text-rose-700 font-medium mt-0.5 truncate">
+                    Đặt lại toàn bộ câu hỏi về Chưa làm để bắt đầu lại
+                  </div>
+                </div>
+              </button>
             </div>
           </div>
         </div>
@@ -554,6 +604,13 @@ export default function Navbar() {
         isOpen={syncModalOpen}
         onClose={() => setSyncModalOpen(false)}
         defaultTab={syncDefaultTab}
+      />
+
+      <ResetProgressModal
+        isOpen={resetModalOpen}
+        onClose={() => setResetModalOpen(false)}
+        currentBankId={overview?.activeQuestionBankId || user?.activeQuestionBankId}
+        currentBankName={overview?.activeCertification?.name}
       />
     </>
   );

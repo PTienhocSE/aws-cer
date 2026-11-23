@@ -171,6 +171,33 @@ export function clearOfflineAnswers(sessionId?: string) {
 }
 
 /**
+ * Xóa toàn bộ cache học tập trên localStorage trình duyệt (offline sessions, mock exams, timer, kết quả thi)
+ */
+export function clearAllLearningCache() {
+  if (typeof window === 'undefined' || !window.localStorage) return;
+  try {
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      if (
+        key.startsWith('aws_cer_session_') ||
+        key === OFFLINE_SESSIONS_KEY ||
+        key.startsWith('aws_cer_mock_exam_') ||
+        key.startsWith('aws_cer_mock_exam_timer_') ||
+        key.startsWith('aws_cer_mock_exam_answers_') ||
+        key.startsWith('aws_cer_mock_exam_result_')
+      ) {
+        keysToRemove.push(key);
+      }
+    }
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+  } catch (err) {
+    console.error('Error clearing all learning cache:', err);
+  }
+}
+
+/**
  * Tải danh sách metadata về máy thành file JSON
  */
 export function downloadMetadataFile(records: QuestionAnswerMetadata[], filename?: string) {

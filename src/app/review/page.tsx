@@ -39,6 +39,7 @@ import HighlightableText from '@/components/HighlightableText';
 import MarkdownExplanation from '@/components/MarkdownExplanation';
 import QuestionNoteBox from '@/components/QuestionNoteBox';
 import SessionReviewModal from '@/components/SessionReviewModal';
+import ResetProgressModal from '@/components/ResetProgressModal';
 
 async function fetchOverview() {
   const res = await fetch('/api/progress/overview', {
@@ -115,6 +116,7 @@ function ReviewContent() {
   const [activeNoteQuestionId, setActiveNoteQuestionId] = useState<string | null>(null);
   const [isStartingPractice, setIsStartingPractice] = useState<boolean>(false);
   const [localMockExams, setLocalMockExams] = useState<any[]>([]);
+  const [resetModalOpen, setResetModalOpen] = useState(false);
   const [selectedSessionForModal, setSelectedSessionForModal] = useState<{
     id: string;
     type: 'practice' | 'exam';
@@ -469,6 +471,15 @@ function ReviewContent() {
           >
             <Play className="w-3.5 h-3.5 mr-1.5 fill-white" />
             Luyện tập bộ lọc hiện tại
+          </button>
+
+          <button
+            onClick={() => setResetModalOpen(true)}
+            className="px-3 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold text-xs rounded-xl shadow-xs flex items-center justify-center transition active:scale-95 whitespace-nowrap shrink-0 cursor-pointer"
+            title="Xóa cache để xóa lịch sử làm bài và khôi phục lại từ đầu bộ câu hỏi"
+          >
+            <RotateCcw className="w-3.5 h-3.5 mr-1.5 text-rose-600" />
+            Khôi phục từ đầu
           </button>
         </div>
       </div>
@@ -1469,6 +1480,19 @@ function ReviewContent() {
         isOpen={!!selectedSessionForModal}
         onClose={() => setSelectedSessionForModal(null)}
         session={selectedSessionForModal}
+      />
+
+      {/* Reset Progress & Clear Cache Modal */}
+      <ResetProgressModal
+        isOpen={resetModalOpen}
+        onClose={() => setResetModalOpen(false)}
+        currentBankId={currentBankId}
+        currentBankName={overview?.activeCertification?.name}
+        onSuccess={() => {
+          refetch();
+          refetchPractice();
+          refetchMockExams();
+        }}
       />
     </div>
   );
