@@ -7,14 +7,14 @@ import {
   Award,
   CheckSquare,
   Clock,
+  Eye,
   ShieldCheck,
+  SlidersHorizontal,
+  TimerOff,
   Zap,
   BookOpen,
   Layers,
   Sparkles,
-  HelpCircle,
-  Shuffle,
-  AlertCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -60,6 +60,9 @@ function MockExamConfigContent() {
   const [domainId, setDomainId] = useState<string>('');
   const [keepOriginalOrder, setKeepOriginalOrder] = useState<boolean>(true);
   const [safeMode, setSafeMode] = useState<boolean>(false);
+  const [examMode, setExamMode] = useState<'STANDARD' | 'PRACTICE'>('STANDARD');
+  const [timerEnabled, setTimerEnabled] = useState<boolean>(false);
+  const [showAnswerAfterEach, setShowAnswerAfterEach] = useState<boolean>(true);
   const [loading, setLoading] = useState(false);
 
   // 1. Load Question Banks
@@ -170,16 +173,47 @@ function MockExamConfigContent() {
     return { udemyTests, udemyMax, dojoTests, dojoMax, saaStandalone, others };
   }, [banksList]);
 
+  const persistExamSettings = (attemptId: string) => {
+    const effectiveTimerEnabled = examMode === 'STANDARD' ? true : timerEnabled;
+    const effectiveShowAnswer = examMode === 'STANDARD' ? false : showAnswerAfterEach;
+    try {
+      localStorage.setItem(
+        `aws_cer_mock_exam_settings_${attemptId}`,
+        JSON.stringify({
+          examMode,
+          timerEnabled: effectiveTimerEnabled,
+          showAnswerAfterEach: effectiveShowAnswer,
+        })
+      );
+    } catch {}
+    return { effectiveTimerEnabled, effectiveShowAnswer };
+  };
+
+  const buildExamRoute = (attemptId: string) => {
+    const { effectiveTimerEnabled, effectiveShowAnswer } = persistExamSettings(attemptId);
+    if (examMode === 'PRACTICE') {
+      return `/exam/${attemptId}?mode=practice&timer=${effectiveTimerEnabled ? '1' : '0'}&instant=${
+        effectiveShowAnswer ? '1' : '0'
+      }`;
+    }
+    return `/exam/${attemptId}`;
+  };
+
   // Start local resilient exam (Client-Side Safe Mode)
   const startLocalExam = async (bankId: string) => {
     try {
       const toastId = toast.loading('Đang khởi tạo đề thi an toàn (Kháng mạng công ty)...');
 
       // Fetch questions via GET (never blocked by corporate proxy!)
-      const res = await fetch(`/api/questions?questionBankId=${bankId}&limit=${totalQuestions}&page=1`, {
-        headers: { 'x-guest-mode': '1' },
-        credentials: 'include',
-      });
+      const fetchLimit = !keepOriginalOrder ? Math.max(totalQuestions, 500) : totalQuestions;
+      const domainQuery = domainId ? `&domainId=${encodeURIComponent(domainId)}` : '';
+      const res = await fetch(
+        `/api/questions?questionBankId=${encodeURIComponent(bankId)}&limit=${fetchLimit}&page=1${domainQuery}`,
+        {
+          headers: { 'x-guest-mode': '1' },
+          credentials: 'include',
+        }
+      );
 
       if (!res.ok) throw new Error('Không thể tải câu hỏi từ server');
       const data = await res.json();
@@ -214,23 +248,28 @@ function MockExamConfigContent() {
           question: {
             id: q.id,
             rawId: q.rawId,
-            type: q.type,
-            questionText: q.questionText,
-            explanationText: q.explanationText,
-            options: q.options.map((o: any) => ({
+            type: (q.type || 'SINGLE_CHOICE').toUpperCase(),
+            questionText: q.questionText || q.question || '',
+            explanationText: q.explanationText ?? q.explanation ?? null,
+            options: (q.options || []).map((o: any) => ({
               id: o.id,
               text: o.text,
               isCorrect: o.isCorrect,
             })),
-            domain: q.domain,
+            domain: q.domain || {
+              id: q.domainId,
+              code: q.domainCode,
+              name: q.domainName || 'AWS Domain',
+            },
           },
         })),
       };
 
       localStorage.setItem(`aws_cer_mock_exam_${localAttemptId}`, JSON.stringify(localAttempt));
+      const targetUrl = buildExamRoute(localAttemptId);
       toast.dismiss(toastId);
       toast.success('Đã tạo đề thi thành công! Bài làm được bảo vệ an toàn.');
-      router.push(`/exam/${localAttemptId}`);
+      router.push(targetUrl);
     } catch (err) {
       console.error('Local exam error:', err);
       alert('Lỗi kết nối khi tải câu hỏi. Vui lòng kiểm tra lại đường truyền!');
@@ -279,7 +318,7 @@ function MockExamConfigContent() {
 
       const data = await res.json();
       if (data.examAttemptId) {
-        router.push(`/exam/${data.examAttemptId}`);
+        router.push(buildExamRoute(data.examAttemptId));
       } else {
         await startLocalExam(selectedBankId);
       }
@@ -404,7 +443,173 @@ function MockExamConfigContent() {
           )}
         </div>
 
-        {/* 2. Thứ tự câu hỏi & Giữ nguyên không trộn (Task 2) */}
+        {/* 2. Chọn chế độ thi (Standard vs Practice Mock Exam) */}
+        <div>
+          <label className="block text-xs font-extrabold text-slate-900 uppercase mb-3 flex items-center">
+            <SlidersHorizontal className="w-3.5 h-3.5 mr-1.5 text-amber-500" />
+            Chọn chế độ làm bài:
+          </label>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <button
+              type="button"
+              onClick={() => setExamMode('STANDARD')}
+              className={`p-4 rounded-2xl border-2 text-left transition cursor-pointer ${
+                examMode === 'STANDARD'
+                  ? 'border-amber-500 bg-amber-50/70 text-slate-950 shadow-xs'
+                  : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center space-x-2 text-sm font-extrabold text-slate-950">
+                  <Award className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Thi thử chuẩn</span>
+                </div>
+                {examMode === 'STANDARD' && (
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-md bg-amber-500 text-slate-950">
+                    Đang chọn
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
+                Mô phỏng kỳ thi AWS thật • Bắt buộc đếm ngược giờ và chỉ xem đáp án sau khi nộp bài.
+              </p>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setExamMode('PRACTICE')}
+              className={`p-4 rounded-2xl border-2 text-left transition cursor-pointer ${
+                examMode === 'PRACTICE'
+                  ? 'border-amber-500 bg-amber-50/70 text-slate-950 shadow-xs'
+                  : 'border-slate-200 hover:border-slate-300 bg-white text-slate-700'
+              }`}
+            >
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center space-x-2 text-sm font-extrabold text-slate-950">
+                  <Sparkles className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Luyện tập thi thử</span>
+                </div>
+                <span
+                  className={`text-[10px] font-extrabold px-2 py-0.5 rounded-md ${
+                    examMode === 'PRACTICE'
+                      ? 'bg-amber-500 text-slate-950'
+                      : 'bg-indigo-50 text-indigo-700 border border-indigo-200'
+                  }`}
+                >
+                  {examMode === 'PRACTICE' ? 'Đang chọn' : 'Linh hoạt'}
+                </span>
+              </div>
+              <p className="text-[11px] text-slate-600 mt-1.5 leading-relaxed">
+                Luyện đề chủ động • Tuỳ chọn bật/tắt đếm giờ và hiển thị đáp án ngay sau mỗi câu hỏi.
+              </p>
+            </button>
+          </div>
+
+          {examMode === 'PRACTICE' && (
+            <div className="mt-3 p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-3 shadow-sm">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-extrabold uppercase tracking-wider text-amber-400">
+                  Tuỳ chọn chế độ luyện tập thi thử
+                </span>
+                <span className="text-[11px] text-slate-400">Có thể bật/tắt lại trong lúc làm bài</span>
+              </div>
+
+              {/* Feature 1: Toggle Timer */}
+              <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                <div className="flex items-start space-x-2.5">
+                  {timerEnabled ? (
+                    <Clock className="w-4 h-4 text-amber-400 shrink-0 mt-0.5" />
+                  ) : (
+                    <TimerOff className="w-4 h-4 text-slate-400 shrink-0 mt-0.5" />
+                  )}
+                  <div>
+                    <div className="text-xs font-extrabold text-white flex items-center gap-2">
+                      <span>Đếm giờ làm bài</span>
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          timerEnabled
+                            ? 'bg-amber-500/20 text-amber-300 border border-amber-400/30'
+                            : 'bg-slate-700 text-slate-300'
+                        }`}
+                      >
+                        {timerEnabled ? 'Đang bật' : 'Đang tắt'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      {timerEnabled
+                        ? `Đếm ngược ${timeLimitMinutes} phút và tự động nộp bài khi hết giờ.`
+                        : 'Tắt đồng hồ đếm ngược — làm bài thoải mái không áp lực thời gian.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={timerEnabled}
+                  aria-label="Bật hoặc tắt đếm giờ làm bài"
+                  onClick={() => setTimerEnabled((v) => !v)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
+                    timerEnabled ? 'bg-amber-500' : 'bg-slate-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                      timerEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+
+              {/* Feature 2: Toggle Show Answer After Each Question */}
+              <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-white/5 border border-white/10">
+                <div className="flex items-start space-x-2.5">
+                  <Eye
+                    className={`w-4 h-4 shrink-0 mt-0.5 ${
+                      showAnswerAfterEach ? 'text-emerald-400' : 'text-slate-400'
+                    }`}
+                  />
+                  <div>
+                    <div className="text-xs font-extrabold text-white flex items-center gap-2">
+                      <span>Hiển thị đáp án sau mỗi câu hỏi</span>
+                      <span
+                        className={`text-[10px] font-bold px-1.5 py-0.5 rounded ${
+                          showAnswerAfterEach
+                            ? 'bg-emerald-500/20 text-emerald-300 border border-emerald-400/30'
+                            : 'bg-slate-700 text-slate-300'
+                        }`}
+                      >
+                        {showAnswerAfterEach ? 'Đang bật' : 'Đang tắt'}
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-slate-300 mt-0.5">
+                      {showAnswerAfterEach
+                        ? 'Cho phép kiểm tra đúng/sai và xem giải thích song ngữ ngay sau từng câu.'
+                        : 'Ẩn đáp án trong lúc làm, chỉ chấm điểm và xem giải thích sau khi nộp bài.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={showAnswerAfterEach}
+                  aria-label="Bật hoặc tắt hiển thị đáp án sau mỗi câu hỏi"
+                  onClick={() => setShowAnswerAfterEach((v) => !v)}
+                  className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full transition-colors cursor-pointer ${
+                    showAnswerAfterEach ? 'bg-emerald-500' : 'bg-slate-600'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                      showAnswerAfterEach ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* 3. Thứ tự câu hỏi & Giữ nguyên không trộn (Task 2) */}
         <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
           <label className="flex items-start space-x-3 cursor-pointer">
             <input
@@ -479,7 +684,9 @@ function MockExamConfigContent() {
                 </span>
               </div>
               <div className="text-xs text-slate-500 mt-1">
-                Thời gian: 130 phút • Điểm đạt: 720/1000
+                {examMode === 'PRACTICE' && !timerEnabled
+                  ? 'Không giới hạn giờ • Luyện tập toàn bộ đề'
+                  : 'Thời gian: 130 phút • Điểm đạt: 720/1000'}
               </div>
             </button>
 
@@ -503,7 +710,9 @@ function MockExamConfigContent() {
                 </span>
               </div>
               <div className="text-xs text-slate-500 mt-1">
-                Thời gian: 40 phút • Thích hợp luyện nhanh
+                {examMode === 'PRACTICE' && !timerEnabled
+                  ? 'Không giới hạn giờ • Thích hợp luyện nhanh'
+                  : 'Thời gian: 40 phút • Thích hợp luyện nhanh'}
               </div>
             </button>
           </div>
@@ -542,7 +751,11 @@ function MockExamConfigContent() {
           ) : (
             <span className="flex items-center">
               <CheckSquare className="w-4 h-4 mr-2 text-amber-400" />
-              Bắt đầu làm bài thi ({totalQuestions} câu • {timeLimitMinutes} phút)
+              {examMode === 'PRACTICE'
+                ? `Bắt đầu luyện tập thi thử (${totalQuestions} câu • ${
+                    timerEnabled ? `${timeLimitMinutes} phút` : 'Không đếm giờ'
+                  })`
+                : `Bắt đầu làm bài thi (${totalQuestions} câu • ${timeLimitMinutes} phút)`}
             </span>
           )}
         </button>

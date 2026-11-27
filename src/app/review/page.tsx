@@ -420,7 +420,7 @@ function ReviewContent() {
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-20">
       {/* Top Banner & Title */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-white p-6 rounded-3xl border border-slate-200/90 shadow-xs">
         <div className="space-y-1">
           <div className="flex items-center space-x-2 text-xs font-black uppercase tracking-wider text-amber-600">
             <RotateCcw className="w-4 h-4" />
@@ -440,7 +440,7 @@ function ReviewContent() {
         </div>
 
         {/* Practice CTA Buttons: strictly in 1 single row, aligned to the right, never wrapping */}
-        <div className="flex items-center gap-2 flex-nowrap shrink-0 lg:ml-auto overflow-x-auto w-full lg:w-auto pb-1 lg:pb-0">
+        <div className="flex items-center justify-start md:justify-end gap-2 flex-nowrap shrink-0 md:ml-auto overflow-x-auto max-w-full pb-1 md:pb-0">
           <button
             onClick={() => setActiveTab('practice')}
             className={`px-3.5 py-2.5 font-extrabold text-xs rounded-xl border shadow-xs flex items-center justify-center transition active:scale-95 whitespace-nowrap shrink-0 cursor-pointer ${

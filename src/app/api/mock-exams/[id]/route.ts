@@ -11,6 +11,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     const attempt = await prisma.mockExamAttempt.findUnique({
       where: { id },
       include: {
+        questionBank: {
+          select: { id: true, name: true },
+        },
         answers: {
           orderBy: { id: 'asc' },
           include: {
@@ -44,8 +47,10 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Không tìm thấy bài thi' }, { status: 404 });
     }
 
-    // If the attempt is still in progress, mask `isCorrect` so the examinee cannot peek answers in network devtools
-    if (!attempt.isCompleted) {
+    const isPracticeMode = req.nextUrl.searchParams.get('mode') === 'practice';
+
+    // If the attempt is still in progress in standard exam mode, mask `isCorrect` so the examinee cannot peek answers in network devtools
+    if (!attempt.isCompleted && !isPracticeMode) {
       const sanitizedAnswers = attempt.answers.map((ans) => ({
         ...ans,
         isCorrect: null,

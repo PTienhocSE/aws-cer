@@ -1,13 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAuthUserOrDemo } from '@/lib/auth';
+import { getAuthenticatedUser } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   try {
-    const authUser = await getAuthUserOrDemo(req);
-    if (!authUser) {
-      return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
-    }
+    const authUser = await getAuthenticatedUser(req);
 
     const body = await req.json().catch(() => ({}));
     const {
@@ -17,17 +14,26 @@ export async function POST(req: NextRequest) {
       clearNotesAndBookmarks = false,
     } = body;
 
-    const userId = authUser.userId;
-    const isGuestOrDemo =
-      authUser.role === 'GUEST' ||
-      authUser.email === 'guest@aws-cert.local' ||
-      authUser.email === 'guest@awscer.local' ||
-      authUser.email?.includes('guest') ||
-      req.headers.get('x-guest-mode') === '1' ||
-      userId === 'guest-learner';
+    // Collect target user IDs
+    let userIds: string[] = [];
 
-    // Target user IDs (supporting guest/corporate learner resilience)
-    const userIds = isGuestOrDemo ? [userId, 'guest-learner'] : [userId];
+    if (authUser) {
+      userIds.push(authUser.userId);
+      if (
+        authUser.role === 'GUEST' ||
+        authUser.email?.includes('guest') ||
+        authUser.userId === 'guest-learner'
+      ) {
+        userIds.push('guest-learner');
+      }
+    } else {
+      // For unauthenticated visitors calling reset, target any guest users in database
+      const guestUsers = await prisma.user.findMany({
+        where: { email: { contains: 'guest' } },
+        select: { id: true },
+      });
+      userIds = [...guestUsers.map((g) => g.id), 'guest-learner'];
+    }
 
     // Determine questionBankId filter (null or 'all' means reset all banks)
     const targetBankId =

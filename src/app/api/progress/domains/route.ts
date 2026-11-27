@@ -1,17 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAuthUserOrDemo } from '@/lib/auth';
+import { getAuthenticatedUser } from '@/lib/auth';
 import { getNextQuestionIndex } from '@/lib/practice-selection';
 
 export async function GET(req: NextRequest) {
   try {
-    const authUser = await getAuthUserOrDemo(req);
-    if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
-    const userId = authUser.userId;
+    const authUser = await getAuthenticatedUser(req);
+    const userId = authUser?.userId || null;
 
     // Support questionBankId query param, fallback to activeQuestionBankId or first published bank
     const requestedBankId = req.nextUrl.searchParams.get('questionBankId');
-    let activeBankId = requestedBankId || authUser.activeQuestionBankId;
+    let activeBankId = requestedBankId || authUser?.activeQuestionBankId;
     if (!activeBankId) {
       const defaultBank = await prisma.questionBank.findFirst({ where: { status: 'PUBLISHED' } });
       activeBankId = defaultBank?.id || 'aws-saa-c03-v1';
@@ -35,38 +34,40 @@ export async function GET(req: NextRequest) {
       },
     });
 
-    const [userProgresses, domainSessions] = await Promise.all([
-      prisma.userQuestionProgress.findMany({
-        where: {
-          userId,
-          questionBankId: activeBankId,
-        },
-        select: {
-          questionId: true,
-          lastAnswerCorrect: true,
-          question: {
-            select: { domainId: true },
-          },
-        },
-      }),
-      prisma.practiceSession.findMany({
-        where: {
-          userId,
-          questionBankId: activeBankId,
-          mode: 'DOMAIN',
-          sourceId: { in: domains.map((domain) => domain.id) },
-        },
-        orderBy: { updatedAt: 'desc' },
-        select: {
-          id: true,
-          sourceId: true,
-          answers: {
-            select: { questionId: true, isCorrect: true },
-            orderBy: { createdAt: 'asc' },
-          },
-        },
-      }),
-    ]);
+    const [userProgresses, domainSessions] = userId
+      ? await Promise.all([
+          prisma.userQuestionProgress.findMany({
+            where: {
+              userId,
+              questionBankId: activeBankId,
+            },
+            select: {
+              questionId: true,
+              lastAnswerCorrect: true,
+              question: {
+                select: { domainId: true },
+              },
+            },
+          }),
+          prisma.practiceSession.findMany({
+            where: {
+              userId,
+              questionBankId: activeBankId,
+              mode: 'DOMAIN',
+              sourceId: { in: domains.map((domain) => domain.id) },
+            },
+            orderBy: { updatedAt: 'desc' },
+            select: {
+              id: true,
+              sourceId: true,
+              answers: {
+                select: { questionId: true, isCorrect: true },
+                orderBy: { createdAt: 'asc' },
+              },
+            },
+          }),
+        ])
+      : [[], []];
 
     const domainSessionMap = new Map<string, (typeof domainSessions)[number]>();
     for (const session of domainSessions) {

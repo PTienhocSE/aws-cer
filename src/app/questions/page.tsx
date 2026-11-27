@@ -20,7 +20,10 @@ import {
   Highlighter,
   Sparkles,
   Eye,
+  Trash2,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
+import { clearAllLearningCache } from '@/lib/practice-sync';
 import QuestionNoteBox from '@/components/QuestionNoteBox';
 import HighlightableText from '@/components/HighlightableText';
 import MarkdownExplanation from '@/components/MarkdownExplanation';
@@ -64,6 +67,7 @@ export default function QuestionBankPage() {
 
   const [selectedQuestionId, setSelectedQuestionId] = useState<string | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [isClearingCache, setIsClearingCache] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -112,6 +116,37 @@ export default function QuestionBankPage() {
     }
   };
 
+  const handleClearCache = async () => {
+    if (!confirm('Bạn có chắc chắn muốn xóa toàn bộ cache câu hỏi và khôi phục trạng thái ban đầu (Chưa học)?')) {
+      return;
+    }
+    setIsClearingCache(true);
+    try {
+      // 1. Clear all localStorage learning and question cache
+      clearAllLearningCache();
+
+      // 2. Clear server-side progress
+      await fetch('/api/progress/reset', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ questionBankId: 'all', clearSessions: true, clearExams: true }),
+      }).catch(() => null);
+
+      // 3. Invalidate TanStack query caches to refresh UI
+      await queryClient.invalidateQueries({ queryKey: ['questions'] });
+      await queryClient.invalidateQueries({ queryKey: ['questionDetail'] });
+      await queryClient.invalidateQueries({ queryKey: ['progressOverview'] });
+      await queryClient.invalidateQueries({ queryKey: ['domains'] });
+
+      toast.success('Đã xóa toàn bộ cache câu hỏi! Trạng thái đã được khôi phục về ban đầu.');
+    } catch (err) {
+      console.error(err);
+      toast.error('Có lỗi xảy ra khi xóa cache câu hỏi.');
+    } finally {
+      setIsClearingCache(false);
+    }
+  };
+
   const selectedQuestion = detailData?.question;
 
   return (
@@ -125,12 +160,24 @@ export default function QuestionBankPage() {
           </p>
         </div>
 
-        <button
-          onClick={handleStartPracticeFiltered}
-          className="px-5 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition flex items-center"
-        >
-          <Play className="w-4 h-4 mr-1.5 fill-slate-950" /> Bắt đầu luyện tập từ bộ lọc này
-        </button>
+        <div className="flex items-center gap-2 flex-wrap">
+          <button
+            onClick={handleClearCache}
+            disabled={isClearingCache}
+            className="px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-extrabold text-xs rounded-xl shadow-xs transition active:scale-95 flex items-center cursor-pointer disabled:opacity-50"
+            title="Xóa cache để xóa lịch sử làm bài và khôi phục lại từ đầu bộ câu hỏi"
+          >
+            <RotateCcw className={`w-3.5 h-3.5 mr-1.5 ${isClearingCache ? 'animate-spin' : ''}`} />
+            {isClearingCache ? 'Đang xóa...' : 'Xóa cache câu hỏi'}
+          </button>
+
+          <button
+            onClick={handleStartPracticeFiltered}
+            className="px-5 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-extrabold text-xs rounded-xl shadow-md transition flex items-center cursor-pointer"
+          >
+            <Play className="w-4 h-4 mr-1.5 fill-slate-950" /> Bắt đầu luyện tập từ bộ lọc này
+          </button>
+        </div>
       </div>
 
       {/* Filter & Quick Tabs Bar */}

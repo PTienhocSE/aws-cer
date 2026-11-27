@@ -1,26 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAuthUserOrDemo } from '@/lib/auth';
+import { getAuthenticatedUser } from '@/lib/auth';
 
 export async function GET(req: NextRequest) {
   try {
-    const authUser = await getAuthUserOrDemo(req);
-    if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
-    const userId = authUser.userId;
+    const authUser = await getAuthenticatedUser(req);
+    const userId = authUser?.userId || null;
     const { searchParams } = new URL(req.url);
 
     const requestedBankId = searchParams.get('questionBankId');
-    let activeBankId = requestedBankId || authUser.activeQuestionBankId;
+    let activeBankId = requestedBankId || authUser?.activeQuestionBankId || null;
 
     if (!activeBankId) {
-      // Find user's first enrolled bank or any published bank
-      const enrolled = await prisma.userQuestionBankEnrollment.findFirst({
-        where: { userId },
-        orderBy: { enrolledAt: 'desc' },
-      });
-      if (enrolled) {
-        activeBankId = enrolled.questionBankId;
-      } else {
+      if (userId) {
+        const enrolled = await prisma.userQuestionBankEnrollment.findFirst({
+          where: { userId },
+          orderBy: { enrolledAt: 'desc' },
+        });
+        if (enrolled) {
+          activeBankId = enrolled.questionBankId;
+        }
+      }
+      if (!activeBankId) {
         const defaultBank = await prisma.questionBank.findFirst({ where: { status: 'PUBLISHED' } });
         activeBankId = defaultBank?.id || null;
       }
@@ -49,22 +50,89 @@ export async function GET(req: NextRequest) {
       ];
     }
 
-    if (status === 'BOOKMARKED') {
-      where.bookmarks = { some: { userId } };
-    } else if (status === 'INCORRECT') {
-      where.progresses = { some: { userId, lastAnswerCorrect: false } };
-    } else if (status === 'CORRECT') {
-      where.progresses = { some: { userId, lastAnswerCorrect: true } };
-    } else if (status === 'MASTERED') {
-      where.progresses = { some: { userId, masteryStatus: 'MASTERED' } };
-    } else if (status === 'UNANSWERED') {
-      where.progresses = { none: { userId } };
-    } else if (status === 'ANSWERED') {
-      where.progresses = { some: { userId } };
-    } else if (status === 'HAS_NOTE') {
-      where.notes = { some: { userId } };
+    if (!userId) {
+      // Unauthenticated visitor: all questions are UNANSWERED in the database
+      if (status === 'UNANSWERED' || status === 'ALL') {
+        // match normal
+      } else {
+        // ANSWERED, INCORRECT, CORRECT, MASTERED, BOOKMARKED, HAS_NOTE return empty
+        where.id = 'unauthenticated-no-progress-matches';
+      }
+    } else {
+      if (status === 'BOOKMARKED') {
+        where.bookmarks = { some: { userId } };
+      } else if (status === 'INCORRECT') {
+        where.progresses = { some: { userId, lastAnswerCorrect: false } };
+      } else if (status === 'CORRECT') {
+        where.progresses = { some: { userId, lastAnswerCorrect: true } };
+      } else if (status === 'MASTERED') {
+        where.progresses = { some: { userId, masteryStatus: 'MASTERED' } };
+      } else if (status === 'UNANSWERED') {
+        where.progresses = { none: { userId } };
+      } else if (status === 'ANSWERED') {
+        where.progresses = { some: { userId } };
+      } else if (status === 'HAS_NOTE') {
+        where.notes = { some: { userId } };
+      }
     }
 
+    if (!userId) {
+      // Query for unauthenticated visitors: clean questions without any DB user progress
+      const [total, questions] = await Promise.all([
+        prisma.question.count({ where }),
+        prisma.question.findMany({
+          where,
+          skip,
+          take: limit,
+          select: {
+            id: true,
+            rawId: true,
+            questionBankId: true,
+            domainId: true,
+            type: true,
+            difficulty: true,
+            questionText: true,
+            explanationText: true,
+            options: { select: { id: true, text: true, isCorrect: true } },
+            domain: { select: { id: true, code: true, name: true } },
+          },
+          orderBy: [{ rawId: 'asc' }, { createdAt: 'desc' }],
+        }),
+      ]);
+
+      const formatted = questions.map((q) => ({
+        id: q.id,
+        rawId: q.rawId,
+        questionBankId: q.questionBankId,
+        domainId: q.domainId,
+        domainCode: q.domain.code,
+        domainName: q.domain.name,
+        type: q.type.toLowerCase(),
+        difficulty: q.difficulty,
+        question: q.questionText,
+        explanation: q.explanationText,
+        options: q.options,
+        highlights: [],
+        isBookmarked: false,
+        userNote: '',
+        userProgress: null,
+      }));
+
+      return NextResponse.json({
+        questions: formatted,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit),
+        stats: {
+          answered: 0,
+          correct: 0,
+          incorrect: 0,
+          bookmarked: 0,
+        },
+      });
+    }
+
+    // Authenticated user: load DB user progresses, bookmarks, and notes
     const [total, questions, statsTotalAnswered, statsCorrect, statsIncorrect, statsBookmarked] = await Promise.all([
       prisma.question.count({ where }),
       prisma.question.findMany({

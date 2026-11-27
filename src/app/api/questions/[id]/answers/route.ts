@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAuthUserOrDemo } from '@/lib/auth';
+import { getAuthenticatedUser } from '@/lib/auth';
 import { parseQuestionIds } from '@/lib/practice-selection';
 
 export async function POST(
@@ -8,10 +8,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const authUser = await getAuthUserOrDemo(req);
-    if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
+    const authUser = await getAuthenticatedUser(req);
     const { id: questionId } = await params;
-    const userId = authUser.userId;
 
     const body = await req.json();
     const { selectedOptionIds, confidenceLevel, sessionId } = body as {
@@ -42,7 +40,19 @@ export async function POST(
       correctOptionIds.length === selectedOptionIds.length &&
       correctOptionIds.every((id) => selectedOptionIds.includes(id));
 
-    // Upsert user question progress (SRS)
+    // If unauthenticated, NEVER save to PostgreSQL. Progress is strictly local (localStorage).
+    if (!authUser) {
+      return NextResponse.json({
+        isCorrect,
+        correctOptionIds,
+        explanation: question.explanationText,
+        isGuest: true,
+      });
+    }
+
+    const userId = authUser.userId;
+
+    // Upsert user question progress (SRS) for authenticated users only
     const existing = await prisma.userQuestionProgress.findUnique({
       where: { userId_questionId: { userId, questionId } },
     });
@@ -101,7 +111,6 @@ export async function POST(
 
     // Record in PracticeAnswer if sessionId provided
     if (sessionId) {
-      // Check session belongs to user
       const session = await prisma.practiceSession.findFirst({
         where: { id: sessionId, userId },
       });
@@ -116,7 +125,6 @@ export async function POST(
 
         await prisma.practiceAnswer.upsert({
           where: {
-            // Composite uniqueness not defined, use findFirst + create logic
             id: (
               await prisma.practiceAnswer.findFirst({
                 where: { sessionId, questionId },

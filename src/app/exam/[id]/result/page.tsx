@@ -261,7 +261,7 @@ export default function MockExamResultPage() {
 
       {/* Review Questions Section with Filters */}
       <div className="card-saas p-6 space-y-6">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 border-b border-slate-100 pb-4">
           <div className="space-y-1">
             <h2 className="text-base font-extrabold text-slate-900">Chi tiết đáp án &amp; Giải thích</h2>
             <p className="text-xs text-slate-500">
@@ -270,7 +270,7 @@ export default function MockExamResultPage() {
           </div>
 
           {/* Action Tools & Filter Pills: strictly 1 row, aligned right, no wrapping */}
-          <div className="flex items-center gap-1.5 flex-nowrap shrink-0 lg:ml-auto overflow-x-auto max-w-full pb-1 lg:pb-0">
+          <div className="flex items-center justify-start md:justify-end gap-1.5 flex-nowrap shrink-0 md:ml-auto overflow-x-auto max-w-full pb-1 md:pb-0">
             <button
               onClick={toggleCollapseAll}
               className="px-2.5 py-1.5 rounded-lg text-xs font-bold transition cursor-pointer flex items-center whitespace-nowrap shrink-0 border border-slate-200 bg-white hover:bg-slate-100 text-slate-700 shadow-2xs"

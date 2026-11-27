@@ -1,21 +1,68 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAuthUserOrDemo } from '@/lib/auth';
+import { getAuthenticatedUser } from '@/lib/auth';
 import { calculateStreak } from '@/lib/streak';
 
 export async function GET(req: NextRequest) {
   try {
-    const authUser = await getAuthUserOrDemo(req);
+    const authUser = await getAuthenticatedUser(req);
+    const requestedBankId = req.nextUrl.searchParams.get('questionBankId');
+
     if (!authUser) {
-      return NextResponse.json(null);
+      // Unauthenticated visitor: zero progress, no DB sync across users
+      const targetBankId = requestedBankId || null;
+      const bank = targetBankId
+        ? await prisma.questionBank.findUnique({
+            where: { id: targetBankId },
+            select: {
+              id: true,
+              name: true,
+              version: true,
+              totalQuestions: true,
+              certification: { select: { id: true, name: true, code: true } },
+            },
+          })
+        : await prisma.questionBank.findFirst({
+            where: { status: 'PUBLISHED' },
+            select: {
+              id: true,
+              name: true,
+              version: true,
+              totalQuestions: true,
+              certification: { select: { id: true, name: true, code: true } },
+            },
+          });
+
+      return NextResponse.json({
+        activeQuestionBankId: bank?.id || null,
+        activeCertification: bank
+          ? {
+              id: bank.certification.id,
+              name: bank.certification.name,
+              code: bank.certification.code,
+              bankName: bank.name,
+              version: bank.version,
+            }
+          : null,
+        stats: {
+          totalQuestions: bank?.totalQuestions || 0,
+          totalAnswered: 0,
+          accuracyRate: 0,
+          bookmarkedCount: 0,
+          notesCount: 0,
+          streakDays: 0,
+          longestStreak: 0,
+          todayCompleted: false,
+          lastMockExamScore: null,
+          lastMockExamPassed: null,
+        },
+      });
     }
 
     const userId = authUser.userId;
-    const requestedBankId = req.nextUrl.searchParams.get('questionBankId');
     let bankId = requestedBankId || authUser.activeQuestionBankId;
 
     if (!bankId) {
-      // Find user's first enrolled bank or any published bank
       const enrolled = await prisma.userQuestionBankEnrollment.findFirst({
         where: { userId },
         orderBy: { enrolledAt: 'desc' },
@@ -47,7 +94,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
-    // Parallelize all DB queries using Promise.all to eliminate sequential DB roundtrips
+    // Parallelize all DB queries using Promise.all
     const [bank, progresses, bookmarkedCount, notesCount, activities, latestExam] = await Promise.all([
       prisma.questionBank.findUnique({
         where: { id: bankId },

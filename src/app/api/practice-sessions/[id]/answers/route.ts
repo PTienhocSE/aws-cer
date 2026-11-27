@@ -1,13 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { getAuthUserOrDemo } from '@/lib/auth';
+import { getAuthenticatedUser } from '@/lib/auth';
 import { calculateSuperMemo2 } from '@/lib/spaced-repetition';
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const authUser = await getAuthUserOrDemo(req);
-    if (!authUser) return NextResponse.json({ error: 'Chưa đăng nhập' }, { status: 401 });
-    const userId = authUser.userId;
+    const authUser = await getAuthenticatedUser(req);
     const { id: sessionId } = await params;
     const body = await req.json();
     const { questionId, selectedOptionIds, confidenceLevel = 3 } = body;
@@ -15,10 +13,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const session = await prisma.practiceSession.findUnique({
       where: { id: sessionId },
     });
-
-    if (!session) {
-      return NextResponse.json({ error: 'Phiên học không tồn tại' }, { status: 404 });
-    }
 
     const question = await prisma.question.findUnique({
       where: { id: questionId },
@@ -34,6 +28,19 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     const isCorrect =
       selectedOptionIds.length === correctOptionIds.length &&
       selectedOptionIds.every((id: string) => correctOptionIds.includes(id));
+
+    // If unauthenticated, do NOT write to database. Progress is kept in browser localStorage.
+    if (!authUser || !session) {
+      return NextResponse.json({
+        answerId: 'guest-local-answer',
+        isCorrect,
+        correctOptionIds,
+        explanation: question.explanationText,
+        isGuest: true,
+      });
+    }
+
+    const userId = authUser.userId;
 
     // Save answer
     const answer = await prisma.practiceAnswer.create({

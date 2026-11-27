@@ -48,7 +48,6 @@ export default function Navbar() {
   const [syncModalOpen, setSyncModalOpen] = useState(false);
   const [syncDefaultTab, setSyncDefaultTab] = useState<'export' | 'import'>('import');
   const [resetModalOpen, setResetModalOpen] = useState(false);
-  const [guestDocsDropdownOpen, setGuestDocsDropdownOpen] = useState(false);
   const [guestMobileMenuOpen, setGuestMobileMenuOpen] = useState(false);
 
   const { data: overview } = useQuery({
@@ -220,41 +219,34 @@ export default function Navbar() {
                   </button>
 
                   {moreDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 space-y-1">
+                    <div className="absolute right-0 mt-2 w-80 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 space-y-1">
                       <Link
                         href="/profile"
                         onClick={() => setMoreDropdownOpen(false)}
-                        className="flex items-center px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+                        className="flex items-center px-3 py-2.5 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
                       >
-                        <UserIcon className="w-4 h-4 mr-2 text-amber-500 shrink-0" /> Trang cá nhân
-                      </Link>
-                      <Link
-                        href="/review?tab=practice"
-                        onClick={() => setMoreDropdownOpen(false)}
-                        className="flex items-center px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
-                      >
-                        <Clock className="w-4 h-4 mr-2 text-blue-500 shrink-0" /> Lịch sử các phiên luyện tập
+                        <UserIcon className="w-4 h-4 mr-2.5 text-amber-500 shrink-0" /> Trang cá nhân
                       </Link>
                       <Link
                         href="/notes"
                         onClick={() => setMoreDropdownOpen(false)}
-                        className="flex items-center px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+                        className="flex items-center px-3 py-2.5 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
                       >
-                        <FileText className="w-4 h-4 mr-2 text-indigo-500 shrink-0" /> Ghi chú cá nhân
+                        <FileText className="w-4 h-4 mr-2.5 text-indigo-500 shrink-0" /> Ghi chú cá nhân
                       </Link>
                       <Link
                         href="/bookmarks"
                         onClick={() => setMoreDropdownOpen(false)}
-                        className="flex items-center px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+                        className="flex items-center px-3 py-2.5 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
                       >
-                        <Star className="w-4 h-4 mr-2 text-amber-500 fill-amber-400 shrink-0" /> Đã Bookmark
+                        <Star className="w-4 h-4 mr-2.5 text-amber-500 fill-amber-400 shrink-0" /> Đã Bookmark
                       </Link>
                       <Link
                         href="/highlights"
                         onClick={() => setMoreDropdownOpen(false)}
-                        className="flex items-center px-3 py-2 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
+                        className="flex items-center px-3 py-2.5 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-slate-100 rounded-xl transition"
                       >
-                        <Highlighter className="w-4 h-4 mr-2 text-pink-500 shrink-0" /> Đã Tô màu Highlight
+                        <Highlighter className="w-4 h-4 mr-2.5 text-pink-500 shrink-0" /> Đã Tô màu Highlight
                       </Link>
 
                       <button
@@ -269,11 +261,11 @@ export default function Navbar() {
                           <Upload className="w-4 h-4 text-amber-700" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1.5">
-                            <span className="text-xs font-bold text-slate-800 group-hover:text-amber-900 truncate">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-bold text-slate-800 group-hover:text-amber-900 whitespace-nowrap">
                               Nạp / Xuất Metadata
                             </span>
-                            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-md whitespace-nowrap shrink-0 border border-amber-200">
+                            <span className="px-2 py-0.5 bg-amber-100 text-amber-900 text-[10px] font-extrabold rounded-md whitespace-nowrap shrink-0 border border-amber-300">
                               Máy cty
                             </span>
                           </div>
@@ -294,11 +286,11 @@ export default function Navbar() {
                           <RotateCcw className="w-4 h-4 text-rose-600" />
                         </div>
                         <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1.5">
-                            <span className="text-xs font-bold text-slate-800 group-hover:text-rose-900 truncate">
+                          <div className="flex items-center justify-between gap-2">
+                            <span className="text-xs font-bold text-slate-800 group-hover:text-rose-900 whitespace-nowrap">
                               Xóa cache &amp; Khôi phục
                             </span>
-                            <span className="px-1.5 py-0.5 bg-rose-100 text-rose-700 text-[10px] font-bold rounded-md whitespace-nowrap shrink-0 border border-rose-200">
+                            <span className="px-2 py-0.5 bg-rose-100 text-rose-700 text-[10px] font-extrabold rounded-md whitespace-nowrap shrink-0 border border-rose-200">
                               Làm lại
                             </span>
                           </div>
@@ -312,7 +304,7 @@ export default function Navbar() {
                 </div>
               </nav>
             ) : (
-              /* Unauthenticated Guest Landing Page Nav Links - Clean, Grouped & Streamlined */
+              /* Unauthenticated Guest Landing Page Nav Links - Streamlined & Minimalist */
               <nav className="hidden md:flex items-center space-x-1 lg:space-x-2 text-xs sm:text-sm font-bold text-slate-600">
                 <Link
                   href="/questions"
@@ -347,94 +339,42 @@ export default function Navbar() {
                   Bộ câu hỏi
                 </Link>
 
-                {/* Tài liệu & Tiện ích Dropdown */}
-                <div className="relative">
-                  <button
-                    onClick={() => setGuestDocsDropdownOpen(!guestDocsDropdownOpen)}
-                    onBlur={() => setTimeout(() => setGuestDocsDropdownOpen(false), 200)}
-                    className={`flex items-center px-3 py-1.5 rounded-xl transition-all cursor-pointer ${
-                      pathname.startsWith('/docs') || pathname.startsWith('/cheat-seat-saa')
-                        ? 'bg-slate-900 text-white shadow-xs'
-                        : 'hover:text-slate-900 hover:bg-slate-100 text-slate-700'
-                    }`}
-                  >
-                    <span>Tài liệu</span>
-                    <ChevronDown className="w-3.5 h-3.5 ml-1 text-slate-400" />
-                  </button>
-
-                  {guestDocsDropdownOpen && (
-                    <div className="absolute left-0 mt-2 w-72 bg-white border border-slate-200 rounded-2xl shadow-xl p-2 z-50 animate-in fade-in zoom-in-95 space-y-1">
-                      <Link
-                        href="/docs"
-                        onClick={() => setGuestDocsDropdownOpen(false)}
-                        className="flex items-center p-2.5 hover:bg-indigo-50/70 rounded-xl transition text-left group"
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-indigo-100 flex items-center justify-center mr-2.5 shrink-0 group-hover:bg-indigo-200 transition">
-                          <FileText className="w-4 h-4 text-indigo-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-bold text-slate-800 group-hover:text-indigo-900">
-                            Tài liệu SAA-C03
-                          </div>
-                          <div className="text-[10px] font-medium text-slate-400 mt-0.5 truncate">
-                            Kiến thức trọng tâm theo từng chuyên đề
-                          </div>
-                        </div>
-                      </Link>
-
-                      <Link
-                        href="/cheat-seat-saa"
-                        onClick={() => setGuestDocsDropdownOpen(false)}
-                        className="flex items-center p-2.5 hover:bg-amber-50/70 rounded-xl transition text-left group"
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center mr-2.5 shrink-0 group-hover:bg-amber-200 transition">
-                          <FileSpreadsheet className="w-4 h-4 text-amber-600" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="text-xs font-bold text-slate-800 group-hover:text-amber-900">
-                            Cheat Sheet SAA
-                          </div>
-                          <div className="text-[10px] font-medium text-slate-400 mt-0.5 truncate">
-                            Bảng tra cứu dịch vụ &amp; so sánh AWS
-                          </div>
-                        </div>
-                      </Link>
-
-                      <button
-                        onClick={() => {
-                          setGuestDocsDropdownOpen(false);
-                          setSyncDefaultTab('export');
-                          setSyncModalOpen(true);
-                        }}
-                        className="w-full flex items-center p-2.5 hover:bg-amber-50/70 rounded-xl transition text-left cursor-pointer border-t border-slate-100 mt-1 group"
-                      >
-                        <div className="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center mr-2.5 shrink-0 group-hover:bg-amber-200 transition">
-                          <Download className="w-4 h-4 text-amber-700" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1.5">
-                            <span className="text-xs font-bold text-slate-800 group-hover:text-amber-900 truncate">
-                              Nạp / Xuất Metadata
-                            </span>
-                            <span className="px-1.5 py-0.5 bg-amber-100 text-amber-800 text-[10px] font-bold rounded-md whitespace-nowrap shrink-0 border border-amber-200">
-                              Máy cty
-                            </span>
-                          </div>
-                          <div className="text-[10px] font-medium text-slate-400 mt-0.5 truncate">
-                            Đồng bộ tiến độ học từ máy công ty
-                          </div>
-                        </div>
-                      </button>
-                    </div>
-                  )}
-                </div>
+                <Link
+                  href="/docs"
+                  className={`px-3 py-1.5 rounded-xl transition-all ${
+                    pathname.startsWith('/docs')
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'hover:text-slate-900 hover:bg-slate-100 text-slate-700'
+                  }`}
+                >
+                  Tài liệu
+                </Link>
 
                 <Link
-                  href="/#features"
-                  className="px-3 py-1.5 rounded-xl hover:text-slate-900 hover:bg-slate-100 text-slate-700 transition-all"
+                  href="/cheat-seat-saa"
+                  className={`px-3 py-1.5 rounded-xl transition-all ${
+                    pathname.startsWith('/cheat-seat-saa')
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'hover:text-slate-900 hover:bg-slate-100 text-slate-700'
+                  }`}
                 >
-                  Tính năng
+                  Cheat Sheet
                 </Link>
+
+                <button
+                  onClick={() => {
+                    setSyncDefaultTab('export');
+                    setSyncModalOpen(true);
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl hover:text-slate-900 hover:bg-amber-50/80 text-slate-700 transition-all flex items-center gap-1.5 cursor-pointer border border-transparent hover:border-amber-200"
+                  title="Nạp hoặc xuất tiến độ học tập trên máy công ty"
+                >
+                  <Download className="w-3.5 h-3.5 text-amber-600" />
+                  <span className="text-xs font-bold">Nạp / Xuất</span>
+                  <span className="px-1.5 py-0.5 bg-amber-100 text-amber-900 text-[9px] font-extrabold rounded-md whitespace-nowrap border border-amber-300">
+                    Máy cty
+                  </span>
+                </button>
               </nav>
             )}
 
