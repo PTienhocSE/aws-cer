@@ -389,18 +389,60 @@ function PracticeSessionContent({ params }: { params: Promise<{ id: string }> })
 
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
-      if (['INPUT', 'TEXTAREA'].includes((e.target as HTMLElement)?.tagName)) return;
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)) {
+        return;
+      }
+      if (viewMode !== 'PRACTICE' || isSyncModalOpen || !currentQuestion) return;
+
+      const key = e.key.toLowerCase();
+
       if (e.key === 'ArrowRight' && questionsData) {
         if (currentIndex < questionsData.questions.length - 1) setCurrentIndex((i) => i + 1);
+        return;
       }
       if (e.key === 'ArrowLeft' && currentIndex > 0) {
         setCurrentIndex((i) => i - 1);
+        return;
       }
-      if (e.key.toLowerCase() === 'f' && currentQuestion) {
-        toggleBookmarkMutation.mutate();
+
+      const qState = qStateMap[currentQuestion.id];
+      const isSubmittedQ = !!qState?.isSubmitted;
+      const optionKeys = ['a', 'b', 'c', 'd', 'e', 'f'];
+      const optionIndex = optionKeys.indexOf(key);
+
+      if (optionIndex !== -1) {
+        const hasSixthOption = (currentQuestion.options?.length ?? 0) >= 6;
+        if (key === 'f' && (!hasSixthOption || isSubmittedQ)) {
+          toggleBookmarkMutation.mutate();
+          return;
+        }
+        const opt = currentQuestion.options?.[optionIndex];
+        if (opt && !isSubmittedQ) {
+          handleOptionSelect(opt.id);
+        }
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        if (!isSubmittedQ && (qState?.selectedOptionIds?.length ?? 0) > 0) {
+          e.preventDefault();
+          handleCheckAnswer(3);
+        }
       }
     },
-    [currentQuestion, questionsData, currentIndex, toggleBookmarkMutation]
+    [
+      viewMode,
+      isSyncModalOpen,
+      currentQuestion,
+      questionsData,
+      currentIndex,
+      qStateMap,
+      toggleBookmarkMutation,
+      handleOptionSelect,
+      handleCheckAnswer,
+    ]
   );
 
   useEffect(() => {
@@ -1214,7 +1256,7 @@ function PracticeSessionContent({ params }: { params: Promise<{ id: string }> })
                     className="px-6 py-2.5 bg-gradient-to-r from-amber-400 via-amber-500 to-amber-600 hover:from-amber-500 hover:to-amber-600 text-slate-950 font-black text-xs sm:text-sm rounded-xl transition shadow-md flex items-center justify-center disabled:opacity-40 disabled:cursor-not-allowed cursor-pointer"
                   >
                     <CheckCircle className="w-4 h-4 mr-2 text-slate-950" />
-                    <span>Xem đáp án &amp; Kiểm tra ngay</span>
+                    <span>Xem đáp án &amp; Kiểm tra ngay (Enter)</span>
                   </button>
                   <div className="text-[11px] font-bold text-slate-400 text-center sm:text-right">
                     (Hoặc bấm 1 trong 4 mức độ tự tin bên dưới để tính lịch SRS)
@@ -1312,6 +1354,14 @@ function PracticeSessionContent({ params }: { params: Promise<{ id: string }> })
               </button>
             </div>
           )}
+
+          {/* Keyboard Shortcuts Hint */}
+          <div className="hidden sm:flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] font-semibold text-slate-400 pt-1">
+            <span><kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-600 font-mono">A–F</kbd> Chọn đáp án</span>
+            <span><kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-600 font-mono">Enter</kbd> Xem đáp án</span>
+            <span><kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-600 font-mono">←</kbd> <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-600 font-mono">→</kbd> Chuyển câu</span>
+            <span><kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-600 font-mono">F</kbd> Đánh dấu</span>
+          </div>
         </div>
       </div>
 

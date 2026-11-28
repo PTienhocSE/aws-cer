@@ -500,23 +500,103 @@ function MockExamRunnerContent() {
   };
 
   // Handle Flag Toggle with continuous auto-save
-  const handleFlagToggle = (questionId: string) => {
-    setAnswersMap((prev) => {
-      const current = prev[questionId] || { selectedOptionIds: [], isFlagged: false };
-      const updated = {
-        ...prev,
-        [questionId]: { ...current, isFlagged: !current.isFlagged },
-      };
+  const handleFlagToggle = useCallback(
+    (questionId: string) => {
+      setAnswersMap((prev) => {
+        const current = prev[questionId] || { selectedOptionIds: [], isFlagged: false };
+        const updated = {
+          ...prev,
+          [questionId]: { ...current, isFlagged: !current.isFlagged },
+        };
 
-      if (examAttemptId) {
-        try {
-          localStorage.setItem(`aws_cer_mock_exam_answers_${examAttemptId}`, JSON.stringify(updated));
-        } catch {}
+        if (examAttemptId) {
+          try {
+            localStorage.setItem(`aws_cer_mock_exam_answers_${examAttemptId}`, JSON.stringify(updated));
+          } catch {}
+        }
+
+        return updated;
+      });
+    },
+    [examAttemptId]
+  );
+
+  // Keyboard shortcuts: A-F select option, Enter reveal answer (practice mode), ArrowLeft/Right navigate, F flag
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      if (target && (['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable)) {
+        return;
       }
 
-      return updated;
-    });
-  };
+      if (showSubmitConfirm) {
+        if (e.key === 'Escape') setShowSubmitConfirm(false);
+        return;
+      }
+
+      if (!attempt || attempt.isCompleted || isSubmitting) return;
+      const activeAnswer = attempt.answers?.[currentIndex];
+      const activeQuestion = activeAnswer?.question;
+      if (!activeQuestion) return;
+
+      if (e.key === 'ArrowRight') {
+        if (currentIndex < attempt.answers.length - 1) {
+          setCurrentIndex((i) => i + 1);
+        }
+        return;
+      }
+
+      if (e.key === 'ArrowLeft') {
+        if (currentIndex > 0) {
+          setCurrentIndex((i) => i - 1);
+        }
+        return;
+      }
+
+      const key = e.key.toLowerCase();
+      const optionKeys = ['a', 'b', 'c', 'd', 'e', 'f'];
+      const optionIndex = optionKeys.indexOf(key);
+      const isQuestionRevealed =
+        isPracticeMode && examSettings.showAnswerAfterEach && !!checkedQuestions[activeQuestion.id];
+
+      if (optionIndex !== -1) {
+        const hasSixthOption = (activeQuestion.options?.length ?? 0) >= 6;
+        if (key === 'f' && (!hasSixthOption || isQuestionRevealed)) {
+          handleFlagToggle(activeQuestion.id);
+          return;
+        }
+        const opt = activeQuestion.options?.[optionIndex];
+        if (opt && !isQuestionRevealed) {
+          handleOptionToggle(activeQuestion.id, opt.id, activeQuestion.type);
+        }
+        return;
+      }
+
+      if (e.key === 'Enter') {
+        if (isPracticeMode && examSettings.showAnswerAfterEach && !checkedQuestions[activeQuestion.id]) {
+          const selectedCount = answersMap[activeQuestion.id]?.selectedOptionIds?.length ?? 0;
+          if (selectedCount > 0) {
+            e.preventDefault();
+            handleCheckQuestionAnswer(activeQuestion.id);
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [
+    attempt,
+    currentIndex,
+    showSubmitConfirm,
+    isSubmitting,
+    isPracticeMode,
+    examSettings.showAnswerAfterEach,
+    checkedQuestions,
+    answersMap,
+    handleFlagToggle,
+  ]);
 
   const isLoading = isLocal ? !localAttempt : isServerLoading || !attempt;
 
@@ -692,7 +772,7 @@ function MockExamRunnerContent() {
               }`}
             >
               <Flag className={`w-3.5 h-3.5 mr-1.5 ${currentAnswerState.isFlagged ? 'fill-amber-500' : ''}`} />
-              {currentAnswerState.isFlagged ? 'Đã cắm cờ' : 'Cắm cờ xem lại'}
+              {currentAnswerState.isFlagged ? 'Đã cắm cờ (F)' : 'Cắm cờ xem lại (F)'}
             </button>
           </div>
 
@@ -839,6 +919,16 @@ function MockExamRunnerContent() {
             >
               Câu sau <ArrowRight className="w-3.5 h-3.5 ml-1" />
             </button>
+          </div>
+
+          {/* Keyboard Shortcuts Hint */}
+          <div className="hidden sm:flex flex-wrap items-center justify-center gap-x-4 gap-y-1 text-[11px] font-semibold text-slate-400">
+            <span><kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-600 font-mono">A–F</kbd> Chọn đáp án</span>
+            {isPracticeMode && examSettings.showAnswerAfterEach && (
+              <span><kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-600 font-mono">Enter</kbd> Xem đáp án</span>
+            )}
+            <span><kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-600 font-mono">←</kbd> <kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-600 font-mono">→</kbd> Chuyển câu</span>
+            <span><kbd className="px-1.5 py-0.5 bg-slate-100 border border-slate-200 rounded text-slate-600 font-mono">F</kbd> Cắm cờ</span>
           </div>
         </div>
 
