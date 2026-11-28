@@ -181,6 +181,8 @@ function renderFormattedCheatSheetText(text: string) {
 export default function CheatSheetFlashcardsClient() {
   // Primary Mode: 'study' (Flashcard learning) vs 'quiz' (Test knowledge)
   const [appMode, setAppMode] = useState<'study' | 'quiz'>('study');
+  // Mobile-only full-focus session toggle: starts on launcher screen, enters full-screen card/quiz when user clicks Start
+  const [mobileSessionActive, setMobileSessionActive] = useState<boolean>(false);
 
   // Shared Filters
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -563,6 +565,18 @@ export default function CheatSheetFlashcardsClient() {
     };
   }, [quizQuestions, quizAnswers]);
 
+  // Lock background scroll on mobile when full-focus flashcard/quiz session is open
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    if (mobileSessionActive && window.innerWidth < 768) {
+      const prevOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prevOverflow;
+      };
+    }
+  }, [mobileSessionActive]);
+
   const scrollCategoryStrip = (dir: 'left' | 'right') => {
     categoryScrollRef.current?.scrollBy({
       left: dir === 'left' ? -220 : 220,
@@ -570,8 +584,874 @@ export default function CheatSheetFlashcardsClient() {
     });
   };
 
+  // Shared Flashcard interactive flip card (adapts cleanly for desktop inline vs mobile full-focus)
+  const renderFlashcardSurface = (isMobileFocus: boolean) => {
+    if (!currentCard) return null;
+    return (
+      <div
+        onClick={() => setIsFlipped((f) => !f)}
+        onTouchStart={(e) => {
+          touchStartX.current = e.touches[0].clientX;
+          touchStartY.current = e.touches[0].clientY;
+        }}
+        onTouchEnd={(e) => {
+          if (touchStartX.current === null || touchStartY.current === null) return;
+          const dx = e.changedTouches[0].clientX - touchStartX.current;
+          const dy = e.changedTouches[0].clientY - touchStartY.current;
+          touchStartX.current = null;
+          touchStartY.current = null;
+          if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+            if (dx < 0) handleNextCard();
+            else handlePrevCard();
+          }
+        }}
+        className={`relative rounded-3xl border-2 flex flex-col justify-between transition-all duration-200 cursor-pointer select-none shadow-lg ${
+          isMobileFocus
+            ? 'w-full flex-1 min-h-0 p-4'
+            : 'p-5 sm:p-8 min-h-[300px] sm:min-h-[340px]'
+        } ${
+          isFlipped
+            ? 'bg-white border-amber-400 shadow-amber-500/10'
+            : 'bg-gradient-to-br from-white via-white to-amber-50/40 border-slate-200 hover:border-amber-300'
+        }`}
+      >
+        {/* Card Top Header: Service Tag + Category + Card Type */}
+        <div
+          className={`flex flex-wrap items-center justify-between gap-1.5 border-b border-slate-100 shrink-0 ${
+            isMobileFocus ? 'pb-3' : 'pb-4'
+          }`}
+        >
+          <div className="flex flex-wrap items-center gap-1.5 min-w-0">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedServiceTag(
+                  selectedServiceTag === currentCard.serviceTag
+                    ? 'all'
+                    : currentCard.serviceTag
+                );
+              }}
+              title="Bấm để lọc toàn bộ thẻ của Service này"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 text-amber-400 text-[11px] sm:text-xs font-extrabold hover:bg-slate-800 transition cursor-pointer max-w-full"
+            >
+              <Tag className="w-3 h-3 shrink-0" />
+              <span className="truncate">{currentCard.serviceTag}</span>
+            </button>
+
+            <span className="px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-bold">
+              {currentCard.categoryTitle}
+            </span>
+
+            <span
+              className={`px-2 py-1 rounded-lg text-[11px] font-extrabold border ${
+                CARD_TYPE_STYLES[currentCard.cardType].bg
+              } ${CARD_TYPE_STYLES[currentCard.cardType].text} ${
+                CARD_TYPE_STYLES[currentCard.cardType].border
+              }`}
+            >
+              {currentCard.cardTypeLabel}
+            </span>
+          </div>
+
+          <span
+            className={`text-[10px] sm:text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full shrink-0 ${
+              isFlipped
+                ? 'bg-emerald-100 text-emerald-800'
+                : 'bg-amber-100 text-amber-900'
+            }`}
+          >
+            {isFlipped ? 'Đáp án' : 'Mặt trước'}
+          </span>
+        </div>
+
+        {/* Card Center Body (internally scrollable on mobile if back answer is long) */}
+        <div
+          className={`flex-1 flex flex-col ${
+            isMobileFocus ? 'overflow-y-auto py-4 justify-center min-h-0' : 'py-5 sm:py-7 justify-center'
+          }`}
+        >
+          {!isFlipped ? (
+            <div className="text-center space-y-3 my-auto px-1">
+              <p
+                className={`font-extrabold text-slate-900 leading-snug whitespace-pre-line ${
+                  isMobileFocus ? 'text-lg' : 'text-lg sm:text-2xl'
+                }`}
+              >
+                {currentCard.front}
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3 my-auto animate-in fade-in duration-150">
+              <div className="text-xs font-bold text-slate-400 leading-snug">
+                {currentCard.front}
+              </div>
+
+              {currentCard.cardType === 'quick_pick' ? (
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-2">
+                  <div className="text-xs font-extrabold uppercase tracking-wider text-emerald-700">
+                    Đáp án chọn nhanh
+                  </div>
+                  <div className="text-lg sm:text-2xl font-black text-emerald-950">
+                    {currentCard.back}
+                  </div>
+                  {currentCard.extraContext && (
+                    <div className="text-xs text-emerald-800 font-medium pt-1">
+                      {currentCard.extraContext}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                renderFormattedCheatSheetText(currentCard.back)
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Card Bottom Hint */}
+        <div
+          className={`border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-slate-400 shrink-0 ${
+            isMobileFocus ? 'pt-2.5' : 'pt-3'
+          }`}
+        >
+          <span className="flex items-center gap-1">
+            <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+            {isFlipped
+              ? 'Chạm lại để xem mặt trước'
+              : 'Chạm vào thẻ để lật xem đáp án'}
+          </span>
+          <span className="hidden sm:inline">Space: Lật thẻ</span>
+        </div>
+      </div>
+    );
+  };
+
+  // Shared Active Quiz Card (used on Desktop inline & Mobile full-focus)
+  const renderActiveQuizCard = (isMobileFocus: boolean) => {
+    if (!currentQuizQ) return null;
+    return (
+      <div
+        className={`bg-white border border-slate-200 shadow-md space-y-4 ${
+          isMobileFocus ? 'rounded-2xl p-4' : 'rounded-3xl p-5 sm:p-7 space-y-5'
+        }`}
+      >
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          <div className="flex flex-wrap items-center gap-1.5">
+            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 text-amber-400 text-[11px] font-extrabold">
+              <Tag className="w-3 h-3" />
+              {currentQuizQ.serviceTag}
+            </span>
+            <span className="px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-bold">
+              {currentQuizQ.categoryTitle}
+            </span>
+            <span
+              className={`px-2 py-1 rounded-lg text-[11px] font-extrabold border ${
+                CARD_TYPE_STYLES[currentQuizQ.questionType].bg
+              } ${CARD_TYPE_STYLES[currentQuizQ.questionType].text} ${
+                CARD_TYPE_STYLES[currentQuizQ.questionType].border
+              }`}
+            >
+              {currentQuizQ.questionTypeLabel}
+            </span>
+          </div>
+        </div>
+
+        <h2
+          className={`font-extrabold text-slate-900 leading-relaxed ${
+            isMobileFocus ? 'text-sm sm:text-base' : 'text-base sm:text-lg'
+          }`}
+        >
+          {currentQuizQ.prompt}
+        </h2>
+
+        {/* 4 Options */}
+        <div className="space-y-2.5">
+          {currentQuizQ.options.map((opt, idx) => {
+            const letter = String.fromCharCode(65 + idx);
+            const isSelected = currentSelectedOpt === idx;
+            const isCorrectOpt = idx === currentQuizQ.correctIndex;
+
+            let containerClass =
+              'bg-white border-slate-200 hover:border-amber-400 hover:bg-amber-50/30 text-slate-800 cursor-pointer';
+            let letterClass = 'bg-slate-100 text-slate-700';
+
+            if (isCurrentQuizRevealed) {
+              if (isCorrectOpt) {
+                containerClass =
+                  'bg-emerald-50 border-emerald-500 text-emerald-950 font-bold cursor-default';
+                letterClass = 'bg-emerald-600 text-white';
+              } else if (isSelected && !isCorrectOpt) {
+                containerClass =
+                  'bg-rose-50 border-rose-500 text-rose-950 font-semibold cursor-default';
+                letterClass = 'bg-rose-600 text-white';
+              } else {
+                containerClass =
+                  'bg-slate-50/70 border-slate-200 text-slate-400 opacity-75 cursor-default';
+                letterClass = 'bg-slate-200 text-slate-500';
+              }
+            } else if (isSelected) {
+              containerClass =
+                'bg-amber-50 border-amber-500 text-slate-950 font-bold shadow-xs';
+              letterClass = 'bg-amber-500 text-slate-950';
+            }
+
+            return (
+              <button
+                key={idx}
+                type="button"
+                disabled={isCurrentQuizRevealed}
+                onClick={() => handleSelectQuizOption(currentQuizQ.id, idx)}
+                className={`w-full text-left p-3.5 sm:p-4 rounded-2xl border-2 transition flex items-start gap-3 min-h-[50px] active:scale-[0.99] ${containerClass}`}
+              >
+                <span
+                  className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${letterClass}`}
+                >
+                  {letter}
+                </span>
+                <span className="flex-1 text-xs sm:text-sm leading-relaxed pt-0.5">
+                  {opt}
+                </span>
+                {isCurrentQuizRevealed && isCorrectOpt && (
+                  <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+                )}
+                {isCurrentQuizRevealed && isSelected && !isCorrectOpt && (
+                  <XCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Instant Cheat Sheet Explanation */}
+        {isCurrentQuizRevealed && (
+          <div className="p-3.5 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 animate-in fade-in duration-150">
+            <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-amber-800">
+              <Lightbulb className="w-4 h-4 text-amber-600 shrink-0" />
+              <span>Nội dung gốc trong Cheat Sheet ({currentQuizQ.explanationItem.name})</span>
+            </div>
+
+            <p className="text-xs sm:text-sm font-bold text-slate-900">
+              {currentQuizQ.explanationItem.purpose}
+            </p>
+
+            {renderFormattedCheatSheetText(currentQuizQ.explanationItem.scenario)}
+
+            {currentQuizQ.explanationItem.note && (
+              <div className="pt-2 border-t border-slate-200 space-y-1.5">
+                <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
+                  Ghi chú &amp; Mẹo thi:
+                </div>
+                {renderFormattedCheatSheetText(currentQuizQ.explanationItem.note)}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Desktop inline footer navigation */}
+        {!isMobileFocus && (
+          <div className="flex items-center justify-between pt-3 border-t border-slate-100">
+            <button
+              type="button"
+              disabled={quizIndex === 0}
+              onClick={() => setQuizIndex((i) => Math.max(0, i - 1))}
+              className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold text-xs sm:text-sm rounded-xl disabled:opacity-40 flex items-center gap-1.5 cursor-pointer hover:bg-slate-50"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Câu trước</span>
+            </button>
+
+            {quizIndex < quizQuestions.length - 1 ? (
+              <button
+                type="button"
+                onClick={() => setQuizIndex((i) => i + 1)}
+                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs"
+              >
+                <span>Câu sau</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleFinishQuiz}
+                className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-extrabold text-xs sm:text-sm rounded-xl flex items-center gap-1.5 cursor-pointer shadow-md"
+              >
+                <CheckCircle2 className="w-4 h-4" />
+                <span>Hoàn thành &amp; Xem kết quả</span>
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-slate-50/60 pb-20">
+      {/* ================================================================== */}
+      {/* MOBILE-ONLY LAUNCHER SCREEN (< 768px) WHEN SESSION IS NOT ACTIVE   */}
+      {/* ================================================================== */}
+      <div className="md:hidden">
+        {!mobileSessionActive && (
+          <div className="pb-12">
+            {/* Compact Mobile Header */}
+            <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white px-4 pt-4 pb-5 border-b border-slate-700 space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <Link
+                  href="/cheat-seat-saa"
+                  className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-300 bg-white/10 px-2.5 py-1 rounded-lg border border-white/10"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5" />
+                  <span>Cheat Sheet</span>
+                </Link>
+                <span className="text-[11px] font-bold text-slate-300">
+                  {ALL_CHEATSHEET_FLASHCARDS.length} thẻ • {ALL_SERVICE_TAGS.length} services
+                </span>
+              </div>
+
+              <div>
+                <h1 className="text-xl font-black tracking-tight flex items-center gap-2">
+                  <Layers className="w-5 h-5 text-amber-400 shrink-0" />
+                  <span>Flashcard &amp; Test SAA-C03</span>
+                </h1>
+                <p className="text-xs text-slate-300 mt-1">
+                  Chọn phạm vi bên dưới rồi bấm Bắt đầu để vào màn hình tập trung toàn màn hình.
+                </p>
+              </div>
+
+              {/* 3 Compact Stats */}
+              <div className="grid grid-cols-3 gap-2 text-center text-xs">
+                <div className="bg-white/5 border border-white/10 rounded-xl py-2 px-2">
+                  <div className="font-black text-amber-400 text-sm">{scopeStats.total}</div>
+                  <div className="text-[10px] text-slate-300">Thẻ đang chọn</div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-xl py-2 px-2">
+                  <div className="font-black text-emerald-400 text-sm">
+                    {scopeStats.mastered} ({scopeStats.pct}%)
+                  </div>
+                  <div className="text-[10px] text-slate-300">Đã thuộc</div>
+                </div>
+                <div className="bg-white/5 border border-white/10 rounded-xl py-2 px-2">
+                  <div className="font-black text-rose-400 text-sm">{scopeStats.review}</div>
+                  <div className="text-[10px] text-slate-300">Cần ôn lại</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Primary Mobile Start Buttons + Scope Picker */}
+            <div className="px-3.5 pt-4 space-y-4">
+              {/* Two Big Action Buttons */}
+              <div className="grid grid-cols-1 gap-2.5">
+                <button
+                  type="button"
+                  disabled={filteredCards.length === 0}
+                  onClick={() => {
+                    setAppMode('study');
+                    setStudyLayout('card');
+                    setIsFlipped(false);
+                    setMobileSessionActive(true);
+                  }}
+                  className="w-full py-4 px-5 rounded-2xl bg-gradient-to-r from-amber-400 via-amber-500 to-amber-500 text-slate-950 font-black text-sm shadow-lg shadow-amber-500/20 flex items-center justify-between active:scale-[0.99] transition disabled:opacity-40 cursor-pointer"
+                >
+                  <div className="flex items-center gap-3 text-left">
+                    <div className="w-10 h-10 rounded-xl bg-slate-950/10 flex items-center justify-center shrink-0">
+                      <BookOpen className="w-5 h-5 text-slate-950" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-black">Bắt đầu học Flashcard</div>
+                      <div className="text-[11px] font-bold text-slate-900/80">
+                        {filteredCards.length} thẻ • Lật thẻ tập trung toàn màn hình
+                      </div>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 shrink-0" />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAppMode('quiz');
+                    startNewQuiz();
+                    setMobileSessionActive(true);
+                  }}
+                  className="w-full py-4 px-5 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 text-white font-black text-sm shadow-lg shadow-emerald-500/20 flex items-center justify-between active:scale-[0.99] transition cursor-pointer"
+                >
+                  <div className="flex items-center gap-3 text-left">
+                    <div className="w-10 h-10 rounded-xl bg-white/15 flex items-center justify-center shrink-0">
+                      <Target className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <div className="text-sm font-black">Bắt đầu Test Kiến Thức</div>
+                      <div className="text-[11px] font-semibold text-emerald-50">
+                        {quizLimit === 0 ? 'Tất cả câu hỏi' : `${quizLimit} câu trắc nghiệm`} từ Cheat Sheet
+                      </div>
+                    </div>
+                  </div>
+                  <ArrowRight className="w-5 h-5 shrink-0" />
+                </button>
+              </div>
+
+              {/* Clean Mobile Scope Selector Card */}
+              <div className="bg-white rounded-2xl border border-slate-200 p-4 space-y-3.5 shadow-xs">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-black uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-amber-500" />
+                    Tùy chọn bộ thẻ &amp; đề test
+                  </span>
+                  {(selectedCategory !== 'all' ||
+                    selectedServiceTag !== 'all' ||
+                    selectedCardType !== 'ALL' ||
+                    serviceSearch ||
+                    studyStatusFilter !== 'all') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedCategory('all');
+                        setSelectedServiceTag('all');
+                        setSelectedCardType('ALL');
+                        setServiceSearch('');
+                        setStudyStatusFilter('all');
+                      }}
+                      className="text-[11px] font-extrabold text-rose-600"
+                    >
+                      Xóa lọc
+                    </button>
+                  )}
+                </div>
+
+                {/* Chuyên đề */}
+                <div className="space-y-1">
+                  <label className="text-[11px] font-bold text-slate-600">Chuyên đề (16 tabs)</label>
+                  <select
+                    value={selectedCategory}
+                    onChange={(e) => {
+                      setSelectedCategory(e.target.value);
+                      setSelectedServiceTag('all');
+                    }}
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800"
+                  >
+                    <option value="all">Tất cả 16 chuyên đề ({ALL_CHEATSHEET_FLASHCARDS.length} thẻ)</option>
+                    {CHEATSHEET_CATEGORIES.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.title} — {cat.vietnameseTitle}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Tìm & Chọn Service Tag */}
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-bold text-slate-600 flex items-center gap-1">
+                    <Tag className="w-3 h-3 text-amber-500" /> Service Tag
+                  </label>
+                  <div className="relative">
+                    <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      value={serviceSearch}
+                      onChange={(e) => setServiceSearch(e.target.value)}
+                      placeholder="Tìm nhanh service (EC2, S3, Lambda...)"
+                      className="w-full pl-8 pr-8 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800"
+                    />
+                    {serviceSearch && (
+                      <button
+                        type="button"
+                        onClick={() => setServiceSearch('')}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400"
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
+                  <select
+                    value={selectedServiceTag}
+                    onChange={(e) => setSelectedServiceTag(e.target.value)}
+                    className="w-full px-3 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800"
+                  >
+                    <option value="all">Tất cả Service Tag ({availableServiceTags.length} service)</option>
+                    {availableServiceTags.map((st) => (
+                      <option key={`${st.categoryId}-${st.serviceTag}`} value={st.serviceTag}>
+                        {st.serviceTag} ({st.cardCount} thẻ)
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Loại thẻ & Trạng thái học */}
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600">Loại thẻ</label>
+                    <select
+                      value={selectedCardType}
+                      onChange={(e) => setSelectedCardType(e.target.value as FlashcardType | 'ALL')}
+                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800"
+                    >
+                      <option value="ALL">Tất cả loại</option>
+                      <option value="purpose">Mục đích</option>
+                      <option value="when_to_use">Khi nào chọn</option>
+                      <option value="distinguish">Phân biệt</option>
+                      <option value="exam_tip">Mẹo thi</option>
+                      <option value="quick_pick">Chọn nhanh</option>
+                    </select>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-[11px] font-bold text-slate-600">Trạng thái thẻ</label>
+                    <select
+                      value={studyStatusFilter}
+                      onChange={(e) => setStudyStatusFilter(e.target.value as any)}
+                      className="w-full px-2.5 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800"
+                    >
+                      <option value="all">Tất cả thẻ</option>
+                      <option value="unmastered">Chưa thuộc</option>
+                      <option value="review">Cần ôn ({scopeStats.review})</option>
+                      <option value="mastered">Đã thuộc ({scopeStats.mastered})</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Tùy chọn Test */}
+                <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[11px] font-bold text-slate-600 mr-1">Số câu test:</span>
+                    {[10, 20, 30, 0].map((num) => (
+                      <button
+                        key={num}
+                        type="button"
+                        onClick={() => setQuizLimit(num)}
+                        className={`px-2 py-1 rounded-lg text-[11px] font-extrabold ${
+                          quizLimit === num
+                            ? 'bg-slate-900 text-white'
+                            : 'bg-slate-100 text-slate-600'
+                        }`}
+                      >
+                        {num === 0 ? 'Hết' : num}
+                      </button>
+                    ))}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => setQuizInstantFeedback((v) => !v)}
+                    className={`px-2.5 py-1 rounded-lg text-[11px] font-bold border ${
+                      quizInstantFeedback
+                        ? 'bg-emerald-50 border-emerald-300 text-emerald-800'
+                        : 'bg-slate-50 border-slate-200 text-slate-600'
+                    }`}
+                  >
+                    {quizInstantFeedback ? 'Hiện đáp án' : 'Chấm cuối'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ================================================================ */}
+        {/* MOBILE-ONLY FULL-FOCUS SCREEN: ONLY FLASHCARD / QUIZ ON SCREEN   */}
+        {/* ================================================================== */}
+        {mobileSessionActive && (
+          <div className="fixed inset-0 z-[120] bg-slate-100 flex flex-col">
+            {/* Minimal Top Focus Bar */}
+            <div className="shrink-0 h-13 px-3 bg-white border-b border-slate-200 flex items-center justify-between gap-2">
+              <button
+                type="button"
+                onClick={() => setMobileSessionActive(false)}
+                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-extrabold cursor-pointer"
+              >
+                <ArrowLeft className="w-3.5 h-3.5" />
+                <span>Thoát</span>
+              </button>
+
+              <div className="text-xs font-black text-slate-800 truncate">
+                {appMode === 'study'
+                  ? `Thẻ ${filteredCards.length > 0 ? cardIndex + 1 : 0} / ${filteredCards.length}`
+                  : quizCompleted
+                  ? `Kết quả: ${quizScoreStats.correct}/${quizScoreStats.total}`
+                  : `Câu ${quizIndex + 1} / ${quizQuestions.length}`}
+              </div>
+
+              {appMode === 'study' ? (
+                <div className="flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={handleShuffleCards}
+                    className="p-2 rounded-xl bg-amber-50 text-amber-800 border border-amber-200"
+                    title="Xáo trộn"
+                  >
+                    <Shuffle className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAppMode('quiz');
+                      startNewQuiz();
+                    }}
+                    className="px-2.5 py-1.5 rounded-xl bg-emerald-600 text-white text-[11px] font-extrabold"
+                  >
+                    Test
+                  </button>
+                </div>
+              ) : !quizCompleted ? (
+                <button
+                  type="button"
+                  onClick={handleFinishQuiz}
+                  className="px-3 py-1.5 rounded-xl bg-slate-900 text-white text-[11px] font-extrabold"
+                >
+                  Nộp bài
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAppMode('study');
+                    setIsFlipped(false);
+                  }}
+                  className="px-2.5 py-1.5 rounded-xl bg-amber-500 text-slate-950 text-[11px] font-extrabold"
+                >
+                  Học thẻ
+                </button>
+              )}
+            </div>
+
+            {/* Thin Progress Bar */}
+            <div className="w-full h-1 bg-slate-200 shrink-0">
+              <div
+                className={`h-full transition-all duration-300 ${
+                  appMode === 'study' ? 'bg-amber-500' : 'bg-emerald-500'
+                }`}
+                style={{
+                  width:
+                    appMode === 'study'
+                      ? `${
+                          filteredCards.length > 0
+                            ? Math.round(((cardIndex + 1) / filteredCards.length) * 100)
+                            : 0
+                        }%`
+                      : `${
+                          quizQuestions.length > 0
+                            ? Math.round(((quizIndex + 1) / quizQuestions.length) * 100)
+                            : 0
+                        }%`,
+                }}
+              />
+            </div>
+
+            {/* Center Stage */}
+            {appMode === 'study' ? (
+              <>
+                <div className="flex-1 min-h-0 p-3 flex flex-col justify-center overflow-hidden">
+                  {filteredCards.length === 0 || !currentCard ? (
+                    <div className="bg-white rounded-3xl border border-slate-200 p-6 text-center space-y-3 my-auto">
+                      <HelpCircle className="w-10 h-10 text-slate-300 mx-auto" />
+                      <p className="text-sm font-bold text-slate-700">
+                        Không có thẻ nào trong bộ lọc này.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setMobileSessionActive(false)}
+                        className="px-4 py-2 bg-slate-900 text-white text-xs font-extrabold rounded-xl"
+                      >
+                        Quay lại chọn bộ lọc
+                      </button>
+                    </div>
+                  ) : (
+                    renderFlashcardSurface(true)
+                  )}
+                </div>
+
+                {/* Bottom Thumb Action Bar for Study */}
+                {currentCard && (
+                  <div className="shrink-0 px-3 pt-2.5 pb-4 bg-white border-t border-slate-200 space-y-2 shadow-[0_-4px_16px_rgba(0,0,0,0.04)]">
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => handleMarkReview(currentCard.id)}
+                        className={`py-2.5 px-3 rounded-xl border-2 font-extrabold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition ${
+                          reviewIds.includes(currentCard.id)
+                            ? 'bg-rose-600 text-white border-rose-600'
+                            : 'bg-rose-50 text-rose-700 border-rose-200'
+                        }`}
+                      >
+                        <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                        <span>Cần ôn lại</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => handleMarkMastered(currentCard.id)}
+                        className={`py-2.5 px-3 rounded-xl border-2 font-extrabold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition ${
+                          masteredIds.includes(currentCard.id)
+                            ? 'bg-emerald-600 text-white border-emerald-600'
+                            : 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        }`}
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+                        <span>Đã thuộc</span>
+                      </button>
+                    </div>
+
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={handlePrevCard}
+                        className="py-2.5 px-3 bg-slate-100 text-slate-800 font-bold text-xs rounded-xl flex items-center justify-center gap-1 active:scale-95"
+                      >
+                        <ArrowLeft className="w-3.5 h-3.5" />
+                        <span>Trước</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsFlipped((f) => !f)}
+                        className="py-2.5 px-3 bg-slate-900 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1 active:scale-95"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-amber-400" />
+                        <span>{isFlipped ? 'Úp thẻ' : 'Lật thẻ'}</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleNextCard}
+                        className="py-2.5 px-3 bg-slate-100 text-slate-800 font-bold text-xs rounded-xl flex items-center justify-center gap-1 active:scale-95"
+                      >
+                        <span>Tiếp</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </>
+            ) : (
+              /* Mobile Full-Focus Quiz Stage */
+              <>
+                <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
+                  {quizQuestions.length === 0 ? (
+                    <div className="bg-white rounded-3xl border border-slate-200 p-6 text-center space-y-3">
+                      <HelpCircle className="w-10 h-10 text-slate-300 mx-auto" />
+                      <p className="text-sm font-bold text-slate-700">
+                        Không đủ câu hỏi cho bộ lọc này.
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => setMobileSessionActive(false)}
+                        className="px-4 py-2 bg-slate-900 text-white text-xs font-extrabold rounded-xl"
+                      >
+                        Chọn lại bộ lọc
+                      </button>
+                    </div>
+                  ) : quizCompleted ? (
+                    <div className="space-y-3 pb-6">
+                      <div className="bg-white rounded-2xl border border-slate-200 p-5 text-center space-y-3 shadow-xs">
+                        <div
+                          className={`w-14 h-14 mx-auto rounded-2xl flex items-center justify-center ${
+                            quizScoreStats.pct >= 72
+                              ? 'bg-emerald-500 text-white'
+                              : 'bg-amber-500 text-slate-950'
+                          }`}
+                        >
+                          <Trophy className="w-7 h-7" />
+                        </div>
+                        <div>
+                          <div className="text-xl font-black text-slate-900">
+                            {quizScoreStats.correct}/{quizScoreStats.total} câu đúng ({quizScoreStats.pct}%)
+                          </div>
+                          <div className="text-xs text-slate-500 mt-0.5">
+                            Đã làm {quizScoreStats.answered}/{quizScoreStats.total} câu
+                          </div>
+                        </div>
+                        <div className="flex flex-wrap justify-center gap-2 pt-1">
+                          {quizScoreStats.wrongQuestions.length > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => startNewQuiz(quizScoreStats.wrongQuestions)}
+                              className="px-3.5 py-2 bg-rose-600 text-white text-xs font-extrabold rounded-xl flex items-center gap-1"
+                            >
+                              <Target className="w-3.5 h-3.5" />
+                              <span>Làm lại {quizScoreStats.wrongQuestions.length} câu sai</span>
+                            </button>
+                          )}
+                          <button
+                            type="button"
+                            onClick={() => startNewQuiz()}
+                            className="px-3.5 py-2 bg-slate-900 text-white text-xs font-extrabold rounded-xl"
+                          >
+                            Đề mới
+                          </button>
+                        </div>
+                      </div>
+
+                      {quizQuestions.map((q, idx) => {
+                        const userOpt = quizAnswers[q.id];
+                        const isRight = userOpt === q.correctIndex;
+                        return (
+                          <div
+                            key={q.id}
+                            className={`bg-white rounded-2xl border p-3.5 space-y-2 ${
+                              isRight ? 'border-emerald-200' : 'border-rose-200'
+                            }`}
+                          >
+                            <div className="flex items-center justify-between gap-2 text-[11px]">
+                              <span className="font-black text-slate-800">
+                                Câu {idx + 1} • {q.serviceTag}
+                              </span>
+                              <span className={`font-extrabold ${isRight ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                {isRight ? 'Đúng' : userOpt === undefined ? 'Chưa làm' : 'Sai'}
+                              </span>
+                            </div>
+                            <p className="text-xs font-bold text-slate-900">{q.prompt}</p>
+                            <div className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1.5 rounded-lg">
+                              Đáp án: {q.options[q.correctIndex]}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  ) : (
+                    renderActiveQuizCard(true)
+                  )}
+                </div>
+
+                {!quizCompleted && quizQuestions.length > 0 && (
+                  <div className="shrink-0 px-3 pt-2.5 pb-4 bg-white border-t border-slate-200 grid grid-cols-2 gap-2 shadow-[0_-4px_16px_rgba(0,0,0,0.04)]">
+                    <button
+                      type="button"
+                      disabled={quizIndex === 0}
+                      onClick={() => setQuizIndex((i) => Math.max(0, i - 1))}
+                      className="py-2.5 px-3 bg-slate-100 text-slate-800 font-bold text-xs rounded-xl disabled:opacity-40 flex items-center justify-center gap-1"
+                    >
+                      <ArrowLeft className="w-3.5 h-3.5" />
+                      <span>Câu trước</span>
+                    </button>
+
+                    {quizIndex < quizQuestions.length - 1 ? (
+                      <button
+                        type="button"
+                        onClick={() => setQuizIndex((i) => i + 1)}
+                        className="py-2.5 px-3 bg-slate-900 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1"
+                      >
+                        <span>Câu sau</span>
+                        <ArrowRight className="w-3.5 h-3.5" />
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={handleFinishQuiz}
+                        className="py-2.5 px-3 bg-emerald-600 text-white font-extrabold text-xs rounded-xl flex items-center justify-center gap-1"
+                      >
+                        <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span>Xem kết quả</span>
+                      </button>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* ================================================================== */}
+      {/* DESKTOP VIEW (>= 768px) — UNCHANGED INLINE LAYOUT                  */}
+      {/* ================================================================== */}
+      <div className="hidden md:block">
       {/* Compact Responsive Hero Header */}
       <div className="bg-gradient-to-br from-slate-900 via-slate-900 to-slate-800 text-white pt-5 pb-6 px-3 sm:px-6 lg:px-8 border-b border-slate-700">
         <div className="max-w-6xl mx-auto space-y-4">
@@ -987,123 +1867,7 @@ export default function CheatSheetFlashcardsClient() {
                 </div>
 
                 {/* Interactive Tap-to-Flip Flashcard */}
-                <div
-                  onClick={() => setIsFlipped((f) => !f)}
-                  onTouchStart={(e) => {
-                    touchStartX.current = e.touches[0].clientX;
-                    touchStartY.current = e.touches[0].clientY;
-                  }}
-                  onTouchEnd={(e) => {
-                    if (touchStartX.current === null || touchStartY.current === null) return;
-                    const dx = e.changedTouches[0].clientX - touchStartX.current;
-                    const dy = e.changedTouches[0].clientY - touchStartY.current;
-                    touchStartX.current = null;
-                    touchStartY.current = null;
-                    // Horizontal swipe threshold
-                    if (Math.abs(dx) > 55 && Math.abs(dx) > Math.abs(dy) * 1.4) {
-                      if (dx < 0) handleNextCard();
-                      else handlePrevCard();
-                    }
-                  }}
-                  className={`relative rounded-3xl border-2 p-5 sm:p-8 min-h-[300px] sm:min-h-[340px] flex flex-col justify-between transition-all duration-200 cursor-pointer select-none shadow-lg ${
-                    isFlipped
-                      ? 'bg-white border-amber-400 shadow-amber-500/10'
-                      : 'bg-gradient-to-br from-white via-white to-amber-50/40 border-slate-200 hover:border-amber-300'
-                  }`}
-                >
-                  {/* Card Top Header: Service Tag + Category + Card Type */}
-                  <div className="flex flex-wrap items-center justify-between gap-2 pb-4 border-b border-slate-100">
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {/* Service Tag Badge (clickable to filter by this service) */}
-                      <button
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setSelectedServiceTag(
-                            selectedServiceTag === currentCard.serviceTag
-                              ? 'all'
-                              : currentCard.serviceTag
-                          );
-                        }}
-                        title="Bấm để lọc toàn bộ thẻ của Service này"
-                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 text-amber-400 text-[11px] sm:text-xs font-extrabold hover:bg-slate-800 transition cursor-pointer"
-                      >
-                        <Tag className="w-3 h-3 shrink-0" />
-                        <span>{currentCard.serviceTag}</span>
-                      </button>
-
-                      <span className="px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-bold">
-                        {currentCard.categoryTitle}
-                      </span>
-
-                      <span
-                        className={`px-2 py-1 rounded-lg text-[11px] font-extrabold border ${
-                          CARD_TYPE_STYLES[currentCard.cardType].bg
-                        } ${CARD_TYPE_STYLES[currentCard.cardType].text} ${
-                          CARD_TYPE_STYLES[currentCard.cardType].border
-                        }`}
-                      >
-                        {currentCard.cardTypeLabel}
-                      </span>
-                    </div>
-
-                    <span
-                      className={`text-[11px] font-black uppercase tracking-wider px-2.5 py-1 rounded-full ${
-                        isFlipped
-                          ? 'bg-emerald-100 text-emerald-800'
-                          : 'bg-amber-100 text-amber-900'
-                      }`}
-                    >
-                      {isFlipped ? 'Đáp án Cheat Sheet' : 'Mặt trước'}
-                    </span>
-                  </div>
-
-                  {/* Card Center Body */}
-                  <div className="py-5 sm:py-7 flex-1 flex flex-col justify-center">
-                    {!isFlipped ? (
-                      <div className="text-center space-y-3">
-                        <p className="text-lg sm:text-2xl font-extrabold text-slate-900 leading-snug whitespace-pre-line">
-                          {currentCard.front}
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4 animate-in fade-in duration-150">
-                        <div className="text-xs font-bold text-slate-400">
-                          {currentCard.front}
-                        </div>
-
-                        {currentCard.cardType === 'quick_pick' ? (
-                          <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-2">
-                            <div className="text-xs font-extrabold uppercase tracking-wider text-emerald-700">
-                              Đáp án chọn nhanh
-                            </div>
-                            <div className="text-xl sm:text-2xl font-black text-emerald-950">
-                              {currentCard.back}
-                            </div>
-                            {currentCard.extraContext && (
-                              <div className="text-xs text-emerald-800 font-medium pt-1">
-                                {currentCard.extraContext}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          renderFormattedCheatSheetText(currentCard.back)
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Card Bottom Hint */}
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] font-semibold text-slate-400">
-                    <span className="flex items-center gap-1">
-                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      {isFlipped
-                        ? 'Chạm lại để xem mặt trước'
-                        : 'Chạm vào thẻ để lật xem đáp án'}
-                    </span>
-                    <span className="hidden sm:inline">Space: Lật thẻ</span>
-                  </div>
-                </div>
+                {renderFlashcardSurface(false)}
 
                 {/* Thumb-Friendly Bottom Action Controls */}
                 <div className="space-y-2.5">
@@ -1492,153 +2256,13 @@ export default function CheatSheetFlashcardsClient() {
                   </div>
 
                   {/* Active Question Card */}
-                  <div className="bg-white rounded-3xl border border-slate-200 p-5 sm:p-7 shadow-md space-y-5">
-                    <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                      <div className="flex flex-wrap items-center gap-1.5">
-                        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-slate-900 text-amber-400 text-[11px] font-extrabold">
-                          <Tag className="w-3 h-3" />
-                          {currentQuizQ.serviceTag}
-                        </span>
-                        <span className="px-2 py-1 rounded-lg bg-slate-100 text-slate-600 text-[11px] font-bold">
-                          {currentQuizQ.categoryTitle}
-                        </span>
-                        <span
-                          className={`px-2 py-1 rounded-lg text-[11px] font-extrabold border ${
-                            CARD_TYPE_STYLES[currentQuizQ.questionType].bg
-                          } ${CARD_TYPE_STYLES[currentQuizQ.questionType].text} ${
-                            CARD_TYPE_STYLES[currentQuizQ.questionType].border
-                          }`}
-                        >
-                          {currentQuizQ.questionTypeLabel}
-                        </span>
-                      </div>
-                    </div>
-
-                    <h2 className="text-base sm:text-lg font-extrabold text-slate-900 leading-relaxed">
-                      {currentQuizQ.prompt}
-                    </h2>
-
-                    {/* 4 Options */}
-                    <div className="space-y-2.5">
-                      {currentQuizQ.options.map((opt, idx) => {
-                        const letter = String.fromCharCode(65 + idx);
-                        const isSelected = currentSelectedOpt === idx;
-                        const isCorrectOpt = idx === currentQuizQ.correctIndex;
-
-                        let containerClass =
-                          'bg-white border-slate-200 hover:border-amber-400 hover:bg-amber-50/30 text-slate-800 cursor-pointer';
-                        let letterClass = 'bg-slate-100 text-slate-700';
-
-                        if (isCurrentQuizRevealed) {
-                          if (isCorrectOpt) {
-                            containerClass =
-                              'bg-emerald-50 border-emerald-500 text-emerald-950 font-bold cursor-default';
-                            letterClass = 'bg-emerald-600 text-white';
-                          } else if (isSelected && !isCorrectOpt) {
-                            containerClass =
-                              'bg-rose-50 border-rose-500 text-rose-950 font-semibold cursor-default';
-                            letterClass = 'bg-rose-600 text-white';
-                          } else {
-                            containerClass =
-                              'bg-slate-50/70 border-slate-200 text-slate-400 opacity-75 cursor-default';
-                            letterClass = 'bg-slate-200 text-slate-500';
-                          }
-                        } else if (isSelected) {
-                          containerClass =
-                            'bg-amber-50 border-amber-500 text-slate-950 font-bold shadow-xs';
-                          letterClass = 'bg-amber-500 text-slate-950';
-                        }
-
-                        return (
-                          <button
-                            key={idx}
-                            type="button"
-                            disabled={isCurrentQuizRevealed}
-                            onClick={() => handleSelectQuizOption(currentQuizQ.id, idx)}
-                            className={`w-full text-left p-3.5 sm:p-4 rounded-2xl border-2 transition flex items-start gap-3 min-h-[52px] active:scale-[0.99] ${containerClass}`}
-                          >
-                            <span
-                              className={`w-7 h-7 rounded-xl flex items-center justify-center font-black text-xs shrink-0 ${letterClass}`}
-                            >
-                              {letter}
-                            </span>
-                            <span className="flex-1 text-xs sm:text-sm leading-relaxed pt-0.5">
-                              {opt}
-                            </span>
-                            {isCurrentQuizRevealed && isCorrectOpt && (
-                              <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
-                            )}
-                            {isCurrentQuizRevealed && isSelected && !isCorrectOpt && (
-                              <XCircle className="w-5 h-5 text-rose-600 shrink-0 mt-0.5" />
-                            )}
-                          </button>
-                        );
-                      })}
-                    </div>
-
-                    {/* Instant Cheat Sheet Explanation */}
-                    {isCurrentQuizRevealed && (
-                      <div className="p-4 sm:p-5 rounded-2xl bg-slate-50 border border-slate-200 space-y-3 animate-in fade-in duration-150">
-                        <div className="flex items-center gap-2 text-xs font-black uppercase tracking-wider text-amber-800">
-                          <Lightbulb className="w-4 h-4 text-amber-600 shrink-0" />
-                          <span>Nội dung gốc trong Cheat Sheet ({currentQuizQ.explanationItem.name})</span>
-                        </div>
-
-                        <p className="text-xs sm:text-sm font-bold text-slate-900">
-                          {currentQuizQ.explanationItem.purpose}
-                        </p>
-
-                        {renderFormattedCheatSheetText(currentQuizQ.explanationItem.scenario)}
-
-                        {currentQuizQ.explanationItem.note && (
-                          <div className="pt-2 border-t border-slate-200 space-y-1.5">
-                            <div className="text-[11px] font-extrabold uppercase tracking-wider text-slate-500">
-                              Ghi chú &amp; Mẹo thi:
-                            </div>
-                            {renderFormattedCheatSheetText(currentQuizQ.explanationItem.note)}
-                          </div>
-                        )}
-                      </div>
-                    )}
-
-                    {/* Quiz Footer Navigation */}
-                    <div className="flex items-center justify-between pt-3 border-t border-slate-100">
-                      <button
-                        type="button"
-                        disabled={quizIndex === 0}
-                        onClick={() => setQuizIndex((i) => Math.max(0, i - 1))}
-                        className="px-4 py-2.5 bg-white border border-slate-200 text-slate-700 font-bold text-xs sm:text-sm rounded-xl disabled:opacity-40 flex items-center gap-1.5 cursor-pointer hover:bg-slate-50"
-                      >
-                        <ArrowLeft className="w-4 h-4" />
-                        <span>Câu trước</span>
-                      </button>
-
-                      {quizIndex < quizQuestions.length - 1 ? (
-                        <button
-                          type="button"
-                          onClick={() => setQuizIndex((i) => i + 1)}
-                          className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold text-xs sm:text-sm rounded-xl flex items-center gap-1.5 cursor-pointer shadow-xs"
-                        >
-                          <span>Câu sau</span>
-                          <ArrowRight className="w-4 h-4" />
-                        </button>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={handleFinishQuiz}
-                          className="px-5 py-2.5 bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-extrabold text-xs sm:text-sm rounded-xl flex items-center gap-1.5 cursor-pointer shadow-md"
-                        >
-                          <CheckCircle2 className="w-4 h-4" />
-                          <span>Hoàn thành &amp; Xem kết quả</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
+                  {renderActiveQuizCard(false)}
                 </div>
               )
             )}
           </div>
         )}
+      </div>
       </div>
     </div>
   );
