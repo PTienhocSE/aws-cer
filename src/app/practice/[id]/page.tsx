@@ -22,6 +22,7 @@ import {
   Check,
   Clock,
   Download,
+  Filter,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import HighlightableText from '@/components/HighlightableText';
@@ -73,6 +74,7 @@ function PracticeSessionContent({ params }: { params: Promise<{ id: string }> })
   const [viewMode, setViewMode] = useState<'PRACTICE' | 'REVIEW'>(
     modeParam === 'review' ? 'REVIEW' : 'PRACTICE'
   );
+  const [reviewFilter, setReviewFilter] = useState<'ALL' | 'CORRECT' | 'INCORRECT' | 'UNANSWERED'>('ALL');
   const [activeReviewNoteId, setActiveReviewNoteId] = useState<string | null>(null);
   const [isStartingNextBatch, setIsStartingNextBatch] = useState(false);
   const [isSyncModalOpen, setIsSyncModalOpen] = useState(false);
@@ -469,6 +471,7 @@ function PracticeSessionContent({ params }: { params: Promise<{ id: string }> })
       // Reset local state
       setQStateMap({});
       setCurrentIndex(0);
+      setReviewFilter('ALL');
       setInitialized(false);
       // Refetch questions (they'll now show as unanswered)
       queryClient.invalidateQueries({ queryKey: ['practiceQuestions', sessionId] });
@@ -614,6 +617,44 @@ function PracticeSessionContent({ params }: { params: Promise<{ id: string }> })
 
   // Dedicated Full-Session Review Screen
   if (viewMode === 'REVIEW') {
+    const reviewQuestions = questionsData.questions.map((q: any, qIdx: number) => {
+      const state = qStateMap[q.id];
+      const userSelectedIds: string[] = state?.submittedOptionIds || q.userSelectedOptionIds || [];
+      const correctIds: string[] =
+        state?.correctOptionIds && state.correctOptionIds.length > 0
+          ? state.correctOptionIds
+          : q.correctOptionIds && q.correctOptionIds.length > 0
+          ? q.correctOptionIds
+          : q.options?.filter((o: any) => o.isCorrect).map((o: any) => o.id) || [];
+
+      const isSubmittedQ = !!state?.isSubmitted || !!q.isAnswered;
+      const isQuestionCorrect =
+        isSubmittedQ &&
+        userSelectedIds.length === correctIds.length &&
+        userSelectedIds.every((id: string) => correctIds.includes(id));
+
+      return {
+        q,
+        qIdx,
+        state,
+        userSelectedIds,
+        correctIds,
+        isSubmittedQ,
+        isQuestionCorrect,
+      };
+    });
+
+    const reviewCorrectCount = reviewQuestions.filter((item: any) => item.isSubmittedQ && item.isQuestionCorrect).length;
+    const reviewIncorrectCount = reviewQuestions.filter((item: any) => item.isSubmittedQ && !item.isQuestionCorrect).length;
+    const reviewUnansweredCount = reviewQuestions.filter((item: any) => !item.isSubmittedQ).length;
+
+    const filteredReviewQuestions = reviewQuestions.filter((item: any) => {
+      if (reviewFilter === 'CORRECT') return item.isSubmittedQ && item.isQuestionCorrect;
+      if (reviewFilter === 'INCORRECT') return item.isSubmittedQ && !item.isQuestionCorrect;
+      if (reviewFilter === 'UNANSWERED') return !item.isSubmittedQ;
+      return true;
+    });
+
     return (
       <div className="max-w-4xl mx-auto space-y-6 pb-24">
         {/* Top Summary & Action Header */}
@@ -701,24 +742,89 @@ function PracticeSessionContent({ params }: { params: Promise<{ id: string }> })
           </div>
         </div>
 
-        {/* 15 Question Review Cards */}
+        {/* Review Filter Bar */}
+        <div className="bg-white px-4 py-3.5 sm:px-5 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 text-xs font-extrabold text-slate-500 mr-1">
+              <Filter className="w-3.5 h-3.5 text-slate-400" />
+              <span className="hidden sm:inline">Lọc câu hỏi:</span>
+            </span>
+            <button
+              type="button"
+              onClick={() => setReviewFilter('ALL')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+                reviewFilter === 'ALL'
+                  ? 'bg-slate-900 text-white shadow-xs'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+              }`}
+            >
+              Tất cả ({totalQuestions})
+            </button>
+            <button
+              type="button"
+              onClick={() => setReviewFilter('CORRECT')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer inline-flex items-center gap-1.5 ${
+                reviewFilter === 'CORRECT'
+                  ? 'bg-emerald-600 text-white shadow-xs'
+                  : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200/70'
+              }`}
+            >
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Câu đúng ({reviewCorrectCount})</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setReviewFilter('INCORRECT')}
+              className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer inline-flex items-center gap-1.5 ${
+                reviewFilter === 'INCORRECT'
+                  ? 'bg-rose-600 text-white shadow-xs'
+                  : 'bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200/70'
+              }`}
+            >
+              <XCircle className="w-3.5 h-3.5" />
+              <span>Câu sai ({reviewIncorrectCount})</span>
+            </button>
+            {reviewUnansweredCount > 0 && (
+              <button
+                type="button"
+                onClick={() => setReviewFilter('UNANSWERED')}
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-black transition cursor-pointer ${
+                  reviewFilter === 'UNANSWERED'
+                    ? 'bg-amber-500 text-slate-950 shadow-xs'
+                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100 border border-amber-200/70'
+                }`}
+              >
+                Chưa làm ({reviewUnansweredCount})
+              </button>
+            )}
+          </div>
+
+          <span className="text-xs font-bold text-slate-500 ml-auto">
+            Hiển thị {filteredReviewQuestions.length}/{totalQuestions} câu
+          </span>
+        </div>
+
+        {/* Question Review Cards */}
         <div className="space-y-6">
-          {questionsData.questions.map((q: any, qIdx: number) => {
-            const state = qStateMap[q.id];
-            const userSelectedIds: string[] = state?.submittedOptionIds || q.userSelectedOptionIds || [];
-            const correctIds: string[] =
-              state?.correctOptionIds && state.correctOptionIds.length > 0
-                ? state.correctOptionIds
-                : q.correctOptionIds && q.correctOptionIds.length > 0
-                ? q.correctOptionIds
-                : q.options?.filter((o: any) => o.isCorrect).map((o: any) => o.id) || [];
-
-            const isSubmittedQ = !!state?.isSubmitted || !!q.isAnswered;
-            const isQuestionCorrect =
-              isSubmittedQ &&
-              userSelectedIds.length === correctIds.length &&
-              userSelectedIds.every((id: string) => correctIds.includes(id));
-
+          {filteredReviewQuestions.length === 0 ? (
+            <div className="bg-white rounded-3xl border border-slate-200/90 p-10 text-center space-y-3 shadow-2xs">
+              <p className="text-sm font-bold text-slate-600">
+                {reviewFilter === 'INCORRECT'
+                  ? 'Tuyệt vời! Bạn không có câu nào làm sai trong phiên này.'
+                  : reviewFilter === 'CORRECT'
+                  ? 'Chưa có câu nào làm đúng trong phiên này.'
+                  : 'Không có câu hỏi nào khớp với bộ lọc hiện tại.'}
+              </p>
+              <button
+                type="button"
+                onClick={() => setReviewFilter('ALL')}
+                className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-extrabold rounded-xl transition cursor-pointer"
+              >
+                Xem toàn bộ {totalQuestions} câu
+              </button>
+            </div>
+          ) : (
+            filteredReviewQuestions.map(({ q, qIdx, state, userSelectedIds, correctIds, isSubmittedQ, isQuestionCorrect }: any) => {
             return (
               <div
                 key={q.id}
@@ -891,7 +997,8 @@ function PracticeSessionContent({ params }: { params: Promise<{ id: string }> })
                 )}
               </div>
             );
-          })}
+          })
+          )}
         </div>
 
         {/* Bottom Completion Box */}
