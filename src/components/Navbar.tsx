@@ -118,13 +118,13 @@ export default function Navbar() {
                     onClick={() => setBankDropdownOpen(!bankDropdownOpen)}
                     onBlur={() => setTimeout(() => setBankDropdownOpen(false), 200)}
                     className={`flex items-center px-3 py-1.5 rounded-xl text-xs sm:text-sm font-bold transition-all ${
-                      pathname.startsWith('/questions') || pathname.startsWith('/question-banks') || pathname.startsWith('/docs') || pathname.startsWith('/cheat-seat-saa')
+                      pathname.startsWith('/questions') || pathname.startsWith('/question-banks') || pathname.startsWith('/docs') || pathname.startsWith('/cheat-seat-saa') || pathname.startsWith('/flashcards')
                         ? 'bg-slate-900 text-white shadow-xs'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100'
                     }`}
                   >
                     <BookOpen className={`w-4 h-4 mr-1.5 ${
-                      pathname.startsWith('/questions') || pathname.startsWith('/question-banks') || pathname.startsWith('/docs') || pathname.startsWith('/cheat-seat-saa') ? 'text-amber-400' : 'text-slate-400'
+                      pathname.startsWith('/questions') || pathname.startsWith('/question-banks') || pathname.startsWith('/docs') || pathname.startsWith('/cheat-seat-saa') || pathname.startsWith('/flashcards') ? 'text-amber-400' : 'text-slate-400'
                     }`} />
                     <span>Ngân hàng</span>
                     <ChevronDown className="w-3.5 h-3.5 ml-1 text-slate-400" />
@@ -173,6 +173,19 @@ export default function Navbar() {
                             <span className="px-1.5 py-0.2 bg-amber-100 text-amber-800 text-[9px] font-bold rounded-full">244 mục</span>
                           </div>
                           <div className="text-[10px] font-medium text-slate-400 mt-0.5">Mô phỏng bảng chia 16 tabs tra cứu</div>
+                        </div>
+                      </Link>
+                      <Link
+                        href="/flashcards"
+                        className="flex items-center px-3 py-2.5 text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-amber-50/70 rounded-xl transition"
+                      >
+                        <Sparkles className="w-4 h-4 mr-2 text-amber-500 shrink-0" />
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span>Flashcard &amp; Test Cheat Sheet</span>
+                            <span className="px-1.5 py-0.2 bg-emerald-100 text-emerald-800 text-[9px] font-bold rounded-full">Mới</span>
+                          </div>
+                          <div className="text-[10px] font-medium text-slate-400 mt-0.5">Học lật thẻ &amp; test kiến thức theo Service</div>
                         </div>
                       </Link>
                     </div>
@@ -361,6 +374,18 @@ export default function Navbar() {
                   Cheat Sheet
                 </Link>
 
+                <Link
+                  href="/flashcards"
+                  className={`px-3 py-1.5 rounded-xl transition-all flex items-center gap-1 ${
+                    pathname.startsWith('/flashcards')
+                      ? 'bg-slate-900 text-white shadow-xs'
+                      : 'hover:text-slate-900 hover:bg-amber-50 text-slate-700'
+                  }`}
+                >
+                  <Sparkles className={`w-3.5 h-3.5 ${pathname.startsWith('/flashcards') ? 'text-amber-400' : 'text-amber-500'}`} />
+                  <span>Flashcard</span>
+                </Link>
+
                 <button
                   onClick={() => {
                     setSyncDefaultTab('export');
@@ -525,6 +550,15 @@ export default function Navbar() {
                 <span>Cheat Sheet SAA</span>
               </Link>
 
+              <Link
+                href="/flashcards"
+                onClick={() => setMobileToolsOpen(false)}
+                className="p-3.5 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center space-x-2.5 active:scale-95 transition col-span-2"
+              >
+                <Sparkles className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
+                <span>Flashcard &amp; Test Kiến Thức Cheat Sheet</span>
+              </Link>
+
               <button
                 onClick={() => {
                   setMobileToolsOpen(false);
@@ -640,6 +674,15 @@ export default function Navbar() {
               >
                 <FileSpreadsheet className="w-4.5 h-4.5 text-amber-500 shrink-0" />
                 <span>Cheat Sheet</span>
+              </Link>
+
+              <Link
+                href="/flashcards"
+                onClick={() => setGuestMobileMenuOpen(false)}
+                className="p-3.5 rounded-2xl bg-emerald-50 text-emerald-800 border border-emerald-200 flex items-center space-x-2.5 active:scale-95 transition"
+              >
+                <Sparkles className="w-4.5 h-4.5 text-emerald-600 shrink-0" />
+                <span>Flashcard &amp; Test</span>
               </Link>
 
               <Link

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo, useEffect, useRef } from 'react';
+import Link from 'next/link';
 import {
   Server,
   Box,
@@ -571,6 +572,16 @@ export default function CheatSheetClient() {
                 Mô phỏng bảng tra cứu toàn diện <strong>244 dịch vụ AWS</strong> chia theo <strong>16 chuyên đề</strong>.
                 Cung cấp mục đích cốt lõi, ma trận &quot;Chọn khi / KHÔNG chọn khi&quot; và các mẹo keyword phân biệt đáp án sát đề thi thực tế.
               </p>
+              <div className="mt-4 flex flex-wrap items-center gap-2.5">
+                <Link
+                  href="/flashcards"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-500 hover:to-amber-600 text-slate-950 text-xs sm:text-sm font-extrabold shadow-lg shadow-amber-500/20 transition active:scale-95"
+                >
+                  <Layers className="w-4 h-4 shrink-0" />
+                  <span>Học Flashcard &amp; Test Kiến Thức từ Cheat Sheet</span>
+                  <ArrowRight className="w-4 h-4 shrink-0" />
+                </Link>
+              </div>
             </div>
 
             {/* Quick Stats Badges */}
